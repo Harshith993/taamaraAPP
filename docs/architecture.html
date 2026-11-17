@@ -117,10 +117,10 @@ footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line);
   <nav class="rail" aria-label="Contents"><p>Contents</p><ol><li><a href="#what-i-understood">What I understood</a></li><li><a href="#features-beyond-the-original-brief">Features beyond the original brief</a></li><li><a href="#your-answers-and-what-they-changed">Your answers and what they changed</a></li><li><a href="#architecture">Architecture</a></li><li><a href="#how-access-control-works">How access control works</a></li><li><a href="#role-permission-matrix-v1-1">Role–permission matrix (v1.1)</a></li><li><a href="#database-design">Database design</a></li><li><a href="#development-roadmap">Development roadmap</a></li><li><a href="#risks-and-how-we-handle-them">Risks and how we handle them</a></li><li><a href="#next-steps">Next steps</a></li></ol></nav>
   <main>
     <header class="doc">
-      <span class="eyebrow">v1.1 · updated with your answers · awaiting approval</span>
+      <span class="eyebrow">v1.1 · approved by the owners · 17 Nov 2026</span>
       <h1>Event Management ERP: requirements, architecture and roadmap</h1>
-      <p class="status"><strong>Status:</strong> v1.1, updated with your answers and the photo/video proof requirement, awaiting your approval · <strong>Phase:</strong> 1 (Requirements) and 2 (Architecture) · <strong>Date:</strong> 17 Nov 2026</p>
-      <p class="lead">This is the plan for the internal system. Nothing has been built yet. Section 3 records your answers and what each one changed. Once you approve this version, Phase 3 (screen designs) begins.</p>
+      <p class="status"><strong>Status:</strong> v1.1, <strong>approved by the owners on 17 Nov 2026</strong> · <strong>Phase:</strong> 1 (Requirements) and 2 (Architecture) · <strong>Date:</strong> 17 Nov 2026</p>
+      <p class="lead">This is the plan for the internal system. Nothing has been built yet. Section 3 records your answers and what each one changed. Phase 3 (screen designs) is under way.</p>
     </header>
     <h2 id="what-i-understood">1. What I understood</h2>
 <p>You run an event management company (weddings, pre-wedding shoots, cocktail parties, birthdays and other celebrations). Today the work with vendors and labour runs over phone calls and WhatsApp. You want <strong>one internal system</strong> where every booking is planned, staffed, executed and settled. Each person logs in with their own account and sees only what they are allowed to see. It is an internal operations tool. It is <strong>not</strong> a booking app, and <strong>clients don&#39;t use it</strong>.</p>
@@ -224,6 +224,11 @@ footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line);
 <td>G13</td>
 <td><strong>Encrypted bank and ID details</strong></td>
 <td>Only owners and the accountant can see them.</td>
+</tr>
+<tr>
+<td>G18</td>
+<td><strong>iPad as a first-class device</strong> (your request, 17 Nov)</td>
+<td>Every screen is designed at three sizes: phone, iPad (portrait and landscape) and desktop. On iPad: two-pane layouts, 44 px touch targets, no hover-only actions, keyboard shortcuts with a Magic Keyboard, and install from Safari&#39;s &quot;Add to Home Screen&quot; with push notifications (iPadOS 16.4+).</td>
 </tr>
 <tr>
 <td>G17</td>
@@ -331,11 +336,17 @@ footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line);
 <tr>
 <td>—</td>
 <td>New request</td>
+<td>A very immersive UI that doesn&#39;t look AI-generated; iPad users too</td>
+<td>Phase 3 starts with three genuinely different visual directions drawn on a real screen. You pick one before the full design. Every screen is designed for phone, iPad and desktop (G18).</td>
+</tr>
+<tr>
+<td>—</td>
+<td>New request</td>
 <td>Vendors and labour upload photos or videos of completed work</td>
 <td>New work-proof feature (G17): camera upload in the vendor portal and crew app, review by manager or supervisor, video processing on the server, more storage. Built in Phase 6.</td>
 </tr>
 </tbody></table></div>
-<h3 id="assumptions-i-made-tell-me-if-any-is-wrong">Assumptions I made (tell me if any is wrong)</h3>
+<h3 id="assumptions-all-confirmed-by-the-owners-17-nov">Assumptions (all confirmed by the owners, 17 Nov)</h3>
 <ul>
 <li><strong>A1.</strong> Either owner can approve on their own; both signatures are not required.</li>
 <li><strong>A2.</strong> Managers can see vendor quotes and crew pay for <em>their</em> bookings, so they can plan within budget. They never see what the client is charged. The owner can switch this off.</li>
@@ -344,7 +355,7 @@ footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line);
 </ul>
 <h3 id="still-open-answer-any-time-before-the-phase-noted">Still open (answer any time before the phase noted)</h3>
 <ol>
-<li><strong>App name, logo and colours.</strong> Is the app called <strong>Taamara</strong>, after the repository? <em>(Phase 3, next; a placeholder logo is fine)</em></li>
+<li>✅ <strong>Answered:</strong> the app is called <strong>Taamara</strong>. The logo and colours come out of Phase 3.</li>
 <li><strong>Client billing:</strong> should the app generate GST tax invoices to clients, or does your accountant raise them while the app only records client payments? Do you deduct TDS on vendor payments? <em>(Phase 7)</em></li>
 <li><strong>Accountant:</strong> an employee, or your outside accountant logging in? <em>(Phase 5)</em></li>
 <li><strong>Attendance:</strong> does the supervisor mark it, or does the crew check in on their phone at the venue (with location)? <em>(Phase 6)</em></li>
@@ -353,7 +364,7 @@ footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line);
 <li><strong>Equipment:</strong> do you own decor, furniture, lights or sound that moves between events? <em>(Phase 6)</em></li>
 <li><strong>Scale:</strong> events per month, the busiest single day, and roughly how many vendors, crew and managers? <em>(Phase 4)</em></li>
 <li><strong>Launch timing:</strong> pilot on a few small events during the season, or switch over after it? <em>(Phase 10)</em></li>
-<li><strong>Proof rules:</strong> must proof be taken live with the camera, or may people also pick older photos from their gallery? Is a 2-minute (about 500 MB) limit per video right? Must a vendor&#39;s work have approved proof before their final payment can be approved? <em>(Phase 6; the defaults are camera or gallery, 2 minutes, and proof required)</em></li>
+<li>✅ <strong>Answered:</strong> defaults approved. Proof can come from the camera or the gallery, videos can be up to 2 minutes, and a vendor&#39;s final payment needs approved proof.</li>
 </ol>
 
 <h2 id="architecture">4. Architecture</h2>
@@ -1463,9 +1474,9 @@ docs/                this document, progress tracker, decisions log
 </tr>
 <tr>
 <td><strong>3. UI/UX</strong></td>
-<td>Sitemap per role; design system (colours, type, light and dark); clickable mockups of the owner dashboard, booking workspace, manager dashboard, supervisor event-day screen, vendor portal and crew app</td>
-<td>You approve the look on phone and desktop</td>
-<td>M · ~2 wks</td>
+<td>Three visual directions on the owner&#39;s iPad home screen → you pick → sitemap per role; design system (colours, type, light and dark); clickable mockups of the owner dashboard, booking workspace, manager dashboard, supervisor event-day screen, vendor portal and crew app, on phone, iPad and desktop</td>
+<td>You approve the look on phone, iPad and desktop</td>
+<td>🔄 started 17 Nov · ~2 wks</td>
 </tr>
 <tr>
 <td><strong>4. Database</strong></td>
@@ -1561,8 +1572,9 @@ docs/                this document, progress tracker, decisions log
 <h2 id="next-steps">10. Next steps</h2>
 <ol>
 <li>✅ <strong>Done:</strong> the repository <code>Harshith993/taamaraAPP</code> exists and holds this plan.</li>
-<li><strong>You:</strong> approve this v1.1, or tell me what to change. The open questions in section 3 can be answered as we go; only the app name and logo are useful for Phase 3.</li>
-<li><strong>Me:</strong> Phase 3, the screen designs, starting with the owner dashboard, the booking workspace and the crew app on a phone.</li>
+<li>✅ <strong>Done:</strong> v1.1 approved, along with assumptions A1–A4, the name Taamara and the proof defaults.</li>
+<li><strong>You:</strong> pick a visual direction (A Night Pond, B Invitation, C Cue Sheet, or a mix) on the design canvas.</li>
+<li><strong>Me:</strong> build the design system and the full screen set in that direction, for phone, iPad and desktop.</li>
 </ol>
 
     <footer>Source: <code>docs/ARCHITECTURE.md</code> in the project. Progress and decisions are tracked in <code>docs/PROGRESS.md</code>.</footer>

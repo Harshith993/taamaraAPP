@@ -1,8 +1,8 @@
 # Event Management ERP: Requirements, Architecture & Roadmap
 
-**Status:** v1.1, updated with your answers and the photo/video proof requirement, awaiting your approval · **Phase:** 1 (Requirements) and 2 (Architecture) · **Date:** 17 Nov 2026
+**Status:** v1.1, **approved by the owners on 17 Nov 2026** · **Phase:** 1 (Requirements) and 2 (Architecture) · **Date:** 17 Nov 2026
 
-This is the plan for the internal system. Nothing has been built yet. Section 3 records your answers and what each one changed. Once you approve this version, Phase 3 (screen designs) begins.
+This is the plan for the internal system. Nothing has been built yet. Section 3 records your answers and what each one changed. Phase 3 (screen designs) is under way.
 
 ---
 
@@ -49,6 +49,7 @@ These were proposed in v0.1 and adjusted after your answers.
 | G7 | **Phone-number logins** | Labour and most vendors log in with their mobile number and a password or PIN. Owners can reset it. |
 | G11 | **Task and checklist templates** per event type | "New wedding" creates your standard checklist automatically. |
 | G13 | **Encrypted bank and ID details** | Only owners and the accountant can see them. |
+| G18 | **iPad as a first-class device** (your request, 17 Nov) | Every screen is designed at three sizes: phone, iPad (portrait and landscape) and desktop. On iPad: two-pane layouts, 44 px touch targets, no hover-only actions, keyboard shortcuts with a Magic Keyboard, and install from Safari's "Add to Home Screen" with push notifications (iPadOS 16.4+). |
 | G17 | **Photo and video proof of completed work** (your request, 17 Nov) | Vendors and crew record proof straight from their phone camera. Each item is time-stamped and approved or rejected by the manager or supervisor. Owners and the accountant can check it before paying. See "Work proof" in section 4. |
 | G15 | **Import from Excel and contacts** | So day one isn't hours of typing. |
 | G16 | **Automatic backups (kept in India) and full export** | It's your data; you can always take it out. |
@@ -82,9 +83,10 @@ WhatsApp Business notifications · online client payments (UPI links) · owned-i
 | 9 | Approvals | Founder and co-founder approve | Owners approve quotes, payments and expenses. Managers and the accountant prepare; owners decide. |
 | 10 | Hosting | Data must stay in India: Option B | One server in **AWS Mumbai**, files and backups in AWS Mumbai storage. No services that store your business data abroad. |
 | 21 | GitHub | Repository `taamaraAPP` created | All plans and code are pushed to `Harshith993/taamaraAPP`. |
+| — | New request | A very immersive UI that doesn't look AI-generated; iPad users too | Phase 3 starts with three genuinely different visual directions drawn on a real screen. You pick one before the full design. Every screen is designed for phone, iPad and desktop (G18). |
 | — | New request | Vendors and labour upload photos or videos of completed work | New work-proof feature (G17): camera upload in the vendor portal and crew app, review by manager or supervisor, video processing on the server, more storage. Built in Phase 6. |
 
-### Assumptions I made (tell me if any is wrong)
+### Assumptions (all confirmed by the owners, 17 Nov)
 
 - **A1.** Either owner can approve on their own; both signatures are not required.
 - **A2.** Managers can see vendor quotes and crew pay for *their* bookings, so they can plan within budget. They never see what the client is charged. The owner can switch this off.
@@ -93,7 +95,7 @@ WhatsApp Business notifications · online client payments (UPI links) · owned-i
 
 ### Still open (answer any time before the phase noted)
 
-1. **App name, logo and colours.** Is the app called **Taamara**, after the repository? *(Phase 3, next; a placeholder logo is fine)*
+1. ✅ **Answered:** the app is called **Taamara**. The logo and colours come out of Phase 3.
 2. **Client billing:** should the app generate GST tax invoices to clients, or does your accountant raise them while the app only records client payments? Do you deduct TDS on vendor payments? *(Phase 7)*
 3. **Accountant:** an employee, or your outside accountant logging in? *(Phase 5)*
 4. **Attendance:** does the supervisor mark it, or does the crew check in on their phone at the venue (with location)? *(Phase 6)*
@@ -102,7 +104,7 @@ WhatsApp Business notifications · online client payments (UPI links) · owned-i
 7. **Equipment:** do you own decor, furniture, lights or sound that moves between events? *(Phase 6)*
 8. **Scale:** events per month, the busiest single day, and roughly how many vendors, crew and managers? *(Phase 4)*
 9. **Launch timing:** pilot on a few small events during the season, or switch over after it? *(Phase 10)*
-10. **Proof rules:** must proof be taken live with the camera, or may people also pick older photos from their gallery? Is a 2-minute (about 500 MB) limit per video right? Must a vendor's work have approved proof before their final payment can be approved? *(Phase 6; the defaults are camera or gallery, 2 minutes, and proof required)*
+10. ✅ **Answered:** defaults approved. Proof can come from the camera or the gallery, videos can be up to 2 minutes, and a vendor's final payment needs approved proof.
 
 ---
 
@@ -412,7 +414,7 @@ Each phase ends with a demo to you on a test server, passing tests, and an updat
 |---|---|---|---|
 | **1. Requirements** | v0.1 → v1.0 of this document | You approve v1.0 | ✅ |
 | **2. Architecture** | Stack, access model, matrix, schema outline, hosting | You approve v1.0 | ✅ |
-| **3. UI/UX** | Sitemap per role; design system (colours, type, light and dark); clickable mockups of the owner dashboard, booking workspace, manager dashboard, supervisor event-day screen, vendor portal and crew app | You approve the look on phone and desktop | M · ~2 wks |
+| **3. UI/UX** | Three visual directions on the owner's iPad home screen → you pick → sitemap per role; design system (colours, type, light and dark); clickable mockups of the owner dashboard, booking workspace, manager dashboard, supervisor event-day screen, vendor portal and crew app, on phone, iPad and desktop | You approve the look on phone, iPad and desktop | 🔄 started 17 Nov · ~2 wks |
 | **4. Database** | Prisma schema, migrations, constraints, audit-log protection, realistic seed data (a full wedding season), repository and CI | Migrations run clean; seed builds a full season | S · ~1 wk |
 | **5. Auth & access** | Phone/email login, PIN for crew, first-login password change, sessions, owner 2FA, rate limits, policy layer, team and role screens, permission test suite | Every role passes its matrix tests | M · ~2 wks |
 | **6. Core operations** | Booking workspace (overview, functions, schedule and run sheet, requirements, tasks, vendors, crew, documents), calendar, vendor directory, quote → approval → work order, **vendor portal**, crew roster and assignments, attendance, **crew app**, supervisor event-day view, **photo/video work proof with review** | A booking can be planned and run end to end without WhatsApp | L · ~5–6 wks |
@@ -444,5 +446,6 @@ Each phase ends with a demo to you on a test server, passing tests, and an updat
 ## 10. Next steps
 
 1. ✅ **Done:** the repository `Harshith993/taamaraAPP` exists and holds this plan.
-2. **You:** approve this v1.1, or tell me what to change. The open questions in section 3 can be answered as we go; only the app name and logo are useful for Phase 3.
-3. **Me:** Phase 3, the screen designs, starting with the owner dashboard, the booking workspace and the crew app on a phone.
+2. ✅ **Done:** v1.1 approved, along with assumptions A1–A4, the name Taamara and the proof defaults.
+3. **You:** pick a visual direction (A Night Pond, B Invitation, C Cue Sheet, or a mix) on the design canvas.
+4. **Me:** build the design system and the full screen set in that direction, for phone, iPad and desktop.
