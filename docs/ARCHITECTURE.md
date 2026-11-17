@@ -95,7 +95,7 @@ WhatsApp Business notifications · online client payments (UPI links) · owned-i
 
 ### Still open (answer any time before the phase noted)
 
-1. ✅ **Answered:** the app is called **Taamara**. The logo and colours come out of Phase 3.
+1. ✅ **Answered:** the company and the app are **Taamara Taamara** (events & beyond). The colours come from the company logo; see `docs/design/DESIGN-LANGUAGE.md`.
 2. **Client billing:** should the app generate GST tax invoices to clients, or does your accountant raise them while the app only records client payments? Do you deduct TDS on vendor payments? *(Phase 7)*
 3. **Accountant:** an employee, or your outside accountant logging in? *(Phase 5)*
 4. **Attendance:** does the supervisor mark it, or does the crew check in on their phone at the venue (with location)? *(Phase 6)*
@@ -447,5 +447,6 @@ Each phase ends with a demo to you on a test server, passing tests, and an updat
 
 1. ✅ **Done:** the repository `Harshith993/taamaraAPP` exists and holds this plan.
 2. ✅ **Done:** v1.1 approved, along with assumptions A1–A4, the name Taamara and the proof defaults.
-3. **You:** pick a visual direction (A Night Pond, B Invitation, C Cue Sheet, or a mix) on the design canvas.
-4. **Me:** build the design system and the full screen set in that direction, for phone, iPad and desktop.
+3. ✅ **Done:** direction C (Cue Sheet) chosen and recoloured in the Taamara Taamara lotus palette.
+4. **You:** confirm the recoloured owner home, design language and crew app, and send the original logo file.
+5. **Me:** the full screen set in this style, for phone, iPad and desktop.

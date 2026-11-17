@@ -1,4 +1,4 @@
-# taamaraAPP: Event Management ERP
+# taamaraAPP: Event Management ERP for Taamara Taamara (events & beyond)
 
 Internal operations system for the company: bookings with multiple functions, vendors, crew, tasks, schedules, money and communication in one place. Founder and co-founder are equal owners. Event managers, the accountant, supervisors, vendors and crew each get their own login and see only what their role allows.
 

@@ -6,7 +6,7 @@ Updated at the end of every working session. Status: ✅ done · 🔄 in progres
 |---|---|---|
 | 1. Requirements analysis | ✅ | v1.1 approved by the owners on 17 Nov. 8 non-blocking questions remain open (section 3), each answered before its phase. |
 | 2. System architecture | ✅ | v1.1 approved on 17 Nov: stack, access model, matrix, schema outline, AWS Mumbai hosting, media pipeline. |
-| 3. UI/UX planning | 🔄 | Three visual directions are drawn on the owner's iPad home screen in the design canvas (A Night Pond, B Invitation, C Cue Sheet). ⏳ Waiting for the owners to pick one. Sources are in `docs/design/phase3-directions/`. |
+| 3. UI/UX planning | 🔄 | Direction C (Cue Sheet) chosen and recoloured in the lotus palette. On the canvas: owner home (iPad), design language, crew app Today (phone). ⏳ Waiting for the owners to confirm, then the full screen set. Specs: `docs/design/DESIGN-LANGUAGE.md`. |
 | 4. Database | ⬜ | Repository ready: `Harshith993/taamaraAPP`. |
 | 5. Authentication & authorization | ⬜ | |
 | 6. Core operations (incl. vendor portal, crew app) | ⬜ | |
@@ -32,7 +32,8 @@ Updated at the end of every working session. Status: ✅ done · 🔄 in progres
 | D11 | 17 Nov 2026 | Owners (either one) approve quotes, payments and expenses; managers never see client billing or margin (owner answers 5, 9) | Decided by owner; "either one" is assumption A1 |
 | D12 | 17 Nov 2026 | Code and plans live in the private repository `Harshith993/taamaraAPP` | Decided by owner |
 | D14 | 17 Nov 2026 | Plan v1.1 approved, with assumptions A1–A4 (either owner approves; managers see costs but not billing; crew extras as approved lines; managers create bookings) | Approved by owners |
-| D15 | 17 Nov 2026 | The app is named **Taamara** | Decided by owner |
+| D15 | 17 Nov 2026 | The company and app are **Taamara Taamara** (events & beyond) | Decided by owner (corrected from "Taamara") |
+| D18 | 17 Nov 2026 | Visual direction C (Cue Sheet), recoloured from the company logo: cream ground, aubergine ink, plum brand, one lotus petal colour per department, lotus-lattice and petal-stripe patterns, and a night mode for event days | Decided by owner |
 | D16 | 17 Nov 2026 | Proof defaults: camera or gallery, videos up to 2 minutes, approved proof required before a vendor's final payment | Approved by owners |
 | D17 | 17 Nov 2026 | iPad is a first-class device alongside phone and desktop; the UI must be immersive and not look generic | Requested by owner |
 | D13 | 17 Nov 2026 | Vendors and crew upload photo/video proof of completed work; managers or supervisors approve it; videos are processed with ffmpeg and stored in S3 Mumbai (G17) | Requested by owner; limits are open question 10 |
