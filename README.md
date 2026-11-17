@@ -1,0 +1,2 @@
+# taamaraAPP
+EVENT MANAGEMENT APP
