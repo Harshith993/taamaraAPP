@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Event ERP Architecture Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Public+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Plan: utilitarian review document. Ink-slate neutrals, marigold accent (the wedding flower), sticky contents rail on wide screens, wide tables scroll inside their own frame. */
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --ink: #18202b;
+  --muted: #586274;
+  --line: #dde2ea;
+  --accent: #b45309;
+  --accent-soft: rgba(217, 119, 6, 0.12);
+  --full: #0f7a4f; --full-bg: rgba(16, 150, 96, 0.12);
+  --scoped: #1d5fb8; --scoped-bg: rgba(37, 110, 210, 0.11);
+  --view: #5b6676; --view-bg: rgba(91, 102, 118, 0.12);
+  --none: #9aa3b0;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --font-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e131a; --surface: #151c26; --ink: #e5e9ef; --muted: #9ba6b5; --line: #263142;
+    --accent: #f5a524; --accent-soft: rgba(245, 165, 36, 0.14);
+    --full: #4fd39a; --full-bg: rgba(79, 211, 154, 0.13);
+    --scoped: #7fb2ff; --scoped-bg: rgba(127, 178, 255, 0.13);
+    --view: #b3bccb; --view-bg: rgba(179, 188, 203, 0.12);
+    --none: #5f6b7c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e131a; --surface: #151c26; --ink: #e5e9ef; --muted: #9ba6b5; --line: #263142;
+  --accent: #f5a524; --accent-soft: rgba(245, 165, 36, 0.14);
+  --full: #4fd39a; --full-bg: rgba(79, 211, 154, 0.13);
+  --scoped: #7fb2ff; --scoped-bg: rgba(127, 178, 255, 0.13);
+  --view: #b3bccb; --view-bg: rgba(179, 188, 203, 0.12);
+  --none: #5f6b7c;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--font-body); -webkit-font-smoothing: antialiased; }
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+.shell { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; max-width: 1240px; margin: 0 auto; padding: 40px 20px 80px; }
+@media (min-width: 1100px) { .shell { grid-template-columns: 220px minmax(0, 1fr); padding-top: 56px; } }
+
+.rail { display: none; }
+@media (min-width: 1100px) {
+  .rail { display: block; position: sticky; top: 24px; align-self: start; font-size: 14px; }
+  .rail p { margin: 0 0 10px; font-weight: 700; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .rail ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: s; }
+  .rail li { counter-increment: s; }
+  .rail a { display: flex; gap: 10px; padding: 6px 10px; border-radius: 6px; color: var(--ink); text-decoration: none; }
+  .rail a::before { content: counter(s); color: var(--muted); font-variant-numeric: tabular-nums; min-width: 1.2em; }
+  .rail a:hover { background: var(--accent-soft); }
+}
+
+main { min-width: 0; }
+header.doc { padding-bottom: 28px; margin-bottom: 8px; border-bottom: 1px solid var(--line); }
+.eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--accent); background: var(--accent-soft); padding: 4px 10px; border-radius: 999px; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 4.6vw, 44px); line-height: 1.1; letter-spacing: -0.02em; margin: 16px 0 12px; text-wrap: balance; max-width: 22ch; }
+.status { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
+.lead { font-size: 18px; max-width: 65ch; margin: 0; }
+
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 1.2; letter-spacing: -0.01em; margin: 56px 0 14px; text-wrap: balance; scroll-margin-top: 20px; }
+h3 { font-size: 18px; margin: 32px 0 10px; text-wrap: balance; scroll-margin-top: 20px; }
+p, ul, ol { max-width: 72ch; }
+li { margin: 4px 0; }
+strong { font-weight: 700; }
+code { font-family: var(--font-mono); font-size: 0.86em; background: var(--view-bg); padding: 1px 5px; border-radius: 4px; }
+pre { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; overflow-x: auto; font-size: 13.5px; line-height: 1.55; }
+pre code { background: none; padding: 0; font-size: inherit; }
+
+.table-wrap { overflow-x: auto; margin: 14px 0 22px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; line-height: 1.5; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+thead th { font-size: 12.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 700; background: var(--bg); white-space: nowrap; }
+tbody tr:last-child > * { border-bottom: 0; }
+td:first-child { min-width: 9em; }
+
+.matrix .table-wrap { margin-top: 10px; }
+.matrix table { font-size: 13.5px; min-width: 900px; }
+.matrix thead th { white-space: normal; vertical-align: bottom; }
+.matrix th[scope="row"] { font-weight: 600; min-width: 15em; position: sticky; left: 0; background: var(--surface); z-index: 1; box-shadow: 1px 0 0 var(--line); }
+.matrix thead th:first-child { position: sticky; left: 0; z-index: 2; box-shadow: 1px 0 0 var(--line); }
+.matrix td { white-space: nowrap; padding: 8px 10px; }
+.matrix tr.group th { background: var(--bg); font-family: var(--font-display); font-size: 14px; font-weight: 700; color: var(--accent); padding: 12px 14px 8px; position: static; box-shadow: none; }
+.chip { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12.5px; font-weight: 600; line-height: 1.5; }
+.chip.full { color: var(--full); background: var(--full-bg); }
+.chip.scoped { color: var(--scoped); background: var(--scoped-bg); }
+.chip.view { color: var(--view); background: var(--view-bg); }
+.chip.none { color: var(--none); padding-inline: 4px; }
+.cfg { margin-left: 4px; color: var(--accent); font-size: 13px; cursor: help; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-size: 13.5px; color: var(--muted); margin: 6px 0 4px; }
+
+figure.diagram { margin: 18px 0 26px; padding: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; color: var(--ink); overflow-x: auto; }
+figure.diagram svg { display: block; width: 100%; min-width: 760px; height: auto; font-family: var(--font-body); }
+figcaption { margin-top: 12px; font-size: 14px; color: var(--muted); max-width: 72ch; }
+
+footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <nav class="rail" aria-label="Contents"><p>Contents</p><ol><li><a href="#what-i-understood">What I understood</a></li><li><a href="#features-beyond-the-original-brief">Features beyond the original brief</a></li><li><a href="#your-answers-and-what-they-changed">Your answers and what they changed</a></li><li><a href="#architecture">Architecture</a></li><li><a href="#how-access-control-works">How access control works</a></li><li><a href="#role-permission-matrix-v1-1">Role–permission matrix (v1.1)</a></li><li><a href="#database-design">Database design</a></li><li><a href="#development-roadmap">Development roadmap</a></li><li><a href="#risks-and-how-we-handle-them">Risks and how we handle them</a></li><li><a href="#next-steps">Next steps</a></li></ol></nav>
+  <main>
+    <header class="doc">
+      <span class="eyebrow">v1.1 · updated with your answers · awaiting approval</span>
+      <h1>Event Management ERP: requirements, architecture and roadmap</h1>
+      <p class="status"><strong>Status:</strong> v1.1, updated with your answers and the photo/video proof requirement, awaiting your approval · <strong>Phase:</strong> 1 (Requirements) and 2 (Architecture) · <strong>Date:</strong> 17 Nov 2026</p>
+      <p class="lead">This is the plan for the internal system. Nothing has been built yet. Section 3 records your answers and what each one changed. Once you approve this version, Phase 3 (screen designs) begins.</p>
+    </header>
+    <h2 id="what-i-understood">1. What I understood</h2>
+<p>You run an event management company (weddings, pre-wedding shoots, cocktail parties, birthdays and other celebrations). Today the work with vendors and labour runs over phone calls and WhatsApp. You want <strong>one internal system</strong> where every booking is planned, staffed, executed and settled. Each person logs in with their own account and sees only what they are allowed to see. It is an internal operations tool. It is <strong>not</strong> a booking app, and <strong>clients don&#39;t use it</strong>.</p>
+<p><strong>Who uses it</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Who they are</th>
+<th>What they mainly do in the app</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Owner</td>
+<td>Founder and co-founder (equal, full access)</td>
+<td>See everything, approve quotes and payments, control who can do what</td>
+</tr>
+<tr>
+<td>Event Manager</td>
+<td>Runs the bookings assigned to them</td>
+<td>Plans functions, books vendors, builds the crew, sets schedules and tasks, records expenses. Never sees client billing or margin.</td>
+</tr>
+<tr>
+<td>Accountant</td>
+<td>Handles the books</td>
+<td>Client billing, vendor invoices, payments, GST records, exports for your outside accountant</td>
+</tr>
+<tr>
+<td>Supervisor</td>
+<td>On site at the venue</td>
+<td>Runs the event day: run sheet, crew attendance, task sign-off, proof photos</td>
+</tr>
+<tr>
+<td>Vendor</td>
+<td>Caterers, decorators, photographers, DJs, tent houses…</td>
+<td>Get requirements, submit quotes, accept work, upload invoices, upload <strong>photos and videos of completed work</strong>, track payments</td>
+</tr>
+<tr>
+<td>Labour</td>
+<td>Your own crew, paid per event</td>
+<td>See assigned events, reporting time and place, duties; mark tasks done; upload <strong>photos and videos of completed work</strong></td>
+</tr>
+</tbody></table></div>
+<p><strong>Clients</strong> are stored as records (name, phone, GST details, invoices and payments) but have no login.</p>
+<p><strong>The lifecycle the system covers</strong></p>
+<ol>
+<li><strong>Booking:</strong> an event is created as <em>Tentative</em> with its client and one or more <strong>functions</strong> (for example Haldi, Sangeet and Wedding, or just a single cocktail party).</li>
+<li><strong>Planning:</strong> requirements are listed per function, vendors are asked for quotes, an owner approves a quote, and a work order goes to the vendor. The crew is assigned and the budget is set.</li>
+<li><strong>Event day(s):</strong> the supervisor runs the schedule, vendors report on time, crew attendance is marked, and vendors and crew upload photos and videos of finished work, which the supervisor or manager approves.</li>
+<li><strong>Closure:</strong> vendors upload invoices, crew pay is confirmed, and the client&#39;s balance is collected.</li>
+<li><strong>Settlement:</strong> everyone is paid, the booking&#39;s profit and loss is final, and its records are locked.</li>
+</ol>
+
+<h2 id="features-beyond-the-original-brief">2. Features beyond the original brief</h2>
+<p>These were proposed in v0.1 and adjusted after your answers.</p>
+<h3 id="in-v1">In v1</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Feature</th>
+<th>Why it matters</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>G2</td>
+<td><strong>Bookings with one or more functions</strong></td>
+<td>A booking can be a single cocktail party or a five-function wedding. Vendors, crew shifts and the run sheet attach to the specific function.</td>
+</tr>
+<tr>
+<td>G3</td>
+<td><strong>Assignment-based access</strong> on top of roles</td>
+<td>Managers and supervisors see only <em>their</em> bookings. Vendors see only <em>their</em> work. Labour see only <em>their</em> events.</td>
+</tr>
+<tr>
+<td>G4</td>
+<td><strong>One approvals inbox for the owners</strong></td>
+<td>Quotes, payments and expenses wait in one list. Either owner can approve.</td>
+</tr>
+<tr>
+<td>G5</td>
+<td><strong>Financial records that can&#39;t be deleted</strong></td>
+<td>Payments and invoices are corrected with a void or reversal plus a reason, never deleted. Your accountant can trust the trail.</td>
+</tr>
+<tr>
+<td>G6</td>
+<td><strong>GST-ready records</strong></td>
+<td>Your GSTIN on documents, vendors&#39; GSTINs, tax split on invoices, gap-free numbering, and GST-friendly exports for your accountant.</td>
+</tr>
+<tr>
+<td>G7</td>
+<td><strong>Phone-number logins</strong></td>
+<td>Labour and most vendors log in with their mobile number and a password or PIN. Owners can reset it.</td>
+</tr>
+<tr>
+<td>G11</td>
+<td><strong>Task and checklist templates</strong> per event type</td>
+<td>&quot;New wedding&quot; creates your standard checklist automatically.</td>
+</tr>
+<tr>
+<td>G13</td>
+<td><strong>Encrypted bank and ID details</strong></td>
+<td>Only owners and the accountant can see them.</td>
+</tr>
+<tr>
+<td>G17</td>
+<td><strong>Photo and video proof of completed work</strong> (your request, 17 Nov)</td>
+<td>Vendors and crew record proof straight from their phone camera. Each item is time-stamped and approved or rejected by the manager or supervisor. Owners and the accountant can check it before paying. See &quot;Work proof&quot; in section 4.</td>
+</tr>
+<tr>
+<td>G15</td>
+<td><strong>Import from Excel and contacts</strong></td>
+<td>So day one isn&#39;t hours of typing.</td>
+</tr>
+<tr>
+<td>G16</td>
+<td><strong>Automatic backups (kept in India) and full export</strong></td>
+<td>It&#39;s your data; you can always take it out.</td>
+</tr>
+</tbody></table></div>
+<h3 id="dropped-after-your-answers">Dropped after your answers</h3>
+<ul>
+<li><strong>G1 Enquiry pipeline and client proposals:</strong> dropped, since this is internal, not a booking app. An event simply starts as <em>Tentative</em>.</li>
+<li><strong>Client/host portal:</strong> dropped, since clients don&#39;t use the app.</li>
+<li><strong>G8 Multi-company design:</strong> dropped, since this is for your company only. This simplifies every query.</li>
+<li><strong>G10 Labour contractors:</strong> dropped, since you hire labour directly.</li>
+<li><strong>G14 Hindi screens:</strong> dropped, since your crew uses English. Text is kept in one place, so another language can be added later.</li>
+</ul>
+<h3 id="later-after-launch">Later (after launch)</h3>
+<p>WhatsApp Business notifications · online client payments (UPI links) · owned-inventory tracking (if you own equipment, see open question 7) · offline mode for venues with poor network · native mobile app.</p>
+
+<h2 id="your-answers-and-what-they-changed">3. Your answers and what they changed</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Question</th>
+<th>Your answer</th>
+<th>What it changes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>SaaS or single business?</td>
+<td>Only for you</td>
+<td>Single-company design; one company profile; no per-company filtering.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Founder vs co-founder, other roles</td>
+<td>Both full owners; also managers, accountant, on-site supervisor</td>
+<td>Roles: <strong>Owner, Event Manager, Accountant, Supervisor</strong> (plus Vendor and Labour).</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Who is the &quot;host&quot;?</td>
+<td>You are; clients don&#39;t need the app</td>
+<td>No client portal. Clients are records only.</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Functions</td>
+<td>One booking, one or many functions</td>
+<td>Event → Functions. Single-function bookings hide the extra layer in screens.</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Margin</td>
+<td>Managers don&#39;t see margin</td>
+<td>Managers never see client billing, margin or company totals.</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Labour</td>
+<td>Smartphones, English, hired directly, paid per event</td>
+<td>Labour app in English; pay is a fixed amount per event (plus approved extras); no contractor layer.</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Vendors</td>
+<td>They will log in for quotes and invoices</td>
+<td>The vendor portal is a core v1 feature, built in Phase 6.</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Tax</td>
+<td>GST-registered; outside accountant</td>
+<td>GST fields and numbering; exports for the accountant (sales and purchase registers, payments).</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Approvals</td>
+<td>Founder and co-founder approve</td>
+<td>Owners approve quotes, payments and expenses. Managers and the accountant prepare; owners decide.</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Hosting</td>
+<td>Data must stay in India: Option B</td>
+<td>One server in <strong>AWS Mumbai</strong>, files and backups in AWS Mumbai storage. No services that store your business data abroad.</td>
+</tr>
+<tr>
+<td>21</td>
+<td>GitHub</td>
+<td>Repository <code>taamaraAPP</code> created</td>
+<td>All plans and code are pushed to <code>Harshith993/taamaraAPP</code>.</td>
+</tr>
+<tr>
+<td>—</td>
+<td>New request</td>
+<td>Vendors and labour upload photos or videos of completed work</td>
+<td>New work-proof feature (G17): camera upload in the vendor portal and crew app, review by manager or supervisor, video processing on the server, more storage. Built in Phase 6.</td>
+</tr>
+</tbody></table></div>
+<h3 id="assumptions-i-made-tell-me-if-any-is-wrong">Assumptions I made (tell me if any is wrong)</h3>
+<ul>
+<li><strong>A1.</strong> Either owner can approve on their own; both signatures are not required.</li>
+<li><strong>A2.</strong> Managers can see vendor quotes and crew pay for <em>their</em> bookings, so they can plan within budget. They never see what the client is charged. The owner can switch this off.</li>
+<li><strong>A3.</strong> Crew pay is one agreed amount per event. Extras (late night, extra day) or deductions are added as separate lines, which an owner approves.</li>
+<li><strong>A4.</strong> Event managers can create bookings; owners can too.</li>
+</ul>
+<h3 id="still-open-answer-any-time-before-the-phase-noted">Still open (answer any time before the phase noted)</h3>
+<ol>
+<li><strong>App name, logo and colours.</strong> Is the app called <strong>Taamara</strong>, after the repository? <em>(Phase 3, next; a placeholder logo is fine)</em></li>
+<li><strong>Client billing:</strong> should the app generate GST tax invoices to clients, or does your accountant raise them while the app only records client payments? Do you deduct TDS on vendor payments? <em>(Phase 7)</em></li>
+<li><strong>Accountant:</strong> an employee, or your outside accountant logging in? <em>(Phase 5)</em></li>
+<li><strong>Attendance:</strong> does the supervisor mark it, or does the crew check in on their phone at the venue (with location)? <em>(Phase 6)</em></li>
+<li><strong>Should crew see their pay</strong> and payment status for each event? <em>(Phase 6)</em></li>
+<li><strong>Cash advances:</strong> do managers or supervisors carry company cash for on-site spending? <em>(Phase 7)</em></li>
+<li><strong>Equipment:</strong> do you own decor, furniture, lights or sound that moves between events? <em>(Phase 6)</em></li>
+<li><strong>Scale:</strong> events per month, the busiest single day, and roughly how many vendors, crew and managers? <em>(Phase 4)</em></li>
+<li><strong>Launch timing:</strong> pilot on a few small events during the season, or switch over after it? <em>(Phase 10)</em></li>
+<li><strong>Proof rules:</strong> must proof be taken live with the camera, or may people also pick older photos from their gallery? Is a 2-minute (about 500 MB) limit per video right? Must a vendor&#39;s work have approved proof before their final payment can be approved? <em>(Phase 6; the defaults are camera or gallery, 2 minutes, and proof required)</em></li>
+</ol>
+
+<h2 id="architecture">4. Architecture</h2>
+<p><strong>A single well-organised application (a &quot;modular monolith&quot;) on one server in Mumbai.</strong> One codebase serves the internal app, the vendor portal and the crew app. Each person&#39;s screens depend on who they are.</p>
+<figure class="diagram"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 530" role="img" aria-label="Request path inside India: users reach one server in AWS Mumbai over HTTPS; each request passes portal routing, the session check and the policy layer before domain services and Prisma reach PostgreSQL on the same server; files and nightly backups live in Amazon S3 Mumbai, reached through links the app signs after a permission check; a background worker sends email through Amazon SES Mumbai and encrypted push notifications to phones." font-size="12">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <!-- Region and server boundaries -->
+  <rect x="222" y="44" width="730" height="418" rx="14" fill="#d97706" fill-opacity="0.05" stroke="#d97706" stroke-width="1.4" stroke-dasharray="7 5"/>
+  <text x="238" y="64" font-weight="700" style="fill: var(--accent)">Stays in India: AWS Mumbai region</text>
+  <rect x="238" y="76" width="496" height="372" rx="12" fill="none" stroke="currentColor" stroke-width="1.6"/>
+  <text x="254" y="96" font-weight="600" fill="currentColor">One server (Docker Compose)</text>
+
+  <!-- Users -->
+  <g fill="none" stroke="currentColor" stroke-opacity="0.55">
+    <rect x="20" y="100" width="180" height="46" rx="8"/>
+    <rect x="20" y="164" width="180" height="46" rx="8"/>
+    <rect x="20" y="228" width="180" height="46" rx="8"/>
+    <rect x="20" y="292" width="180" height="46" rx="8"/>
+  </g>
+  <g fill="currentColor" text-anchor="middle">
+    <text x="110" y="120" font-weight="600">Owners &amp; accountant</text>
+    <text x="110" y="136" font-size="11" fill-opacity="0.7">desktop or phone</text>
+    <text x="110" y="184" font-weight="600">Event managers</text>
+    <text x="110" y="200" font-size="11" fill-opacity="0.7">desktop or phone</text>
+    <text x="110" y="248" font-weight="600">Supervisors &amp; crew</text>
+    <text x="110" y="264" font-size="11" fill-opacity="0.7">app on their phone</text>
+    <text x="110" y="312" font-weight="600">Vendors</text>
+    <text x="110" y="328" font-size="11" fill-opacity="0.7">phone or desktop</text>
+    <text x="110" y="370" font-size="11" fill-opacity="0.7">every request: HTTPS +</text>
+    <text x="110" y="384" font-size="11" fill-opacity="0.7">secure session cookie</text>
+  </g>
+  <g stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow)">
+    <line x1="200" y1="123" x2="252" y2="123"/>
+    <line x1="200" y1="187" x2="252" y2="187"/>
+    <line x1="200" y1="251" x2="252" y2="251"/>
+    <line x1="200" y1="315" x2="252" y2="315"/>
+  </g>
+
+  <!-- App -->
+  <rect x="254" y="106" width="464" height="238" rx="10" fill="none" stroke="currentColor" stroke-opacity="0.8"/>
+  <text x="486" y="124" text-anchor="middle" font-weight="700" fill="currentColor">Next.js application</text>
+  <g fill="none" stroke="currentColor" stroke-opacity="0.55">
+    <rect x="272" y="134" width="428" height="34" rx="6"/>
+    <rect x="272" y="176" width="428" height="34" rx="6"/>
+    <rect x="272" y="260" width="428" height="34" rx="6"/>
+    <rect x="272" y="302" width="428" height="34" rx="6"/>
+  </g>
+  <rect x="272" y="218" width="428" height="34" rx="6" fill="#d97706" fill-opacity="0.14" stroke="#d97706" stroke-width="1.8"/>
+  <g fill="currentColor" text-anchor="middle">
+    <text x="486" y="155">Routing: internal app · vendor portal · crew app</text>
+    <text x="486" y="197">Session check (Better Auth, sessions stored in DB)</text>
+    <text x="486" y="239" font-weight="700">Policy layer: role + assigned scope + field filter</text>
+    <text x="486" y="281">Domain services: Zod validation, transactions, audit</text>
+    <text x="486" y="323">Prisma ORM</text>
+  </g>
+  <g stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow)">
+    <line x1="486" y1="168" x2="486" y2="174"/>
+    <line x1="486" y1="210" x2="486" y2="216"/>
+    <line x1="486" y1="252" x2="486" y2="258"/>
+    <line x1="486" y1="294" x2="486" y2="300"/>
+  </g>
+
+  <!-- Database and worker on the same server -->
+  <rect x="254" y="362" width="200" height="72" rx="8" fill="none" stroke="currentColor" stroke-width="1.6"/>
+  <text x="354" y="388" text-anchor="middle" font-weight="700" fill="currentColor">PostgreSQL</text>
+  <text x="354" y="405" text-anchor="middle" font-size="11" fill="currentColor" fill-opacity="0.7">business data · audit log</text>
+  <text x="354" y="419" text-anchor="middle" font-size="11" fill="currentColor" fill-opacity="0.7">job queue</text>
+  <line x1="354" y1="336" x2="354" y2="360" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow)"/>
+  <text x="362" y="352" font-size="11" fill="currentColor">SQL</text>
+  <rect x="518" y="362" width="200" height="72" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.55"/>
+  <text x="618" y="391" text-anchor="middle" font-weight="600" fill="currentColor">Background worker</text>
+  <text x="618" y="408" text-anchor="middle" font-size="11" fill="currentColor" fill-opacity="0.7">reminders · PDFs · exports</text>
+  <line x1="454" y1="398" x2="516" y2="398" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow)"/>
+  <text x="485" y="391" text-anchor="middle" font-size="11" fill="currentColor">jobs</text>
+
+  <!-- Storage -->
+  <rect x="752" y="106" width="186" height="64" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.55"/>
+  <text x="845" y="129" text-anchor="middle" font-weight="600" fill="currentColor">Amazon S3 (Mumbai)</text>
+  <text x="845" y="146" text-anchor="middle" font-size="11" fill="currentColor" fill-opacity="0.7">private files</text>
+  <text x="845" y="161" text-anchor="middle" font-size="11" fill="currentColor" fill-opacity="0.7">nightly DB backups</text>
+  <polyline points="700,235 742,235 742,138 750,138" fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow)"/>
+  <text x="752" y="196" font-size="11" fill="currentColor">signs file links after</text>
+  <text x="752" y="210" font-size="11" fill="currentColor">a permission check</text>
+  <polyline points="110,100 110,24 845,24 845,104" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+  <text x="480" y="17" text-anchor="middle" font-size="11" fill="currentColor">browser uploads and downloads files directly with the signed link</text>
+
+  <!-- Email -->
+  <rect x="752" y="372" width="186" height="52" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.55"/>
+  <text x="845" y="394" text-anchor="middle" font-weight="600" fill="currentColor">Amazon SES email</text>
+  <text x="845" y="410" text-anchor="middle" font-size="11" fill="currentColor" fill-opacity="0.7">Mumbai</text>
+  <line x1="718" y1="398" x2="750" y2="398" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow)"/>
+
+  <!-- Push leaves the region, encrypted -->
+  <rect x="518" y="480" width="200" height="40" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.55"/>
+  <text x="618" y="505" text-anchor="middle" fill="currentColor">Push to phones</text>
+  <line x1="618" y1="434" x2="618" y2="478" stroke="currentColor" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+  <text x="608" y="474" text-anchor="end" font-size="11" fill="currentColor">encrypted, no business details</text>
+</svg>
+<figcaption>Request path inside India: every request passes the session check and the policy layer before reaching the database; files and backups stay in AWS Mumbai storage</figcaption></figure>
+<h3 id="stack">Stack</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Choice</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>App framework</td>
+<td><strong>Next.js (App Router) + React + TypeScript</strong></td>
+<td>One codebase for every role. Fast pages on phones. Type checking catches mistakes before users do.</td>
+</tr>
+<tr>
+<td>UI</td>
+<td><strong>Tailwind CSS + shadcn/ui</strong> (Radix), TanStack Table, Recharts, lucide icons</td>
+<td>Accessible building blocks we own, styled to look premium, with light and dark mode.</td>
+</tr>
+<tr>
+<td>Backend shape</td>
+<td><strong>Modular monolith</strong>: one module per area (events, vendors, crew, tasks, finance…), each with its own service, policy and validation. REST API under <code>/api/v1</code>.</td>
+<td>One deployment, easy to reason about. A future mobile app can reuse the API.</td>
+</tr>
+<tr>
+<td>Validation</td>
+<td><strong>Zod</strong>, shared by forms (React Hook Form) and the API</td>
+<td>The same rules in the browser and on the server.</td>
+</tr>
+<tr>
+<td>Database</td>
+<td><strong>PostgreSQL 16</strong></td>
+<td>Relational data and safe transactions for money.</td>
+</tr>
+<tr>
+<td>ORM</td>
+<td><strong>Prisma</strong> with <code>prisma migrate</code></td>
+<td>Typed queries, versioned migrations, seed scripts.</td>
+</tr>
+<tr>
+<td>Money</td>
+<td><code>NUMERIC(14,2)</code> in the database, a decimal library in code</td>
+<td>Never floating point, so no lost paise.</td>
+</tr>
+<tr>
+<td>Authentication</td>
+<td><strong>Better Auth</strong> (self-hosted, sessions in our database)</td>
+<td>Phone or email plus password/PIN, revocable sessions, rate limiting, two-factor for owners. Nothing leaves your server.</td>
+</tr>
+<tr>
+<td>Authorization</td>
+<td><strong>Our own policy layer</strong>: <code>can(user, action, record)</code>, scoped query filters, per-role response shapes</td>
+<td>Expresses &quot;only my bookings&quot; and &quot;never show margin&quot;, with tests for every role.</td>
+</tr>
+<tr>
+<td>Files</td>
+<td><strong>Amazon S3 in Mumbai</strong> (private bucket)</td>
+<td>The browser uploads directly through short-lived signed links. Downloads use signed links issued only after a permission check. File type and size are checked; photos are compressed on the phone first. Videos upload in chunks, so a dropped connection resumes instead of starting over.</td>
+</tr>
+<tr>
+<td>Media processing</td>
+<td><strong>ffmpeg</strong> in the background worker</td>
+<td>Makes thumbnails and converts phone videos (including iPhone HEVC) into a small MP4 that plays on any phone or browser. The original is kept.</td>
+</tr>
+<tr>
+<td>Background jobs</td>
+<td><strong>pg-boss</strong> (queue inside Postgres)</td>
+<td>Deadline reminders, overdue checks, notifications, PDF and Excel generation. No extra service to run.</td>
+</tr>
+<tr>
+<td>Live updates</td>
+<td>Server-Sent Events from our own server, with a 30 s refresh as fallback</td>
+<td>Live notification and chat updates with no third-party realtime service, so data stays in India.</td>
+</tr>
+<tr>
+<td>Notifications</td>
+<td>In-app + web push to phones + email (Amazon SES, Mumbai)</td>
+<td>Push payloads are end-to-end encrypted and carry no business details. WhatsApp is listed under Later.</td>
+</tr>
+<tr>
+<td>Documents out</td>
+<td><code>@react-pdf/renderer</code> for work orders, invoices and run sheets; <code>exceljs</code> for exports</td>
+<td>Consistent PDFs and accountant-friendly Excel.</td>
+</tr>
+<tr>
+<td>Quality</td>
+<td>Vitest (unit tests and a full permission-matrix test), Playwright (end-to-end per role), GitHub Actions CI</td>
+<td>Every role is tested against every action on every change.</td>
+</tr>
+<tr>
+<td>Monitoring</td>
+<td>Error and request logs kept on the server, an uptime check, a daily health email</td>
+<td>No error-tracking service that stores data abroad.</td>
+</tr>
+</tbody></table></div>
+<h3 id="hosting-option-b-data-in-india">Hosting (Option B, data in India)</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Piece</th>
+<th>Where</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Server</td>
+<td>AWS Lightsail (or EC2) in <strong>Mumbai</strong>, 4 GB RAM to start</td>
+<td>Docker Compose runs the app, PostgreSQL, the job worker and Caddy (automatic HTTPS). Automatic security updates.</td>
+</tr>
+<tr>
+<td>Files</td>
+<td>Amazon S3, <strong>Mumbai</strong></td>
+<td>Private bucket; versioning on. Photos and videos move to a cheaper storage class after 6 months and are never deleted automatically. Storage costs roughly US $2–3 per month per 100 GB, plus a little for viewing.</td>
+</tr>
+<tr>
+<td>Backups</td>
+<td>Nightly database backup to a separate S3 bucket in <strong>Mumbai</strong>, kept 30 days; weekly server snapshot</td>
+<td>A restore drill is part of Phase 9.</td>
+</tr>
+<tr>
+<td>Email</td>
+<td>Amazon SES, <strong>Mumbai</strong></td>
+<td>Password resets, reminders, daily summary.</td>
+</tr>
+<tr>
+<td>Code</td>
+<td>Private GitHub repository</td>
+<td>Code only. No real business data ever goes into the repository.</td>
+</tr>
+<tr>
+<td>Rough cost</td>
+<td>About US $20–35/month at your scale, plus media storage as it grows</td>
+<td>Confirmed before Phase 10. You&#39;ll need an AWS account in the company&#39;s name.</td>
+</tr>
+</tbody></table></div>
+<p>Keeping everything with one provider in one region means one bill, one place for data, and simpler upkeep. I&#39;ll provide a short runbook for routine care: checking backups, restarting, and updating.</p>
+<h3 id="work-proof-photos-and-videos-of-completed-work">Work proof (photos and videos of completed work)</h3>
+<p>This is how the feature works end to end:</p>
+<ol>
+<li><strong>Capture.</strong> In the vendor portal or crew app, the person opens their task, vendor booking or shift and taps <strong>Add proof</strong>. The phone camera opens directly, and they can also pick from the gallery unless you turn that off. Several photos and videos can be added at once, with an optional caption.</li>
+<li><strong>Upload.</strong> Photos are resized on the phone (about 2–3 MB each) before sending. Videos are sent in chunks with a progress bar. If the venue network drops, the upload resumes from where it stopped while the app is open. The default limit is 2 minutes or about 500 MB per video, which owners can change.</li>
+<li><strong>Stamp.</strong> The server records who uploaded it, when, for which booking and function, and the phone&#39;s location if the person allows it. This shows the work was done at the venue on the day.</li>
+<li><strong>Process.</strong> The background worker makes a thumbnail and a small, universally playable MP4 copy. People see a placeholder until it&#39;s ready, usually within a minute.</li>
+<li><strong>Review.</strong> The booking&#39;s manager or supervisor gets a notification and approves or rejects each item with a note. A rejection asks the vendor or crew member to re-upload.</li>
+<li><strong>Pay.</strong> Owners and the accountant see the approved proof next to a vendor&#39;s invoice before approving payment. By default, a vendor&#39;s final payment needs approved proof (open question 10).</li>
+</ol>
+<p><strong>Who sees it:</strong> owners see all proof. The booking&#39;s manager and supervisor see proof for their bookings. Each vendor and crew member sees only their own uploads. Files are never public: every view uses a link that expires after a few minutes.</p>
+<p><strong>Checks:</strong> the file type is verified from its content, not its name. Size limits are enforced by the signed upload link itself. Location metadata is removed from the viewing copies.</p>
+<h3 id="code-layout">Code layout</h3>
+<pre><code class="language-text">src/
+  app/
+    (auth)/          login, first-time password, reset
+    (internal)/      dashboard, events/[id]/…, vendors, crew, tasks, finance, approvals, reports, team, settings
+    (vendor)/        vendor portal
+    (crew)/          crew app (installable on phones)
+    api/v1/          REST endpoints, thin: auth → policy → service
+  modules/
+    events/  vendors/  crew/  tasks/  finance/  approvals/  documents/  comms/  notifications/  identity/  audit/
+      service.ts      business rules and transactions
+      policy.ts       who may do what, and query scope
+      schemas.ts      Zod input rules
+      serializers.ts  what each role is allowed to see
+  components/        ui/ (shadcn) and shared building blocks
+  lib/               db, auth, storage, jobs, money, errors, rate-limit
+prisma/              schema.prisma, migrations/, seed.ts
+tests/               unit/, permissions/, e2e/
+deploy/              docker-compose.yml, Caddyfile, backup scripts, runbook
+docs/                this document, progress tracker, decisions log
+</code></pre>
+
+<h2 id="how-access-control-works">5. How access control works</h2>
+<p>Permissions are checked in three layers, all <strong>on the server</strong>. Hiding a button in the browser is only for convenience, never for security.</p>
+<ol>
+<li><strong>Account type.</strong> Each account is <code>INTERNAL</code>, <code>VENDOR</code> or <code>LABOUR</code>, which decides which app the person can open. A vendor account can never open internal pages.</li>
+<li><strong>Role permissions.</strong> Each permission is written as <code>area.action</code> with a scope: <strong>all</strong>, <strong>assigned</strong> or <strong>own</strong>. Owners can adjust what Managers, the Accountant and Supervisors may do. The Owner role itself always has everything.</li>
+<li><strong>Record scope and field visibility.</strong> Every query is filtered by the person&#39;s links to a booking (diagram below). Every response is built by a serializer for that role, which lists the fields allowed. For example, a manager&#39;s view of a booking simply has no client-billing fields.</li>
+</ol>
+<figure class="diagram"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 250" role="img" aria-label="Three paths from a user login to a booking: managers and supervisors through EventMember; vendors through VendorUser, Vendor and VendorAssignment; crew through Worker and CrewAssignment. Owners and the accountant see all bookings. The policy layer turns each path into the database filter for that person." font-size="12">
+  <defs>
+    <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <rect x="20" y="30" width="120" height="200" rx="10" fill="none" stroke="currentColor" stroke-width="1.6"/>
+  <text x="80" y="124" text-anchor="middle" font-weight="700" fill="currentColor">User</text>
+  <text x="80" y="140" text-anchor="middle" font-size="11" fill="currentColor" fill-opacity="0.7">one login table</text>
+  <rect x="810" y="30" width="130" height="200" rx="10" fill="#d97706" fill-opacity="0.14" stroke="#d97706" stroke-width="1.8"/>
+  <text x="875" y="124" text-anchor="middle" font-weight="700" fill="currentColor">Booking</text>
+  <text x="875" y="140" text-anchor="middle" font-size="11" fill="currentColor" fill-opacity="0.7">and its functions</text>
+
+  <g font-size="11" font-weight="600" fill="currentColor" fill-opacity="0.75">
+    <text x="180" y="44">EVENT MANAGER / SUPERVISOR</text>
+    <text x="180" y="114">VENDOR</text>
+    <text x="180" y="184">CREW</text>
+  </g>
+
+  <g fill="none" stroke="currentColor" stroke-opacity="0.55">
+    <rect x="180" y="50" width="140" height="40" rx="6"/>
+    <rect x="180" y="120" width="140" height="40" rx="6"/>
+    <rect x="390" y="120" width="140" height="40" rx="6"/>
+    <rect x="600" y="120" width="140" height="40" rx="6"/>
+    <rect x="180" y="190" width="140" height="40" rx="6"/>
+    <rect x="390" y="190" width="140" height="40" rx="6"/>
+  </g>
+  <g fill="currentColor" text-anchor="middle" font-family="ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace" font-size="12">
+    <text x="250" y="74">EventMember</text>
+    <text x="250" y="144">VendorUser</text>
+    <text x="460" y="144">Vendor</text>
+    <text x="670" y="144">VendorAssignment</text>
+    <text x="250" y="214">Worker</text>
+    <text x="460" y="214">CrewAssignment</text>
+  </g>
+
+  <g stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow2)">
+    <line x1="140" y1="70" x2="178" y2="70"/>
+    <line x1="320" y1="70" x2="808" y2="70"/>
+    <line x1="140" y1="140" x2="178" y2="140"/>
+    <line x1="320" y1="140" x2="388" y2="140"/>
+    <line x1="530" y1="140" x2="598" y2="140"/>
+    <line x1="740" y1="140" x2="808" y2="140"/>
+    <line x1="140" y1="210" x2="178" y2="210"/>
+    <line x1="320" y1="210" x2="388" y2="210"/>
+    <line x1="530" y1="210" x2="808" y2="210"/>
+  </g>
+  <g font-size="11" fill="currentColor" text-anchor="middle">
+    <text x="564" y="63">assigned to the booking as manager or supervisor</text>
+    <text x="355" y="133">works for</text>
+    <text x="565" y="133">booked as</text>
+    <text x="775" y="133">on</text>
+    <text x="355" y="203">placed in</text>
+    <text x="669" y="203">hired for the booking, paid per event</text>
+  </g>
+</svg>
+<figcaption>How each kind of login reaches a booking; owners and the accountant see all bookings, everyone else only through these links</figcaption></figure>
+<p><strong>Also built in:</strong></p>
+<ul>
+<li>Preparer and approver are separate for money: managers and the accountant prepare payments and expenses, and owners approve them.</li>
+<li>An append-only audit log of every change: who, what, before and after, when, and from which IP address.</li>
+<li>Two-factor login for owners.</li>
+<li>Rate limits and lockout on login.</li>
+<li>Any session can be signed out remotely (for example, from a lost phone).</li>
+</ul>
+
+<h2 id="role-permission-matrix-v1-1">6. Role–permission matrix (v1.1)</h2>
+<p><strong>Key:</strong> <strong>All</strong> = every record · <strong>Assigned</strong> = only bookings they are assigned to · <strong>Own</strong> = only their own records · <strong>View</strong> = read-only · <strong>⚙</strong> = the default shown; owners can switch it · <strong>—</strong> = no access</p>
+<div class="matrix">
+
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Owner (Founder &amp; Co-founder)</th>
+<th>Event Manager</th>
+<th>Accountant</th>
+<th>Supervisor</th>
+<th>Vendor</th>
+<th>Labour</th>
+</tr>
+</thead>
+<tbody><tr class="group"><th colspan="7" scope="colgroup">Bookings &amp; planning</th></tr>
+<tr><th scope="row">See bookings and functions</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip view">View</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+</tr>
+<tr><th scope="row">Create bookings</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Edit booking details and functions</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Assign managers and supervisors</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Cancel booking</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Delete booking (only if no money recorded)</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Schedule and run sheet</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip view">View</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip scoped">Own</span></td>
+<td><span class="chip scoped">Own</span></td>
+</tr>
+<tr><th scope="row">Requirements per function</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip view">View</span></td>
+<td><span class="chip view">View</span></td>
+<td><span class="chip scoped">Own</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Client contact details</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip full">All</span></td>
+<td><span class="chip scoped">Assigned</span><span class="cfg" title="Default shown; the owner can change it">⚙</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr class="group"><th colspan="7" scope="colgroup">Tasks</th></tr>
+<tr><th scope="row">Create and assign tasks</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip scoped">Assigned</span><span class="cfg" title="Default shown; the owner can change it">⚙</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Update own tasks</th>
+<td><span class="chip scoped">Own</span></td>
+<td><span class="chip scoped">Own</span></td>
+<td><span class="chip scoped">Own</span></td>
+<td><span class="chip scoped">Own</span></td>
+<td><span class="chip scoped">Own</span></td>
+<td><span class="chip scoped">Own</span></td>
+</tr>
+<tr class="group"><th colspan="7" scope="colgroup">Work proof (photos &amp; videos)</th></tr>
+<tr><th scope="row">Upload photos or videos of completed work</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip scoped">Own</span></td>
+<td><span class="chip scoped">Own</span></td>
+</tr>
+<tr><th scope="row">See work proof</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip view">View</span><span class="cfg" title="Default shown; the owner can change it">⚙</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip scoped">Own</span></td>
+<td><span class="chip scoped">Own</span></td>
+</tr>
+<tr><th scope="row">Approve or reject proof</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Approve completed work</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr class="group"><th colspan="7" scope="colgroup">Vendors</th></tr>
+<tr><th scope="row">Vendor directory</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip view">View</span></td>
+<td><span class="chip view">View</span></td>
+<td><span class="chip view">View</span></td>
+<td><span class="chip scoped">Own</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Add and edit vendors</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip scoped">Add</span><span class="cfg" title="Default shown; the owner can change it">⚙</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip scoped">Own</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Vendor bank and GST details</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip scoped">Own</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Request quotations</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Submit quotations and invoices</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip scoped">Own</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">See quotation amounts</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip scoped">Assigned</span><span class="cfg" title="Default shown; the owner can change it">⚙</span></td>
+<td><span class="chip full">All</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip scoped">Own</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Approve quotations</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Accept or decline work</th>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip scoped">Own</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Issue work orders</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip scoped">Assigned</span><span class="cfg" title="Default shown; the owner can change it">⚙</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Rate vendors</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr class="group"><th colspan="7" scope="colgroup">Crew (labour)</th></tr>
+<tr><th scope="row">Crew directory</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip view">View</span></td>
+<td><span class="chip view">View</span></td>
+<td><span class="chip view">View</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip scoped">Own</span></td>
+</tr>
+<tr><th scope="row">Register and edit crew</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip scoped">Add</span><span class="cfg" title="Default shown; the owner can change it">⚙</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip scoped">Own</span></td>
+</tr>
+<tr><th scope="row">Assign crew to bookings and shifts</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Mark attendance</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip scoped">Own</span><span class="cfg" title="Default shown; the owner can change it">⚙</span></td>
+</tr>
+<tr><th scope="row">Per-event pay rates</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip scoped">Assigned</span><span class="cfg" title="Default shown; the owner can change it">⚙</span></td>
+<td><span class="chip full">All</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip scoped">Own</span><span class="cfg" title="Default shown; the owner can change it">⚙</span></td>
+</tr>
+<tr class="group"><th colspan="7" scope="colgroup">Money</th></tr>
+<tr><th scope="row">Company revenue, expenses, P&amp;L</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Client billing and margin</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Booking budget (costs, estimate vs actual)</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip scoped">Assigned</span><span class="cfg" title="Default shown; the owner can change it">⚙</span></td>
+<td><span class="chip full">All</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Record expenses with receipts</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip scoped">Assigned</span><span class="cfg" title="Default shown; the owner can change it">⚙</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Record client payments</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Approve payments and expenses</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Mark approved payments as paid</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Payment status</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip scoped">Assigned</span><span class="cfg" title="Default shown; the owner can change it">⚙</span></td>
+<td><span class="chip full">All</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip scoped">Own</span></td>
+<td><span class="chip scoped">Own</span><span class="cfg" title="Default shown; the owner can change it">⚙</span></td>
+</tr>
+<tr><th scope="row">Reports and exports for the accountant</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr class="group"><th colspan="7" scope="colgroup">Documents &amp; communication</th></tr>
+<tr><th scope="row">Booking documents</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip view">View</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip scoped">Shared</span></td>
+<td><span class="chip scoped">Shared</span></td>
+</tr>
+<tr><th scope="row">Upload documents</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip scoped">Own</span></td>
+<td><span class="chip scoped">Own</span></td>
+</tr>
+<tr><th scope="row">Owner-only confidential documents</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Booking team chat</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Direct threads</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip scoped">Own</span><span class="cfg" title="Default shown; the owner can change it">⚙</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip scoped">Own</span></td>
+<td><span class="chip scoped">Own</span></td>
+</tr>
+<tr><th scope="row">Send announcements</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr class="group"><th colspan="7" scope="colgroup">Administration</th></tr>
+<tr><th scope="row">Users, roles and this matrix</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Settings (lists, company, GST, numbering)</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip scoped">GST &amp; numbering</span><span class="cfg" title="Default shown; the owner can change it">⚙</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Audit log</th>
+<td><span class="chip full">Yes</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip scoped">Financial</span><span class="cfg" title="Default shown; the owner can change it">⚙</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+<tr><th scope="row">Operations reports</th>
+<td><span class="chip full">All</span></td>
+<td><span class="chip scoped">Assigned</span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+<td><span class="chip none"><span aria-label="No access">—</span></span></td>
+</tr>
+</tbody></table></div>
+</div>
+
+<p>Notes on the matrix:</p>
+<ul>
+<li>&quot;Submit quotations and invoices&quot; by an owner or the accountant means entering a document on a vendor&#39;s behalf, for vendors who send it on paper.</li>
+<li>&quot;Delete&quot; applies only to records with no money attached. A booking with payments is cancelled, and payments are voided with a reason (G5).</li>
+<li>Labour &quot;Own&quot; for attendance means self check-in, which depends on open question 4. Labour &quot;Own&quot; for pay depends on open question 5.</li>
+</ul>
+<p><strong>Hard rules (built into the server&#39;s responses, not just hidden on screen):</strong></p>
+<ul>
+<li><strong>Event Managers never see</strong> client billing, margin, company totals, vendor bank details, or bookings they aren&#39;t assigned to.</li>
+<li><strong>Supervisors never see</strong> client billing, vendor quotes, or anyone&#39;s pay.</li>
+<li><strong>Vendors never see</strong> other vendors or their quotes, client details, budgets or crew pay. Their on-site contact is your manager or supervisor.</li>
+<li><strong>Labour never see</strong> client details, budgets, vendor information or other people&#39;s pay. Their own pay is shown only if you allow it.</li>
+</ul>
+
+<h2 id="database-design">7. Database design</h2>
+<p><strong>Conventions:</strong></p>
+<ul>
+<li>Every table has <code>id</code> (UUID), <code>created_at</code>, <code>updated_at</code> and <code>created_by</code>.</li>
+<li>Master data (vendors, crew, clients) is soft-deleted with <code>deleted_at</code>.</li>
+<li>Money is <code>NUMERIC(14,2)</code>.</li>
+<li>Times are stored in UTC and shown in Asia/Kolkata.</li>
+<li>Statuses are enums.</li>
+<li>Documents get readable, gap-free numbers (<code>EVT-2026-0042</code>, <code>PO-2026-0117</code>, <code>INV-2026-0089</code>).</li>
+</ul>
+<p>About 46 tables in 11 modules. Key fields are listed below; the full Prisma schema is written in Phase 4.</p>
+<h3 id="company-identity-access">Company, identity &amp; access</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Key fields</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>CompanyProfile</code></td>
+<td>legal name, GSTIN, PAN, address, state (for GST), logo, bank details for invoices (single row)</td>
+</tr>
+<tr>
+<td><code>User</code></td>
+<td>name, phone, email?, password hash, account type (INTERNAL / VENDOR / LABOUR), status, 2FA, must-change-password, last login</td>
+</tr>
+<tr>
+<td><code>Session</code>, <code>Account</code>, <code>Verification</code></td>
+<td>Managed by Better Auth</td>
+</tr>
+<tr>
+<td><code>Role</code> / <code>RolePermission</code></td>
+<td>role name; permission key + scope (ALL / ASSIGNED / OWN)</td>
+</tr>
+<tr>
+<td><code>UserRole</code></td>
+<td>user ↔ role (Owner, Event Manager, Accountant, Supervisor, Vendor, Labour)</td>
+</tr>
+<tr>
+<td><code>AuditLog</code></td>
+<td>actor, action, record type and id, before (JSON), after (JSON), IP, time. Append-only.</td>
+</tr>
+</tbody></table></div>
+<h3 id="clients">Clients</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Key fields</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Client</code></td>
+<td>individual or company, name, phone, email, address, GSTIN, state</td>
+</tr>
+<tr>
+<td><code>ClientContact</code></td>
+<td>client, name, relation (for example, bride&#39;s father), phone. A record only, with no login.</td>
+</tr>
+</tbody></table></div>
+<h3 id="bookings">Bookings</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Key fields</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>EventCategory</code></td>
+<td>name, colour, default checklist template (configurable)</td>
+</tr>
+<tr>
+<td><code>Venue</code></td>
+<td>name, address, city, map link, contact, capacity (reusable)</td>
+</tr>
+<tr>
+<td><code>Event</code> (booking)</td>
+<td>code, name, category, client, status (TENTATIVE → CONFIRMED → PLANNING → LIVE → COMPLETED → SETTLED; or POSTPONED / CANCELLED), dates (derived from functions), description</td>
+</tr>
+<tr>
+<td><code>EventFunction</code></td>
+<td>event, name (Haldi, Sangeet, Cocktail…), date, start and end time, venue, expected guests, notes</td>
+</tr>
+<tr>
+<td><code>EventMember</code></td>
+<td>event, user, role on booking (MANAGER / SUPERVISOR). <strong>This drives &quot;Assigned&quot; access.</strong></td>
+</tr>
+<tr>
+<td><code>Requirement</code></td>
+<td>event, function, category, description, quantity, status, linked vendor assignment</td>
+</tr>
+<tr>
+<td><code>ScheduleItem</code></td>
+<td>event, function, start and end, type (SETUP / VENDOR_REPORTING / CREW_REPORTING / CEREMONY / DISMANTLE / DEADLINE), location, responsible person, visible to (INTERNAL / VENDORS / CREW)</td>
+</tr>
+</tbody></table></div>
+<h3 id="vendors">Vendors</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Key fields</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>VendorCategory</code></td>
+<td>configurable list (Catering, Decoration, Photography, Videography, Lighting, Sound, Stage, Transport, Security, Equipment rental, Entertainment, Other)</td>
+</tr>
+<tr>
+<td><code>Vendor</code></td>
+<td>contact name, company, categories, services, phone, email, city, GSTIN, PAN, status (ACTIVE / INACTIVE / BLACKLISTED), average rating</td>
+</tr>
+<tr>
+<td><code>VendorUser</code></td>
+<td>vendor ↔ user (a vendor can have several logins)</td>
+</tr>
+<tr>
+<td><code>VendorBankDetail</code></td>
+<td>account name, account number (encrypted), IFSC, UPI ID</td>
+</tr>
+<tr>
+<td><code>VendorRateCard</code></td>
+<td>item, unit, rate</td>
+</tr>
+<tr>
+<td><code>VendorBlackout</code></td>
+<td>dates the vendor is unavailable</td>
+</tr>
+<tr>
+<td><code>VendorAssignment</code></td>
+<td>event, function, vendor, scope of work, reporting time, status (INVITED → QUOTED → APPROVED → ACCEPTED → IN_PROGRESS → DELIVERED → COMPLETED; or DECLINED / CANCELLED)</td>
+</tr>
+<tr>
+<td><code>Quotation</code> / <code>QuotationItem</code></td>
+<td>assignment, version, status (SUBMITTED / REVISION_REQUESTED / APPROVED / REJECTED), subtotal, GST, total, validity, file</td>
+</tr>
+<tr>
+<td><code>WorkOrder</code></td>
+<td>number, assignment, approved quotation, amount, terms, status (ISSUED / ACKNOWLEDGED / CLOSED / CANCELLED), PDF</td>
+</tr>
+<tr>
+<td><code>VendorInvoice</code></td>
+<td>vendor, work order, invoice number and date, taxable amount, GST, total, file, status (SUBMITTED / VERIFIED / APPROVED / PART_PAID / PAID / DISPUTED)</td>
+</tr>
+<tr>
+<td><code>ProgressUpdate</code></td>
+<td>assignment, note, percent complete (photos and videos are <code>WorkProof</code> items)</td>
+</tr>
+<tr>
+<td><code>VendorReview</code></td>
+<td>vendor, event, quality, punctuality, communication (1–5), comment (internal)</td>
+</tr>
+</tbody></table></div>
+<h3 id="crew-labour">Crew (labour)</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Key fields</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Skill</code></td>
+<td>configurable list (Helper, Decorator, Electrician, Waiter, Driver…)</td>
+</tr>
+<tr>
+<td><code>Worker</code></td>
+<td>linked user, name, phone, skills, experience, city, usual per-event rate, ID proof, bank/UPI (encrypted), emergency contact, status</td>
+</tr>
+<tr>
+<td><code>WorkerUnavailability</code></td>
+<td>dates and reason</td>
+</tr>
+<tr>
+<td><code>CrewAssignment</code></td>
+<td>event, worker, duty, <strong>agreed pay for the event</strong>, status (ASSIGNED / CONFIRMED / DECLINED / COMPLETED / NO_SHOW)</td>
+</tr>
+<tr>
+<td><code>CrewPayAdjustment</code></td>
+<td>assignment, type (EXTRA / DEDUCTION), amount, reason, approved by</td>
+</tr>
+<tr>
+<td><code>CrewShift</code></td>
+<td>assignment, function, date, reporting time, location, attendance (PENDING / PRESENT / ABSENT / LATE), check-in time, marked by</td>
+</tr>
+</tbody></table></div>
+<h3 id="tasks">Tasks</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Key fields</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Task</code></td>
+<td>event?, function?, title, description, priority (LOW / MEDIUM / HIGH / URGENT), status (PENDING / ASSIGNED / IN_PROGRESS / UNDER_REVIEW / COMPLETED / DELAYED / CANCELLED), due date, assignee (any user, including vendors and crew), reviewer, needs approval</td>
+</tr>
+<tr>
+<td><code>TaskComment</code>, <code>TaskAttachment</code></td>
+<td>discussion, reference images and files</td>
+</tr>
+<tr>
+<td><code>WorkProof</code></td>
+<td>booking, function, <strong>one of</strong> task / vendor assignment / crew assignment, uploaded by, kind (PHOTO / VIDEO), file, caption, uploaded at (server time), location (if allowed), status (PENDING_REVIEW / APPROVED / REJECTED), reviewed by, review note</td>
+</tr>
+<tr>
+<td><code>TaskTemplate</code> / <code>TaskTemplateItem</code></td>
+<td>checklist per event category with relative due dates (&quot;10 days before&quot;)</td>
+</tr>
+</tbody></table></div>
+<h3 id="finance">Finance</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Key fields</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ExpenseCategory</code></td>
+<td>name, group (VENDOR / LABOUR / TRANSPORT / EQUIPMENT / FOOD / ACCOMMODATION / MISC)</td>
+</tr>
+<tr>
+<td><code>Budget</code> / <code>BudgetLine</code></td>
+<td>event, version; category, description, estimated amount (actuals come from expenses and payments)</td>
+</tr>
+<tr>
+<td><code>ClientCharge</code></td>
+<td>event, description, amount, GST rate: what the client is billed (package, add-ons). <strong>Hidden from managers.</strong></td>
+</tr>
+<tr>
+<td><code>ClientInvoice</code> / <code>ClientInvoiceItem</code></td>
+<td>number, event, client, type (ADVANCE / FINAL / ADDITIONAL), CGST / SGST / IGST, total, status, PDF (pending open question 2)</td>
+</tr>
+<tr>
+<td><code>Payment</code></td>
+<td>direction (IN / OUT), event?, party (client / vendor / worker / other), linked invoice or crew assignment, amount, method (CASH / UPI / BANK / CHEQUE), reference, date, proof, status (PENDING_APPROVAL / APPROVED / PAID / VOIDED), requested by, approved by, void reason</td>
+</tr>
+<tr>
+<td><code>Expense</code></td>
+<td>event?, category, description, amount, date, paid via, receipt, status (SUBMITTED / APPROVED / REJECTED / REIMBURSED), submitted by, approved by</td>
+</tr>
+<tr>
+<td><code>ApprovalRequest</code></td>
+<td>type (QUOTATION / PAYMENT / EXPENSE / CREW_ADJUSTMENT), record, requested by, decided by, status, comment</td>
+</tr>
+<tr>
+<td><code>DocumentSequence</code></td>
+<td>document type, financial year, next number</td>
+</tr>
+</tbody></table></div>
+<h3 id="documents">Documents</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Key fields</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>File</code></td>
+<td>storage key, filename, type, size, checksum, uploaded by; for media: width, height, duration, thumbnail key, playable-copy key, processing status (UPLOADING / PROCESSING / READY / FAILED)</td>
+</tr>
+<tr>
+<td><code>Document</code></td>
+<td>event? / vendor? / worker? / task?, kind (CONTRACT / QUOTATION / INVOICE / PLAN / DESIGN / PHOTO / OTHER), title, file, version, visibility (OWNER_ONLY / INTERNAL / BOOKING_TEAM / SHARED)</td>
+</tr>
+<tr>
+<td><code>DocumentShare</code></td>
+<td>document, shared with (a user, a vendor, or the booking&#39;s crew)</td>
+</tr>
+</tbody></table></div>
+<h3 id="communication-notifications">Communication &amp; notifications</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Key fields</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Channel</code> / <code>ChannelMember</code></td>
+<td>event?, type (BOOKING_TEAM / VENDOR_THREAD / CREW / DIRECT); member, last read</td>
+</tr>
+<tr>
+<td><code>Message</code></td>
+<td>channel, sender, text, attachments, reply to, edited or deleted time</td>
+</tr>
+<tr>
+<td><code>Announcement</code> / <code>AnnouncementAck</code></td>
+<td>audience (all staff, all crew, one booking&#39;s team…), title, body, needs acknowledgement; who acknowledged and when</td>
+</tr>
+<tr>
+<td><code>Notification</code></td>
+<td>user, type, title, link, record, read time</td>
+</tr>
+<tr>
+<td><code>NotificationPreference</code>, <code>PushSubscription</code></td>
+<td>channels per type; phone push endpoints</td>
+</tr>
+</tbody></table></div>
+
+<h2 id="development-roadmap">8. Development roadmap</h2>
+<p>Each phase ends with a demo to you on a test server, passing tests, and an update to <code>docs/PROGRESS.md</code>. Effort is indicative for one full-time developer.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>What gets built</th>
+<th>Done when</th>
+<th>Effort</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>1. Requirements</strong></td>
+<td>v0.1 → v1.0 of this document</td>
+<td>You approve v1.0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><strong>2. Architecture</strong></td>
+<td>Stack, access model, matrix, schema outline, hosting</td>
+<td>You approve v1.0</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><strong>3. UI/UX</strong></td>
+<td>Sitemap per role; design system (colours, type, light and dark); clickable mockups of the owner dashboard, booking workspace, manager dashboard, supervisor event-day screen, vendor portal and crew app</td>
+<td>You approve the look on phone and desktop</td>
+<td>M · ~2 wks</td>
+</tr>
+<tr>
+<td><strong>4. Database</strong></td>
+<td>Prisma schema, migrations, constraints, audit-log protection, realistic seed data (a full wedding season), repository and CI</td>
+<td>Migrations run clean; seed builds a full season</td>
+<td>S · ~1 wk</td>
+</tr>
+<tr>
+<td><strong>5. Auth &amp; access</strong></td>
+<td>Phone/email login, PIN for crew, first-login password change, sessions, owner 2FA, rate limits, policy layer, team and role screens, permission test suite</td>
+<td>Every role passes its matrix tests</td>
+<td>M · ~2 wks</td>
+</tr>
+<tr>
+<td><strong>6. Core operations</strong></td>
+<td>Booking workspace (overview, functions, schedule and run sheet, requirements, tasks, vendors, crew, documents), calendar, vendor directory, quote → approval → work order, <strong>vendor portal</strong>, crew roster and assignments, attendance, <strong>crew app</strong>, supervisor event-day view, <strong>photo/video work proof with review</strong></td>
+<td>A booking can be planned and run end to end without WhatsApp</td>
+<td>L · ~5–6 wks</td>
+</tr>
+<tr>
+<td><strong>7. Finance</strong></td>
+<td>Client charges and billing, budgets, expenses with receipts, vendor invoices, payments with owner approval, crew pay and adjustments, outstanding balances, P&amp;L per booking and month, charts, PDF and Excel exports for your accountant</td>
+<td>A booking can be settled and its P&amp;L matches your books</td>
+<td>L · ~3–4 wks</td>
+</tr>
+<tr>
+<td><strong>8. Communication</strong></td>
+<td>Booking team chat, vendor and crew threads, announcements with acknowledgement, in-app + push + email notifications, reminder jobs (deadlines, overdue, schedule changes, approvals waiting)</td>
+<td>Booking coordination no longer needs WhatsApp</td>
+<td>M · ~2 wks</td>
+</tr>
+<tr>
+<td><strong>9. Testing &amp; security</strong></td>
+<td>Permission tests on every endpoint, end-to-end tests per role, OWASP review, upload hardening (photo/video type and size checks), busy-day load test including many video uploads, backup-restore drill</td>
+<td>No high-severity issues open</td>
+<td>M · ~2 wks</td>
+</tr>
+<tr>
+<td><strong>10. Deployment</strong></td>
+<td>AWS Mumbai server, domain, HTTPS, backups, monitoring, data import, one-page guides per role, pilot on 2–3 bookings, go-live</td>
+<td>Pilot bookings run fully in the system</td>
+<td>M · ~1–2 wks</td>
+</tr>
+</tbody></table></div>
+<p><strong>Remaining:</strong> about 18–21 weeks of focused work for one developer. Building with me in working sessions is usually faster; the real limit is review time.</p>
+
+<h2 id="risks-and-how-we-handle-them">9. Risks and how we handle them</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Vendors or crew don&#39;t use the app</td>
+<td>Phone-number login, very simple screens, push notifications. Owners and the accountant can enter quotes and invoices for paper vendors.</td>
+</tr>
+<tr>
+<td>Rolling out during peak wedding season</td>
+<td>Pilot on a few small bookings first; full switch-over in a quieter month.</td>
+</tr>
+<tr>
+<td>Scope is very large</td>
+<td>Strict phases; a &quot;Later&quot; list; nothing ships half-working.</td>
+</tr>
+<tr>
+<td>Too much typing</td>
+<td>Excel import, checklist templates, reusable venues and vendors, sensible defaults.</td>
+</tr>
+<tr>
+<td>Money figures drift from reality</td>
+<td>Records that can&#39;t be deleted, voids with reasons, owner approvals, tests on every calculation.</td>
+</tr>
+<tr>
+<td>Large videos on weak venue networks</td>
+<td>Chunked uploads that resume, photos shrunk on the phone, a progress bar, clear size limits.</td>
+</tr>
+<tr>
+<td>Media storage keeps growing</td>
+<td>Cheaper storage class after 6 months, a storage report for owners, limits per video.</td>
+</tr>
+<tr>
+<td>Single server goes down</td>
+<td>Nightly backups in Mumbai, weekly snapshots, a tested restore and a runbook. Recovery to a fresh server in under an hour.</td>
+</tr>
+<tr>
+<td>A wrong permission leaks data</td>
+<td>Server-side policy layer, allow-list responses, and an automated test of the whole matrix on every change.</td>
+</tr>
+</tbody></table></div>
+
+<h2 id="next-steps">10. Next steps</h2>
+<ol>
+<li>✅ <strong>Done:</strong> the repository <code>Harshith993/taamaraAPP</code> exists and holds this plan.</li>
+<li><strong>You:</strong> approve this v1.1, or tell me what to change. The open questions in section 3 can be answered as we go; only the app name and logo are useful for Phase 3.</li>
+<li><strong>Me:</strong> Phase 3, the screen designs, starting with the owner dashboard, the booking workspace and the crew app on a phone.</li>
+</ol>
+
+    <footer>Source: <code>docs/ARCHITECTURE.md</code> in the project. Progress and decisions are tracked in <code>docs/PROGRESS.md</code>.</footer>
+  </main>
+</div>
+</body>
+</html>

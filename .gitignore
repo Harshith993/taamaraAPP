@@ -1,0 +1,21 @@
+node_modules/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+
+# Local data and secrets: never commit
+data/
+*.db
+*.db-wal
+*.db-shm
+.env
+.env.*
+!.env.example
+*.pem
+*.dump
+backups/
+
+.DS_Store
+*.log

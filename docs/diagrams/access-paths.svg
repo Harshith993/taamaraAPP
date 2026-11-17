@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 250" role="img" aria-label="Three paths from a user login to a booking: managers and supervisors through EventMember; vendors through VendorUser, Vendor and VendorAssignment; crew through Worker and CrewAssignment. Owners and the accountant see all bookings. The policy layer turns each path into the database filter for that person." font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="12" color="#1f2933">
+  <defs>
+    <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <rect class="bg" x="0" y="0" width="960" height="250" fill="#ffffff"/>
+
+  <rect x="20" y="30" width="120" height="200" rx="10" fill="none" stroke="currentColor" stroke-width="1.6"/>
+  <text x="80" y="124" text-anchor="middle" font-weight="700" fill="currentColor">User</text>
+  <text x="80" y="140" text-anchor="middle" font-size="11" fill="currentColor" fill-opacity="0.7">one login table</text>
+  <rect x="810" y="30" width="130" height="200" rx="10" fill="#d97706" fill-opacity="0.14" stroke="#d97706" stroke-width="1.8"/>
+  <text x="875" y="124" text-anchor="middle" font-weight="700" fill="currentColor">Booking</text>
+  <text x="875" y="140" text-anchor="middle" font-size="11" fill="currentColor" fill-opacity="0.7">and its functions</text>
+
+  <g font-size="11" font-weight="600" fill="currentColor" fill-opacity="0.75">
+    <text x="180" y="44">EVENT MANAGER / SUPERVISOR</text>
+    <text x="180" y="114">VENDOR</text>
+    <text x="180" y="184">CREW</text>
+  </g>
+
+  <g fill="none" stroke="currentColor" stroke-opacity="0.55">
+    <rect x="180" y="50" width="140" height="40" rx="6"/>
+    <rect x="180" y="120" width="140" height="40" rx="6"/>
+    <rect x="390" y="120" width="140" height="40" rx="6"/>
+    <rect x="600" y="120" width="140" height="40" rx="6"/>
+    <rect x="180" y="190" width="140" height="40" rx="6"/>
+    <rect x="390" y="190" width="140" height="40" rx="6"/>
+  </g>
+  <g fill="currentColor" text-anchor="middle" font-family="ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace" font-size="12">
+    <text x="250" y="74">EventMember</text>
+    <text x="250" y="144">VendorUser</text>
+    <text x="460" y="144">Vendor</text>
+    <text x="670" y="144">VendorAssignment</text>
+    <text x="250" y="214">Worker</text>
+    <text x="460" y="214">CrewAssignment</text>
+  </g>
+
+  <g stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow2)">
+    <line x1="140" y1="70" x2="178" y2="70"/>
+    <line x1="320" y1="70" x2="808" y2="70"/>
+    <line x1="140" y1="140" x2="178" y2="140"/>
+    <line x1="320" y1="140" x2="388" y2="140"/>
+    <line x1="530" y1="140" x2="598" y2="140"/>
+    <line x1="740" y1="140" x2="808" y2="140"/>
+    <line x1="140" y1="210" x2="178" y2="210"/>
+    <line x1="320" y1="210" x2="388" y2="210"/>
+    <line x1="530" y1="210" x2="808" y2="210"/>
+  </g>
+  <g font-size="11" fill="currentColor" text-anchor="middle">
+    <text x="564" y="63">assigned to the booking as manager or supervisor</text>
+    <text x="355" y="133">works for</text>
+    <text x="565" y="133">booked as</text>
+    <text x="775" y="133">on</text>
+    <text x="355" y="203">placed in</text>
+    <text x="669" y="203">hired for the booking, paid per event</text>
+  </g>
+</svg>
