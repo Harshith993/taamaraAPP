@@ -9,9 +9,9 @@ Updated at the end of every working session. Status: ✅ done · 🔄 in progres
 | 3. UI/UX planning | ✅ | Direction C in the lotus palette. 9 screens on the canvas: owner home, design language, crew Today, booking workspace, supervisor event day (night mode), crew proof upload, vendor job, manager home (desktop), owner money (desktop). Screen map for every role in `docs/design/SITEMAP.md`. The owner asked to continue without waiting for approval (18 Nov). |
 | 4. Database | ✅ | Prisma 7 schema (72 tables), 2 migrations with database-level protections (append-only audit log, payment ledger rules, fixed issued invoices, proof one-parent rule), reference + demo seed, 42 database tests. |
 | 5. Authentication & authorization | ✅ | Better Auth (phone or email + password, DB sessions, rate limits, forced first password), policy layer with scoped filters, team & role management for owners, sign-in/home/team/roles screens, vendor and crew homes. 77 automated tests + 23-check browser smoke test. |
-| 6. Core operations (incl. vendor portal, crew app) | 🔄 | Done: approvals inbox; bookings list, new booking, booking workspace; vendor job flow (quote → owner approval → work order → accept → started / done → sign-off); **file storage and resumable uploads**; **photo/video work proof with review**; **crew hiring, accept/decline, attendance (supervisor marks, optional self check-in)**; **tasks with photo proof and sign-off**; **night-mode Event day**; **vendor invoices checked by the accountant**; **owner settings**. 156 automated tests + 7 browser check scripts (97 checks). See "Next up" below. |
-| 7. Finance | ⬜ | |
-| 8. Communication & notifications | ⬜ | |
+| 6. Core operations (incl. vendor portal, crew app) | ✅ | Everything in the roadmap row is built: booking workspace (overview, functions, schedule/run sheet, needs, vendors, crew, tasks, proof, documents, money), calendar, vendor directory, quote → approval → work order, vendor portal, crew roster and hiring, attendance, crew app, night-mode Event day, photo/video proof with review, notifications. Still to add: vendor portal profile and payment-status screens, crew "Me" screen (days off, password). |
+| 7. Finance | 🔄 | Done: vendor invoices checked by the accountant; vendor and crew payments (prepare → owner approves → mark paid; void with reason); client charges and receipts; crew extras and deductions; Money tab per booking; Money page with P&L per booking. Next: expenses with receipts, budgets, client GST invoices (needs open question 2), monthly P&L, Excel exports for the outside accountant. |
+| 8. Communication & notifications | 🔄 | In-app notifications with a bell and list for every login (built early, since every flow sends them). Next: booking team chat, vendor/crew threads, announcements, web push, email, reminder jobs. |
 | 9. Testing & security | ⬜ | |
 | 10. Deployment (AWS Mumbai) | ⬜ | Needs an AWS account in the company's name. |
 
@@ -48,30 +48,44 @@ Updated at the end of every working session. Status: ✅ done · 🔄 in progres
 | D28 | 18 Nov 2026 | Owners control five switches on a Settings page: crew see their pay (Q5, default on), crew self check-in (Q4, off), proof from the gallery (on), longest proof video (120 s), vendor's final payment needs approved proof (on). Every change is audited. | Technical decision |
 | D29 | 18 Nov 2026 | Vendor invoices can't add up to more than the work order; disputed and void invoices don't count; invoices are checked by people with "prepare payments" (accountant, owners). | Technical decision |
 | D30 | 18 Nov 2026 | iPhone HEIC photos are converted to JPEG on the phone before upload; the server's image tools can't read HEIC, so one that slips through is refused with a clear message. | Technical decision |
+| D31 | 18 Nov 2026 | Crew extras and deductions are asked for by the booking's manager or supervisor and decided by an owner; only approved ones change what the crew member is owed. | Technical decision |
+| D32 | 18 Nov 2026 | Vendor payments are prepared against a checked invoice; advances paid before an invoice still count towards what the vendor has been paid. A payment can't exceed what is left on the invoice (or what crew are owed), counting payments already waiting. | Technical decision |
+| D33 | 18 Nov 2026 | "Margin before tax" on screens is what the client is charged before GST minus vendor costs (as quoted, GST included) and crew pay. It is a planning figure, not the accounts; GST credits and overheads are for the outside accountant. | Assumption, owners to confirm |
 | D13 | 17 Nov 2026 | Vendors and crew upload photo/video proof of completed work; managers or supervisors approve it; videos are processed with ffmpeg and stored in S3 Mumbai (G17) | Requested by owner; limits are open question 10 |
 
 ## What was built on 18 Nov (owner away; review afterwards)
 
+All of this is on the branch `claude/gallant-dirac-mw3e53`, one commit per piece, each with tests.
+
 | Area | What it does | Where |
 |---|---|---|
 | Vendor screens browser check | Quote request → GST quote on a phone → owner approval → work order → accept → start → done → sign-off, clicked through by four people. Found and fixed: after "We've started" the "Work is done" button didn't appear until a reload. | `tests/e2e/vendor-flow.cjs` |
-| File storage and uploads | Local-disk storage behind an interface (S3 Mumbai later), uploads in resumable 4 MB pieces, file type read from the bytes, size limits, signed per-person links, video byte ranges. | `src/lib/storage/`, `src/modules/files/`, `/api/v1/uploads`, `/api/v1/files` |
+| File storage and uploads | Local-disk storage behind an interface (S3 Mumbai later), resumable 4 MB pieces, file type read from the bytes, size limits, signed per-person links, video byte ranges. | `src/lib/storage/`, `src/modules/files/`, `/api/v1/uploads`, `/api/v1/files` |
 | Media processing | Photos: upright, 1600 px copy, thumbnail, metadata removed. Videos: length checked, thumbnail, H.264 MP4 without location. | `src/modules/files/processing.ts` |
-| Work proof | Vendors (after the work order is accepted) and crew (from Today or a task) take a photo or record a video, add a note and their location; the booking's manager or supervisor approves or asks to redo. Proof page with a count in the menu, Proof tab on each booking. | `/proof`, `src/modules/proof/` |
-| Crew | Hire from the Crew tab (pay, reporting time and place per function; days off refused, double bookings warned), crew accept or decline on their phone, take off with a reason. New crew Today screen. | `src/modules/crew/`, `/crew` |
+| Work proof | Vendors and crew take a photo or record a video, add a note and their location; the booking's manager or supervisor approves or asks to redo. Proof page and a Proof tab on each booking. | `/proof`, `src/modules/proof/` |
+| Crew | Hire from the Crew tab (pay, reporting time and place per function; days off refused, double bookings warned); crew accept or decline on their phone; new crew Today screen with check-in, proof, tasks, pay and shared plans. | `src/modules/crew/`, `/crew` |
 | Attendance | Present / Late / Absent per shift on the booking or on Event day; optional self check-in with location. | `src/modules/crew/service.ts` |
-| Tasks | Add tasks for the team or crew on a booking; tasks that need a photo can't be done without one; sign off or send back with a note. | `src/modules/tasks/` |
-| Event day | Night mode for dark venues: next cue, crew in, vendors due, proof to check, run sheet with a now marker, check-in board, tasks due, the team's numbers. Supervisors land here when a booking is on today. | `/event-day` |
-| Vendor invoices | Vendor sends an invoice (PDF or photo) against the work order; the accountant verifies, asks to correct or voids; never more than the work order. | `/invoices`, `src/modules/vendors/invoices.ts` |
-| Settings | The five owner switches above. | `/settings` |
+| Tasks | Tasks for the team or crew; tasks that need a photo can't be done without one; sign off or send back with a note. | `src/modules/tasks/` |
+| Event day | Night mode for dark venues: next cue, crew in, vendors due, proof to check, run sheet with a now marker and ticks, check-in board, tasks, the team's numbers. | `/event-day` |
+| Planning | Owners choose the team and can cancel a booking; managers edit details and functions; run sheet editor; requirements ("Needs") linked to vendors. | `src/modules/events/planning.ts` |
+| Vendors and crew directories | Search and filter; add and edit (tax and bank details only for owners and the accountant, bank numbers encrypted); profiles with jobs, attendance and days off. | `/vendors`, `/roster` |
+| Documents | Per booking, each document for owners only, the booking team, all staff, or shared with chosen vendors and/or the crew. | Docs tab, `src/modules/documents/` |
+| Calendar | The month's functions on a grid (iPad, desktop) or a day list (phone). | `/calendar` |
+| Vendor invoices | Vendor sends an invoice against the work order; the accountant verifies, asks to correct or voids. | `/invoices` |
+| Payments and client money | Prepare → owner approves → mark paid, void with a reason; client charges and receipts; crew extras; Money tab per booking; Money page. | `/money`, Money tab, `src/modules/finance/` |
+| Notifications | A bell with the unread count for every login, and a list; tapping one opens what it is about. | `src/components/notifications.tsx` |
+| Settings | Owner switches: crew see their pay, crew self check-in, proof from the gallery, video length, proof before a vendor's final payment. | `/settings` |
 
-Browser check scripts (dev server on :3000 with the demo seed): `smoke` 23, `bookings` 9, `approvals`, `vendor-flow` 15, `proof` 12, `crew-day` 15, `invoices` 8. Run each with `node tests/e2e/<name>.cjs <screenshot-folder>`.
+Tests: 183 automated tests (`npm test`) and 13 browser check scripts with 150+ checks, run against both the dev server and a production build on a fresh demo database: `smoke` 23, `bookings` 9, `approvals`, `vendor-flow` 15, `proof` 12, `crew-day` 15, `invoices` 8, `planning` 8, `directory` 10, `docs-calendar` 9, `notifications` 6, `finance` 12. Run each with `node tests/e2e/<name>.cjs <screenshot-folder>` while the app runs on :3000 with the demo seed.
+
+Known: the `pg` driver prints a deprecation warning from inside Prisma's own query engine during some transactions. Our own code no longer overlaps queries in transactions (`inSequence`). Check Prisma's adapter before upgrading to `pg` 9.
 
 ## Next up
 
-1. Rest of Phase 6: edit a booking and its functions; run sheet editor; requirements editor; documents tab (uses the new uploads); vendor directory with add and edit; crew roster with register and edit; calendar.
-2. Phase 7 (finance): vendor payments from verified invoices with owner approval (and the approved-proof check), crew pay register, client charges and payments, expenses with receipts, budgets, P&L, exports.
-3. Owners to confirm D26 (attendance) and D28 defaults, and answer open questions 2, 3, 6, 7, 8, 9.
+1. Phase 7: expenses with receipts (manager/supervisor submit, owner approves, reimburse), budgets (estimate vs actual), client GST invoices once open question 2 is answered, monthly P&L, Excel exports for the outside accountant.
+2. Small Phase 6 leftovers: vendor portal profile (GST, bank, extra logins) and payments screen; crew "Me" screen (days off, password).
+3. Phase 8: booking team chat, vendor and crew threads, announcements with acknowledgement, web push and email, reminder jobs.
+4. Owners to review the 18 Nov work and confirm D26 (attendance), D28 (switch defaults) and D33 (margin), and answer open questions 2, 3, 6, 7, 8, 9.
 
 ## Earlier prototype (superseded)
 
