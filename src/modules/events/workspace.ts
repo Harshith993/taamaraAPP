@@ -15,7 +15,7 @@ export async function getBookingHeader(db: Db, actor: Actor, eventId: string) {
       category: { select: { name: true, color: true } },
       functions: { orderBy: { startsAt: "asc" }, include: { venue: { select: { name: true } } } },
       members: { include: { user: { select: { name: true } } } },
-      _count: { select: { vendorAssignments: true, crewAssignments: true, tasks: true } },
+      _count: { select: { vendorAssignments: true, crewAssignments: true, tasks: true, proofs: true } },
     },
   });
   // Client details only for people allowed to see them (never vendors or crew).

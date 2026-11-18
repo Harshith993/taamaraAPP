@@ -14,6 +14,9 @@ import { formatPhone } from "@/lib/phone";
 import { can } from "@/modules/identity/policy";
 import { homePathFor, requireActor } from "@/modules/identity/session";
 import { getJob } from "@/modules/vendors/jobs";
+import { ProofGrid } from "@/components/proof-grid";
+import { ProofUploader } from "@/components/proof-uploader";
+import { listProof, openRedoRequests } from "@/modules/proof/service";
 import { AcceptWorkOrder, DeclineJob, ProgressButton } from "./job-actions";
 import { QuoteForm } from "./quote-form";
 
@@ -102,6 +105,9 @@ export default async function VendorJobPage({
     if (err instanceof NotFoundError) notFound();
     throw err;
   }
+  const proofOpen = ["ACCEPTED", "IN_PROGRESS", "DELIVERED", "COMPLETED"].includes(job.status);
+  const proof = proofOpen ? await listProof(db, actor, { target: { kind: "vendorJob", id: job.id } }) : [];
+  const redo = openRedoRequests(proof);
   const step = nextStep(job);
   const latest = job.quotes[0];
   const openWO = job.workOrders.find((w) => w.status === "ISSUED");
@@ -188,6 +194,27 @@ export default async function VendorJobPage({
               </div>
             </Panel>
           )}
+
+        {proofOpen && (
+          <Panel title={`Photos and videos of the work${proof.length ? ` · ${proof.length}` : ""}`}>
+            <div className="flex flex-col gap-3 p-3.5">
+              {redo.length > 0 && (
+                <Notice tone="error">
+                  The team asked you to redo {redo.length === 1 ? "one item" : `${redo.length} items`}: {redo.map((r) => r.reviewNote).join(" · ")}
+                </Notice>
+              )}
+              {can(actor, "proof.upload") && job.status !== "COMPLETED" && (
+                <ProofUploader
+                  target={{ kind: "vendorJob", id: job.id }}
+                  allowGallery={actor.switches.proofFromGallery}
+                  maxVideoSeconds={actor.switches.maxVideoSeconds}
+                  prompt="Send photos or a short video of the finished setup. The manager or supervisor checks them; payment needs approved proof."
+                />
+              )}
+              {proof.length > 0 && <ProofGrid items={proof} showAbout={false} uploaderView />}
+            </div>
+          </Panel>
+        )}
 
         <Panel title={`When and where · ${job.functions.length}`}>
           <ul>

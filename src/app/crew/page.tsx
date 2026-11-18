@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { PortalShell } from "@/components/portal-shell";
-import { EmptyState, Panel, Tag } from "@/components/ui";
+import Link from "next/link";
+import { ButtonLink, EmptyState, Panel, Tag } from "@/components/ui";
 import { db } from "@/lib/db";
 import { firstName, formatDate, formatINR, formatTime, todayAsDate, toNumber } from "@/lib/format";
 import { can, crewAssignmentWhere, taskWhere } from "@/modules/identity/policy";
@@ -21,7 +22,7 @@ export default async function CrewHome() {
       orderBy: { reportAt: "asc" },
       take: 10,
       include: {
-        assignment: { select: { duty: true, event: { select: { name: true } } } },
+        assignment: { select: { id: true, duty: true, event: { select: { name: true } } } },
         function: { select: { name: true, venueText: true, venue: { select: { name: true, address: true } } } },
       },
     }),
@@ -67,6 +68,13 @@ export default async function CrewHome() {
                 {next.location ? ` · ${next.location}` : ""}
               </span>
             </div>
+            {can(actor, "proof.upload") && (
+              <div className="px-3.5 pb-3.5">
+                <ButtonLink href={`/crew/proof?a=${next.assignment.id}`} variant="look" className="min-h-[58px] w-full text-[13px]">
+                  Add proof of work
+                </ButtonLink>
+              </div>
+            )}
             <div className={`flex min-h-[34px] items-center px-3.5 font-mono text-[12px] font-semibold tracking-[0.04em] ${next.attendance === "PRESENT" ? "bg-ok" : "bg-ground"}`}>
               {next.attendance === "PRESENT" ? `CHECKED IN${next.checkInAt ? ` ${formatTime(next.checkInAt)}` : ""}` : "NOT CHECKED IN YET"}
             </div>
@@ -103,7 +111,13 @@ export default async function CrewHome() {
               {tasks.map((t) => (
                 <li key={t.id} className="flex items-center justify-between gap-3 border-b border-rule-soft px-3.5 py-3 last:border-b-0">
                   <span className="flex flex-col leading-tight">
-                    <span className="text-[15px] font-semibold">{t.title}</span>
+                    {t.needsProof && can(actor, "proof.upload") ? (
+                      <Link href={`/crew/proof?t=${t.id}`} className="text-[15px] font-semibold">
+                        {t.title}
+                      </Link>
+                    ) : (
+                      <span className="text-[15px] font-semibold">{t.title}</span>
+                    )}
                     <span className="text-[13px] text-ink-quiet">
                       {t.dueAt ? `By ${formatTime(t.dueAt)}, ${formatDate(t.dueAt)}` : "No deadline"}
                       {t.needsProof ? " · needs a photo" : ""}

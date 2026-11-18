@@ -27,7 +27,9 @@ import {
 } from "@/modules/events/workspace";
 import { can } from "@/modules/identity/policy";
 import { requirePermission } from "@/modules/identity/session";
+import { listProof } from "@/modules/proof/service";
 import { invitableVendors } from "@/modules/vendors/jobs";
+import { ProofGrid } from "@/components/proof-grid";
 import { InviteVendorForm, VendorRowActions } from "./vendor-controls";
 
 export const metadata: Metadata = { title: "Booking" };
@@ -38,6 +40,7 @@ const TABS = [
   { key: "vendors", label: "Vendors" },
   { key: "crew", label: "Crew" },
   { key: "tasks", label: "Tasks" },
+  { key: "proof", label: "Proof" },
 ] as const;
 type TabKey = (typeof TABS)[number]["key"];
 
@@ -66,6 +69,7 @@ export default async function BookingPage({
     vendors: header.counts.vendorAssignments,
     crew: header.counts.crewAssignments,
     tasks: header.counts.tasks,
+    proof: header.counts.proofs,
   };
   const now = new Date();
 
@@ -160,6 +164,7 @@ export default async function BookingPage({
       {tab === "vendors" && <Vendors actor={actor} eventId={id} />}
       {tab === "crew" && <Crew actor={actor} eventId={id} />}
       {tab === "tasks" && <Tasks actor={actor} eventId={id} />}
+      {tab === "proof" && <Proof actor={actor} eventId={id} />}
     </div>
   );
 }
@@ -491,7 +496,13 @@ async function Vendors({ actor, eventId }: { actor: Actor; eventId: string }) {
                       </td>
                     )}
                     <td className="px-3 py-2.5 text-right font-mono">
-                      {r.proofCount || "—"}
+                      {r.proofCount ? (
+                        <Link href={`/bookings/${eventId}?tab=proof`}>
+                          {r.proofCount}
+                        </Link>
+                      ) : (
+                        "—"
+                      )}
                     </td>
                     {staff && (
                       <td className="px-3.5 py-2.5 text-right">
@@ -634,6 +645,31 @@ async function Tasks({ actor, eventId }: { actor: Actor; eventId: string }) {
           </li>
         ))}
       </ul>
+    </Panel>
+  );
+}
+
+async function Proof({ actor, eventId }: { actor: Actor; eventId: string }) {
+  const items = can(actor, "proof.view")
+    ? await listProof(db, actor, { eventId })
+    : [];
+  if (!items.length)
+    return (
+      <Panel>
+        <EmptyState title="No proof yet">
+          Photos and videos that vendors and crew send for this booking
+          appear here.
+        </EmptyState>
+      </Panel>
+    );
+  const waiting = items.filter((p) => p.status === "PENDING_REVIEW").length;
+  return (
+    <Panel
+      title={`Proof · ${items.length}${waiting ? ` · ${waiting} to check` : ""}`}
+    >
+      <div className="p-3.5">
+        <ProofGrid items={items} />
+      </div>
     </Panel>
   );
 }

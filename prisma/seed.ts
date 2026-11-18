@@ -13,6 +13,7 @@ import { hashPassword } from "better-auth/crypto";
 import { createDbClient } from "../src/lib/db";
 import { placeholderEmailForPhone } from "../src/lib/phone";
 import { DEFAULT_ROLE_GRANTS, ROLES, type RoleKey } from "../src/modules/identity/permissions";
+import { demoMedia, type DemoArt } from "./seed-media";
 
 const db = createDbClient();
 export const DEMO_PASSWORD = "Taamara@2026";
@@ -364,13 +365,13 @@ async function seedDemo() {
     ],
   });
 
-  // Work proof (files are placeholders until storage is connected)
-  const proofFile = async (name: string, uploadedById: string, mimeType = "image/jpeg") =>
-    db.file.create({ data: { storageKey: `seed/${name}`, filename: name, mimeType, sizeBytes: mimeType.startsWith("video") ? 96_000_000 : 2_400_000, uploadedById, status: "READY" } });
+  // Work proof: demo photos and a video drawn on the fly and stored like real uploads
+  const proofFile = async (name: string, uploadedById: string, art: DemoArt, kind: "photo" | "video" = "photo") =>
+    db.file.create({ data: { ...(await demoMedia(art, kind)), filename: name, uploadedById, purpose: "PROOF", status: "READY", processedAt: new Date() } });
   const garlandTask = await db.task.findFirstOrThrow({ where: { title: "Entrance garlands" } });
-  await db.workProof.create({ data: { eventId: wedding.id, functionId: sangeet.id, taskId: garlandTask.id, kind: "PHOTO", fileId: (await proofFile("entrance-garlands.jpg", sunilUser.id)).id, caption: "Entrance garlands done", uploadedById: sunilUser.id } });
-  await db.workProof.create({ data: { eventId: wedding.id, functionId: sangeet.id, vendorAssignmentId: decorA.id, kind: "PHOTO", fileId: (await proofFile("light-canopy.jpg", gulmoharUser.id)).id, caption: "Fairy-light canopy", status: "APPROVED", uploadedById: gulmoharUser.id, reviewedById: ramesh.id, reviewedAt: new Date() } });
-  await db.workProof.create({ data: { eventId: wedding.id, functionId: sangeet.id, crewAssignmentId: arjunA.id, kind: "VIDEO", fileId: (await proofFile("walkthrough.mp4", arjunUser.id, "video/mp4")).id, caption: "Setup walkthrough", uploadedById: arjunUser.id } });
+  await db.workProof.create({ data: { eventId: wedding.id, functionId: sangeet.id, taskId: garlandTask.id, kind: "PHOTO", fileId: (await proofFile("entrance-garlands.jpg", sunilUser.id, "garlands")).id, caption: "Entrance garlands done", uploadedById: sunilUser.id } });
+  await db.workProof.create({ data: { eventId: wedding.id, functionId: sangeet.id, vendorAssignmentId: decorA.id, kind: "PHOTO", fileId: (await proofFile("light-canopy.jpg", gulmoharUser.id, "canopy")).id, caption: "Fairy-light canopy", status: "APPROVED", uploadedById: gulmoharUser.id, reviewedById: ramesh.id, reviewedAt: new Date() } });
+  await db.workProof.create({ data: { eventId: wedding.id, functionId: sangeet.id, crewAssignmentId: arjunA.id, kind: "VIDEO", fileId: (await proofFile("walkthrough.mp4", arjunUser.id, "canopy", "video")).id, caption: "Setup walkthrough", uploadedById: arjunUser.id } });
 
   // Messages
   const team = await db.channel.create({ data: { type: "BOOKING_TEAM", eventId: wedding.id, name: "Aditi & Karan · team", members: { create: [founder, cofounder, priya, ramesh].map((u) => ({ userId: u.id })) } } });

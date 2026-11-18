@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { ROLES } from "@/modules/identity/permissions";
 import { can } from "@/modules/identity/policy";
 import { homePathFor, requireActor } from "@/modules/identity/session";
+import { proofToCheckCount } from "@/modules/proof/service";
 
 /** Internal staff only: owners, event managers, the accountant and supervisors. */
 export default async function InternalLayout({ children }: { children: React.ReactNode }) {
@@ -13,6 +14,7 @@ export default async function InternalLayout({ children }: { children: React.Rea
   // Only pages that exist and that this person may open appear in the menu.
   const items: NavItem[] = [{ href: "/home", label: "Home" }];
   if (can(actor, "bookings.view")) items.push({ href: "/bookings", label: "Bookings" });
+  if (can(actor, "proof.view")) items.push({ href: "/proof", label: "Proof", badge: await proofToCheckCount(db, actor) });
   if (can(actor, "approvals.decide")) {
     items.push({ href: "/approvals", label: "Approvals", badge: await db.approvalRequest.count({ where: { state: "PENDING" } }) });
   }

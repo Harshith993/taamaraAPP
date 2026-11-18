@@ -45,7 +45,8 @@ async function launch() {
   const browser = await chromium.launch();
   const signIn = async (login, viewport = { width: 1440, height: 1000 }) => {
     await resetLoginLimits();
-    const ctx = await browser.newContext(viewport.isMobile ? viewport : { viewport });
+    // Either a plain viewport, or full context options (with a viewport key).
+    const ctx = await browser.newContext(viewport.viewport ? viewport : { viewport });
     const page = await ctx.newPage();
     await page.goto(`${BASE}/login`);
     await page.fill('input[name="login"]', login);
