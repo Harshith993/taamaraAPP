@@ -429,7 +429,7 @@ async function seedDemo() {
   // ── Booking 5: settled engagement ──
   const engagement = await db.event.create({
     data: {
-      code: await nextCode("EVT", year, "EVT"), name: "Mittal Engagement", categoryId: await cat("Engagement"), clientId: mittal.id, status: "SETTLED",
+      code: await nextCode("EVT", year, "EVT"), name: "Mittal Engagement", categoryId: await cat("Engagement"), clientId: mittal.id, status: "COMPLETED",
       startDate: day(-12), endDate: day(-12), expectedGuests: 200, createdById: founder.id, members: { create: [{ userId: aman.id, role: "MANAGER" }] },
     },
   });
@@ -438,8 +438,13 @@ async function seedDemo() {
   const engDecorQ = await quote(engDecor.id, gulmohar.id, 1, 85000, "APPROVED", "Ring ceremony stage", founder.id);
   await workOrder(engDecor.id, engDecorQ.id, 85000);
   await db.clientCharge.create({ data: { eventId: engagement.id, clientId: mittal.id, description: "Engagement package", amount: 520000, gstRate: 18, createdById: founder.id } });
-  await db.payment.create({ data: { direction: "IN", eventId: engagement.id, partyType: "CLIENT", clientId: mittal.id, amount: 520000, method: "BANK", paidOn: day(-11), status: "PAID", requestedById: kavita.id, approvedById: founder.id, approvedAt: new Date(), paidById: kavita.id } });
+  await db.payment.create({ data: { direction: "IN", eventId: engagement.id, partyType: "CLIENT", clientId: mittal.id, amount: 613600, method: "BANK", paidOn: day(-11), status: "PAID", requestedById: kavita.id, approvedById: founder.id, approvedAt: new Date(), paidById: kavita.id } });
   await db.payment.create({ data: { direction: "OUT", eventId: engagement.id, partyType: "VENDOR", vendorId: gulmohar.id, amount: 85000, method: "BANK", paidOn: day(-10), status: "PAID", requestedById: kavita.id, approvedById: founder.id, approvedAt: new Date(), paidById: kavita.id } });
+  // Settled last: a settled booking's money is locked (database triggers).
+  await db.event.update({
+    where: { id: engagement.id },
+    data: { status: "SETTLED", settledAt: new Date(), settledById: founder.id, settlementSnapshot: { billed: 520000, gst: 93600, received: 613600, vendorCost: 85000, crewCost: 0, expenseCost: 0, paidOut: 85000, margin: 435000, note: null } },
+  });
 
   // ── Booking 6: corporate Diwali night ──
   const diwali = await db.event.create({

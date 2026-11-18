@@ -18,6 +18,7 @@ import {
   type PreparePaymentInput,
   type receiptSchema,
 } from "@/modules/finance/payments";
+import { reopenBooking, settleBooking } from "@/modules/finance/settlement";
 import { requestMeta, requireActor } from "@/modules/identity/session";
 
 async function run(fn: () => Promise<unknown>, message: string): Promise<ActionResult> {
@@ -85,4 +86,14 @@ export async function reviseBudgetAction(eventId: string) {
 export async function submitBudgetAction(eventId: string) {
   const actor = await requireActor();
   return run(async () => submitBudget(db, actor, eventId, await requestMeta()), "Sent to the owners for approval.");
+}
+
+export async function settleBookingAction(eventId: string, note: string) {
+  const actor = await requireActor();
+  return run(async () => settleBooking(db, actor, eventId, { note }, await requestMeta()), "Settled. The booking's money is now locked.");
+}
+
+export async function reopenBookingAction(eventId: string, reason: string) {
+  const actor = await requireActor();
+  return run(async () => reopenBooking(db, actor, eventId, { reason }, await requestMeta()), "Reopened. The booking is back to completed.");
 }

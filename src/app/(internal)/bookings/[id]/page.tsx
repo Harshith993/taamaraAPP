@@ -39,7 +39,8 @@ import { listDocuments } from "@/modules/documents/service";
 import { bookingLedger } from "@/modules/finance/overview";
 import { budgetView } from "@/modules/finance/budgets";
 import { BudgetButtons, BudgetLineForm, RemoveBudgetLine } from "@/components/budget-controls";
-import { AdjustmentForm, ChargeForm, MarkPaid, PreparePayment, ReceiptForm, RemoveCharge, VoidPayment } from "@/components/finance-controls";
+import { AdjustmentForm, ChargeForm, MarkPaid, PreparePayment, ReceiptForm, RemoveCharge, ReopenBooking, SettleBooking, VoidPayment } from "@/components/finance-controls";
+import { settlementView, type SettlementView } from "@/modules/finance/settlement";
 import { todayInIndia } from "@/lib/format";
 import { DocumentList } from "@/components/document-list";
 import { AddDocumentForm } from "@/components/document-controls";
@@ -999,7 +1000,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "ok
 }
 
 async function Money({ actor, eventId }: { actor: Actor; eventId: string }) {
-  const [ledger, budget] = await Promise.all([bookingLedger(db, actor, eventId), budgetView(db, actor, eventId)]);
+  const [ledger, budget, settlement, ev] = await Promise.all([bookingLedger(db, actor, eventId), budgetView(db, actor, eventId), settlementView(db, actor, eventId), db.event.findUnique({ where: { id: eventId }, select: { status: true } })]);
   if (!ledger)
     return (
       <Panel>
@@ -1007,9 +1008,11 @@ async function Money({ actor, eventId }: { actor: Actor; eventId: string }) {
       </Panel>
     );
   const today = todayInIndia();
-  const prepares = can(actor, "payments.prepare");
-  const pays = can(actor, "payments.markPaid");
-  const voids = pays || actor.isOwner;
+  // A settled booking's money is locked (an owner can reopen it).
+  const locked = ev?.status === "SETTLED";
+  const prepares = can(actor, "payments.prepare") && !locked;
+  const pays = can(actor, "payments.markPaid") && !locked;
+  const voids = (can(actor, "payments.markPaid") || actor.isOwner) && !locked;
   const receipts = ledger.payments.filter((p) => p.direction === "IN");
   const outs = ledger.payments.filter((p) => p.direction === "OUT");
   return (
@@ -1025,6 +1028,8 @@ async function Money({ actor, eventId }: { actor: Actor; eventId: string }) {
         {ledger.margin !== null && <Stat label="Margin before tax" value={formatINR(ledger.margin)} tone={ledger.margin < 0 ? "now" : "ok"} />}
       </dl>
 
+      {settlement ? <SettlementPanel eventId={eventId} s={settlement} /> : locked ? <Notice tone="ok">This booking is settled. Its money is final and locked.</Notice> : null}
+
       {budget && <BudgetPanel eventId={eventId} budget={budget} />}
 
       {ledger.billing && (
@@ -1038,14 +1043,16 @@ async function Money({ actor, eventId }: { actor: Actor; eventId: string }) {
                     {formatINR(c.amount)}
                     <span className="block text-[11.5px] text-ink-quiet">+ GST {c.gstRate}% {formatINR(c.gst)}</span>
                   </span>
-                  {can(actor, "finance.billing") ? <RemoveCharge id={c.id} /> : <span />}
+                  {can(actor, "finance.billing") && !locked ? <RemoveCharge id={c.id} /> : <span />}
                 </li>
               ))}
               {ledger.charges.length === 0 && <li className="px-3.5 py-3 text-[14px] text-ink-quiet">Nothing charged yet.</li>}
             </ul>
-            <div className="border-t-2 border-ink px-3.5 py-2.5">
-              <ChargeForm eventId={eventId} />
-            </div>
+            {!locked && (
+              <div className="border-t-2 border-ink px-3.5 py-2.5">
+                <ChargeForm eventId={eventId} />
+              </div>
+            )}
           </Panel>
           <Panel title="Received from the client" className="min-w-0 flex-[1_1_420px]">
             <ul>
@@ -1066,7 +1073,7 @@ async function Money({ actor, eventId }: { actor: Actor; eventId: string }) {
               ))}
               {receipts.length === 0 && <li className="px-3.5 py-3 text-[14px] text-ink-quiet">No payments received yet.</li>}
             </ul>
-            {can(actor, "payments.recordIn") && (
+            {can(actor, "payments.recordIn") && !locked && (
               <div className="border-t-2 border-ink px-3.5 py-2.5">
                 <ReceiptForm eventId={eventId} today={today} />
               </div>
@@ -1213,6 +1220,52 @@ async function Money({ actor, eventId }: { actor: Actor; eventId: string }) {
         )}
       </Panel>
     </div>
+  );
+}
+
+function SettlementPanel({ eventId, s }: { eventId: string; s: SettlementView }) {
+  if (s.settled) {
+    const f = s.settled.figures;
+    return (
+      <Panel title="Settled" tone="paper" action={s.canSettle ? <ReopenBooking eventId={eventId} /> : <Tag tone="ok">LOCKED</Tag>}>
+        <div className="flex flex-col gap-1 px-3.5 py-3 text-[14px]">
+          <p>
+            Settled {formatDate(s.settled.at, { day: "numeric", month: "short", year: "numeric" })}
+            {s.settled.by ? ` by ${s.settled.by}` : ""}. The figures below are final and the booking&apos;s money is locked.
+            {s.settled.note ? <span className="text-ink-quiet"> · {s.settled.note}</span> : null}
+          </p>
+          <p className="font-mono text-[13px]">
+            Billed {formatINR(f.billed)} + GST {formatINR(f.gst)} · received {formatINR(f.received)} · costs {formatINR(f.vendorCost + f.crewCost + f.expenseCost)} · paid out {formatINR(f.paidOut)} · margin <strong>{formatINR(f.margin)}</strong>
+          </p>
+        </div>
+      </Panel>
+    );
+  }
+  const open = s.checks.filter((c) => !c.ok && c.level === "block").length;
+  return (
+    <Panel title={s.ready ? "Ready to settle" : `Settlement · ${open} to clear`} action={s.canSettle ? <SettleBooking eventId={eventId} ready={s.ready} /> : undefined}>
+      <ul aria-label="Settlement checklist">
+        {s.checks.map((c, i) => (
+          <li key={`${c.key}-${i}`} className="flex gap-3 border-b border-rule-soft px-3.5 py-2 text-[14px] last:border-b-0">
+            <span aria-hidden className={`label-mono w-5 shrink-0 text-center font-bold ${c.ok ? "text-ok-text" : c.level === "warn" ? "text-plum" : "text-now"}`}>
+              {c.ok ? "✓" : c.level === "warn" ? "!" : "✗"}
+            </span>
+            <span className="flex flex-col leading-snug">
+              <span className={c.ok ? "" : "font-semibold"}>
+                <span className="sr-only">{c.ok ? "Done: " : c.level === "warn" ? "Note: " : "To do: "}</span>
+                {c.label}
+              </span>
+              {c.details.map((d) => (
+                <span key={d} className="text-[12.5px] text-ink-quiet">
+                  {d}
+                </span>
+              ))}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {!s.canSettle && s.ready && <p className="border-t border-rule-soft px-3.5 py-2 text-[13px] text-ink-quiet">Everything is clear. An owner can settle it.</p>}
+    </Panel>
   );
 }
 

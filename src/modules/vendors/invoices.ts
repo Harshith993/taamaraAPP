@@ -21,6 +21,7 @@ import { MEDIA_SELECT, mediaView } from "@/modules/files/media";
 import type { Actor } from "@/modules/identity/actor";
 import { assertCan, assertEventAccess, can } from "@/modules/identity/policy";
 import { notify, ownerUserIds, vendorUserIds } from "@/modules/notifications/notify";
+import { assertBookingOpen } from "@/modules/events/lock";
 
 /** Invoices that count against the work order's amount. */
 const LIVE = ["SUBMITTED", "VERIFIED", "APPROVED", "PART_PAID", "PAID"] as const;
@@ -71,6 +72,7 @@ export async function submitInvoice(db: Db, actor: Actor, assignmentId: string, 
       await assertEventAccess(tx, actor, job.eventId, "quotes.submit");
     } else throw new NotFoundError("That job");
     if (!["ACCEPTED", "IN_PROGRESS", "DELIVERED", "COMPLETED"].includes(job.status)) throw new ConflictError("Invoices can be sent once the work order is accepted.");
+    await assertBookingOpen(tx, job.eventId);
     const wo = await tx.workOrder.findFirst({ where: { assignmentId: job.id, status: { in: ["ACKNOWLEDGED", "CLOSED"] } }, orderBy: { issuedAt: "desc" } });
     if (!wo) throw new ConflictError("There is no accepted work order on this job.");
 
@@ -120,6 +122,7 @@ export async function reviewInvoice(db: Db, actor: Actor, invoiceId: string, inp
     assertCan(actor, "payments.prepare", "You can't check invoices.");
     const inv = await tx.vendorInvoice.findUnique({ where: { id: invoiceId }, include: { vendor: { select: { id: true, companyName: true } }, workOrder: { select: { id: true, number: true, assignmentId: true } } } });
     if (!inv) throw new NotFoundError("That invoice");
+    if (inv.workOrder) await assertBookingOpen(tx, (await tx.vendorAssignment.findUniqueOrThrow({ where: { id: inv.workOrder.assignmentId }, select: { eventId: true } })).eventId);
     const allowed: Record<string, string[]> = { VERIFY: ["SUBMITTED", "DISPUTED"], DISPUTE: ["SUBMITTED", "VERIFIED"], VOID: ["SUBMITTED", "VERIFIED", "DISPUTED"] };
     if (!allowed[v.decision].includes(inv.status)) throw new ConflictError(inv.status === "VOID" ? "This invoice is void." : `This invoice is already ${inv.status.toLowerCase().replace("_", " ")}.`);
     if (v.decision === "VERIFY" && inv.workOrderId) {

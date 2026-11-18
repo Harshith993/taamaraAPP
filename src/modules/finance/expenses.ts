@@ -20,6 +20,7 @@ import { recordAudit, type RequestMeta } from "@/modules/audit/audit";
 import { MEDIA_SELECT, mediaView } from "@/modules/files/media";
 import type { Actor } from "@/modules/identity/actor";
 import { assertCan, assertEventAccess, can, eventWhere } from "@/modules/identity/policy";
+import { assertBookingOpen } from "@/modules/events/lock";
 import { notify, ownerUserIds } from "@/modules/notifications/notify";
 
 export const RECEIPT_REQUIRED_ABOVE = 500;
@@ -44,6 +45,7 @@ export async function submitExpense(db: Db, actor: Actor, input: ExpenseInput, m
   return db.$transaction(async (tx) => {
     if (v.eventId) await assertEventAccess(tx, actor, v.eventId, "expenses.record");
     else if (scope !== "ALL") throw new ValidationError("Pick the booking this was for.", { eventId: "Pick the booking." });
+    await assertBookingOpen(tx, v.eventId);
     if (!(await tx.expenseCategory.count({ where: { id: v.categoryId } }))) throw new ValidationError("Pick what it was for.", { categoryId: "Pick what it was for." });
     if (v.receiptFileId) {
       const f = await tx.file.findFirst({ where: { id: v.receiptFileId, uploadedById: actor.userId, purpose: "DOCUMENT", status: "READY" }, select: { _count: { select: { expenseReceipts: true } } } });
@@ -79,6 +81,7 @@ export async function markRepaid(db: Db, actor: Actor, expenseId: string, input:
     const e = await tx.expense.findUnique({ where: { id: expenseId }, include: { event: { select: { name: true } } } });
     if (!e) throw new NotFoundError("That expense");
     if (e.status !== "APPROVED" || e.paidVia !== "OWN_POCKET") throw new ConflictError(e.status === "REIMBURSED" ? "Already repaid." : "Only approved expenses paid from someone's own pocket are repaid.");
+    await assertBookingOpen(tx, e.eventId);
     const who = e.submittedById ? await tx.user.findUnique({ where: { id: e.submittedById }, select: { name: true } }) : null;
     await tx.payment.create({
       data: {

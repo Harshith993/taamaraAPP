@@ -612,6 +612,11 @@ model Event {
   /// Share the host's contact with vendors for this booking (off by default).
   shareHostContactWithVendors Boolean       @default(false)
   cancelledReason             String?
+  /// Set when an owner settles the booking (status SETTLED); its money records are then locked.
+  settledAt                   DateTime?
+  settledById                 String?
+  /// The final figures at settlement: billed, GST, received, costs, paid out, margin.
+  settlementSnapshot          Json?
   createdById                 String?
   createdAt                   DateTime      @default(now())
   updatedAt                   DateTime      @updatedAt

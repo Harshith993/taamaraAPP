@@ -7,6 +7,7 @@ import { formatCalendarDate, formatDate, formatINR, todayInIndia } from "@/lib/f
 import { EVENT_STATUS_TONE } from "@/modules/events/labels";
 import { moneyOverview } from "@/modules/finance/overview";
 import { EXPORT_KINDS, EXPORT_LABELS } from "@/modules/finance/exports";
+import { financialYearOf, fyLabel, fyMonths, monthlyPnl, type PnlMonth } from "@/modules/finance/pnl";
 import { can } from "@/modules/identity/policy";
 import { requirePermission } from "@/modules/identity/session";
 
@@ -22,10 +23,40 @@ function Tile({ label, value, note, tone }: { label: string; value: number; note
   );
 }
 
-export default async function MoneyPage() {
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const monthName = (ym: string) => `${MONTH_NAMES[Number(ym.slice(5, 7)) - 1]} ${ym.slice(2, 4)}`;
+
+function PnlRow({ r, total }: { r: PnlMonth; total?: boolean }) {
+  const cell = "px-3 py-2 text-right font-mono";
+  const quiet = !total && r.bookings === 0 && r.received === 0 && r.paidOut === 0 && r.officeCost === 0;
+  return (
+    <tr className={`border-b border-rule-soft ${total ? "border-t-2 border-t-ink font-semibold" : ""} ${quiet ? "text-ink-quiet" : ""}`}>
+      <th scope="row" className="px-3.5 py-2 text-left font-semibold">
+        {total ? "Total" : monthName(r.month)}
+      </th>
+      <td className={cell}>
+        {r.bookings}
+        {r.settled ? <span className="block text-[11px] text-ok-text">{r.settled} settled</span> : null}
+      </td>
+      <td className={cell}>{formatINR(r.billed)}</td>
+      <td className={cell}>{formatINR(r.vendorCost + r.crewCost + r.expenseCost)}</td>
+      <td className={`${cell} font-semibold ${r.margin < 0 ? "text-now" : ""}`}>{formatINR(r.margin)}</td>
+      <td className={cell}>{r.officeCost ? formatINR(r.officeCost) : "—"}</td>
+      <td className={`${cell} ${r.afterOffice < 0 ? "text-now" : ""}`}>{formatINR(r.afterOffice)}</td>
+      <td className={`${cell} border-l-2 border-ink text-ok-text`}>{formatINR(r.received)}</td>
+      <td className={cell}>{formatINR(r.paidOut)}</td>
+      <td className={`${cell} ${r.net < 0 ? "text-now" : ""}`}>{formatINR(r.net)}</td>
+    </tr>
+  );
+}
+
+export default async function MoneyPage({ searchParams }: { searchParams: Promise<{ fy?: string }> }) {
   const actor = await requirePermission("finance.company");
-  const m = await moneyOverview(db, actor);
   const today = todayInIndia();
+  const sp = await searchParams;
+  const thisFy = financialYearOf(today);
+  const fy = /^\d{4}$/.test(sp.fy ?? "") && Math.abs(Number(sp.fy) - thisFy) <= 10 ? Number(sp.fy) : thisFy;
+  const [m, pnl] = await Promise.all([moneyOverview(db, actor), monthlyPnl(db, actor, fyMonths(fy))]);
   const pays = can(actor, "payments.markPaid");
   const prepares = can(actor, "payments.prepare");
 
@@ -44,6 +75,51 @@ export default async function MoneyPage() {
         <Tile label="Approved, to pay" value={m.totals.toPay} note={m.waitingApproval ? `${m.waitingApproval} more waiting for an owner` : undefined} />
         <Tile label="Margin before tax" value={m.totals.margin} tone={m.totals.margin < 0 ? "now" : "ok"} />
       </div>
+
+      <Panel
+        title={`Month by month · FY ${fyLabel(fy)}`}
+        action={
+          <span className="flex items-center gap-1.5">
+            <Link href={`/money?fy=${fy - 1}`} className="label-mono inline-flex min-h-11 items-center px-2 text-[12px]" aria-label={`Financial year ${fyLabel(fy - 1)}`}>
+              ← {fyLabel(fy - 1)}
+            </Link>
+            {fy < thisFy && (
+              <Link href={`/money?fy=${fy + 1}`} className="label-mono inline-flex min-h-11 items-center px-2 text-[12px]" aria-label={`Financial year ${fyLabel(fy + 1)}`}>
+                {fyLabel(fy + 1)} →
+              </Link>
+            )}
+            <a href={`/api/v1/exports?kind=pnl&from=${fy}-04-01&to=${fy + 1}-03-31`} className="label-mono inline-flex min-h-11 items-center border-2 border-ink px-2.5 text-[12px] font-semibold">
+              Excel
+            </a>
+          </span>
+        }
+      >
+        <p className="px-3.5 pt-2.5 text-[13px] text-ink-quiet">Bookings count in the month of their first day. Received and paid out are by payment date. Office expenses are approved expenses not tied to a booking.</p>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[980px] border-collapse text-[13.5px]" aria-label={`Monthly profit and loss, FY ${fyLabel(fy)}`}>
+            <thead>
+              <tr className="label-mono border-b-2 border-ink text-left text-[11px] text-ink-quiet">
+                <th scope="col" className="px-3.5 py-2 font-semibold">Month</th>
+                <th scope="col" className="px-3 py-2 text-right font-semibold">Bookings</th>
+                <th scope="col" className="px-3 py-2 text-right font-semibold">Billed</th>
+                <th scope="col" className="px-3 py-2 text-right font-semibold">Costs</th>
+                <th scope="col" className="px-3 py-2 text-right font-semibold">Margin</th>
+                <th scope="col" className="px-3 py-2 text-right font-semibold">Office</th>
+                <th scope="col" className="px-3 py-2 text-right font-semibold">After office</th>
+                <th scope="col" className="border-l-2 border-ink px-3 py-2 text-right font-semibold">Received</th>
+                <th scope="col" className="px-3 py-2 text-right font-semibold">Paid out</th>
+                <th scope="col" className="px-3 py-2 text-right font-semibold">Net cash</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pnl.months.map((r) => (
+                <PnlRow key={r.month} r={r} />
+              ))}
+              <PnlRow r={pnl.total} total />
+            </tbody>
+          </table>
+        </div>
+      </Panel>
 
       <div className="flex flex-wrap items-start gap-4">
         <Panel title={`Payments to make · ${m.toPay.length}`} className="min-w-0 flex-[1_1_460px]">

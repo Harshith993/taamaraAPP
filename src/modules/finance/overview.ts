@@ -11,6 +11,7 @@ import { toNumber } from "@/lib/format";
 import { MEDIA_SELECT, mediaView } from "@/modules/files/media";
 import type { Actor } from "@/modules/identity/actor";
 import { assertCan, assertEventAccess, can, paymentWhere } from "@/modules/identity/policy";
+import { bookingFigures } from "./figures";
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -96,6 +97,7 @@ export async function bookingLedger(db: Db, actor: Actor, eventId: string) {
     const waiting = sum(a.payments as never, ["PENDING_APPROVAL", "APPROVED"]);
     return {
       id: a.id,
+      status: a.status,
       name: a.worker.name,
       duty: a.duty,
       agreed: toNumber(a.agreedPay),
@@ -111,7 +113,8 @@ export async function bookingLedger(db: Db, actor: Actor, eventId: string) {
   });
 
   const vendorCost = round2(vendorRows.reduce((s, v) => s + v.agreed, 0));
-  const crewCost = round2(crewRows.reduce((s, c) => s + c.total, 0));
+  // No-shows are listed but not paid, so they are not a cost.
+  const crewCost = round2(crewRows.filter((c) => c.status !== "NO_SHOW").reduce((s, c) => s + c.total, 0));
   const expenseCost = costs ? round2(toNumber((await db.expense.aggregate({ where: { eventId, status: { in: ["APPROVED", "REIMBURSED"] } }, _sum: { amount: true } }))._sum.amount)) : 0;
   const paidOut = sum(payments.filter((p) => p.direction === "OUT") as never, ["PAID"]);
 
@@ -153,36 +156,18 @@ export type BookingLedger = NonNullable<Awaited<ReturnType<typeof bookingLedger>
 /** The owners' and accountant's view across every booking. */
 export async function moneyOverview(db: Db, actor: Actor) {
   assertCan(actor, "finance.company", "Only owners and the accountant see company money.");
-  const [charges, inSum, outSum, toPay, waiting, readyInvoices, events, approvedCrew] = await Promise.all([
-    db.clientCharge.findMany({ select: { eventId: true, amount: true, gstRate: true } }),
-    db.payment.groupBy({ by: ["eventId"], where: { direction: "IN", status: "PAID" }, _sum: { amount: true } }),
-    db.payment.groupBy({ by: ["eventId"], where: { direction: "OUT", status: "PAID" }, _sum: { amount: true } }),
+  const [toPay, waiting, readyInvoices, events, inSum, outSum] = await Promise.all([
     db.payment.findMany({ where: { direction: "OUT", status: "APPROVED" }, orderBy: { approvedAt: "asc" }, include: { vendor: { select: { companyName: true } }, worker: { select: { name: true } }, event: { select: { id: true, name: true } }, vendorInvoice: { select: { invoiceNumber: true } } } }),
     db.payment.count({ where: { direction: "OUT", status: "PENDING_APPROVAL" } }),
     db.vendorInvoice.findMany({ where: { status: { in: ["VERIFIED", "PART_PAID", "APPROVED"] } }, include: { vendor: { select: { companyName: true } }, payments: { select: { amount: true, status: true } }, workOrder: { select: { number: true, assignment: { select: { event: { select: { id: true, name: true } }, _count: { select: { proofs: { where: { status: "APPROVED" } } } } } } } } } }),
-    db.event.findMany({ where: { status: { not: "CANCELLED" } }, orderBy: { startDate: "desc" }, take: 60, select: { id: true, name: true, code: true, status: true, startDate: true, client: { select: { name: true } }, vendorAssignments: { where: { status: { notIn: ["DECLINED", "CANCELLED", "INVITED", "QUOTED"] } }, select: { agreedAmount: true } }, crewAssignments: { where: { status: { in: ["CONFIRMED", "COMPLETED", "NO_SHOW"] } }, select: { agreedPay: true } } } }),
-    db.crewPayAdjustment.findMany({ where: { state: "APPROVED" }, select: { type: true, amount: true, assignment: { select: { eventId: true } } } }),
+    db.event.findMany({ where: { status: { not: "CANCELLED" } }, orderBy: { startDate: "desc" }, take: 60, select: { id: true, name: true, code: true, status: true, startDate: true, client: { select: { name: true } } } }),
+    db.payment.aggregate({ where: { direction: "IN", status: "PAID" }, _sum: { amount: true } }),
+    db.payment.aggregate({ where: { direction: "OUT", status: "PAID" }, _sum: { amount: true } }),
   ]);
-  const expenseSums = await db.expense.groupBy({ by: ["eventId"], where: { status: { in: ["APPROVED", "REIMBURSED"] }, eventId: { not: null } }, _sum: { amount: true } });
-  const expensesBy = new Map(expenseSums.map((e) => [e.eventId!, toNumber(e._sum.amount)]));
-  const byEvent = <T extends { eventId: string | null; _sum: { amount: unknown } }>(rows: T[]) => new Map(rows.filter((r) => r.eventId).map((r) => [r.eventId!, toNumber(r._sum.amount as number)]));
-  const received = byEvent(inSum);
-  const paidOut = byEvent(outSum);
-  const billedBy = new Map<string, { net: number; gst: number }>();
-  for (const c of charges) {
-    const b = billedBy.get(c.eventId) ?? { net: 0, gst: 0 };
-    b.net += toNumber(c.amount);
-    b.gst += (toNumber(c.amount) * toNumber(c.gstRate)) / 100;
-    billedBy.set(c.eventId, b);
-  }
-  const adjBy = new Map<string, number>();
-  for (const a of approvedCrew) adjBy.set(a.assignment.eventId, (adjBy.get(a.assignment.eventId) ?? 0) + (a.type === "EXTRA" ? 1 : -1) * toNumber(a.amount));
+  const figures = await bookingFigures(db, events.map((e) => e.id));
 
   const bookings = events.map((e) => {
-    const b = billedBy.get(e.id) ?? { net: 0, gst: 0 };
-    const vendorCost = e.vendorAssignments.reduce((s, v) => s + toNumber(v.agreedAmount), 0);
-    const crewCost = e.crewAssignments.reduce((s, c) => s + toNumber(c.agreedPay), 0) + (adjBy.get(e.id) ?? 0) + (expensesBy.get(e.id) ?? 0);
-    const rec = received.get(e.id) ?? 0;
+    const f = figures.get(e.id)!;
     return {
       id: e.id,
       name: e.name,
@@ -190,12 +175,12 @@ export async function moneyOverview(db: Db, actor: Actor) {
       status: e.status,
       startDate: e.startDate,
       client: e.client.name,
-      billed: round2(b.net),
-      due: round2(b.net + b.gst - rec),
-      received: rec,
-      costs: round2(vendorCost + crewCost),
-      paidOut: paidOut.get(e.id) ?? 0,
-      margin: round2(b.net - vendorCost - crewCost),
+      billed: f.billed,
+      due: round2(f.billed + f.gst - f.received),
+      received: f.received,
+      costs: round2(f.vendorCost + f.crewCost + f.expenseCost),
+      paidOut: f.paidOut,
+      margin: f.margin,
     };
   });
 
@@ -210,9 +195,9 @@ export async function moneyOverview(db: Db, actor: Actor) {
   return {
     totals: {
       billed: round2(bookings.reduce((s, b) => s + b.billed, 0)),
-      received: round2([...received.values()].reduce((s, x) => s + x, 0)),
+      received: round2(toNumber(inSum._sum.amount)),
       due: round2(bookings.reduce((s, b) => s + Math.max(0, b.due), 0)),
-      paidOut: round2([...paidOut.values()].reduce((s, x) => s + x, 0)),
+      paidOut: round2(toNumber(outSum._sum.amount)),
       toPay: round2(toPay.reduce((s, p) => s + toNumber(p.amount), 0)),
       margin: round2(bookings.reduce((s, b) => s + b.margin, 0)),
     },

@@ -3,7 +3,7 @@
 /** Small inline forms for money: prepare, mark paid, void, receipts, charges, crew extras. */
 import { useRouter } from "next/navigation";
 import { useState, useTransition, type ReactNode } from "react";
-import { addChargeAction, markPaidAction, preparePaymentAction, recordReceiptAction, removeChargeAction, requestAdjustmentAction, voidPaymentAction } from "@/app/actions/finance";
+import { addChargeAction, markPaidAction, preparePaymentAction, recordReceiptAction, removeChargeAction, reopenBookingAction, requestAdjustmentAction, settleBookingAction, voidPaymentAction } from "@/app/actions/finance";
 import { Button, Field, SelectField } from "@/components/ui";
 import type { ActionResult } from "@/lib/errors";
 
@@ -253,6 +253,62 @@ export function AdjustmentForm({ assignmentId, name }: { assignmentId: string; n
           </span>
           <Outcome result={result} />
         </form>
+      )}
+    </Inline>
+  );
+}
+
+/** An owner settles a booking once its checklist is clear; it then locks. */
+export function SettleBooking({ eventId, ready }: { eventId: string; ready: boolean }) {
+  const { result, pending, run } = useRun();
+  const [note, setNote] = useState("");
+  if (result?.ok) return <Outcome result={result} />;
+  if (!ready)
+    return (
+      <Button type="button" className="min-h-11 px-4 text-[12px]" disabled title="Clear the checklist first">
+        Settle booking
+      </Button>
+    );
+  return (
+    <Inline label="Settle booking" variant="primary">
+      {(close) => (
+        <>
+          <p className="text-[13.5px]">Settling makes this booking&apos;s figures final and locks its money: no new charges, payments, expenses, crew extras or vendor jobs. An owner can reopen it with a reason.</p>
+          <Field label="Note (optional)" name={`settle-${eventId}`} value={note} onChange={(e) => setNote(e.target.value)} placeholder="All paid, books closed" />
+          <span className="flex gap-1.5">
+            <Button type="button" className="min-h-10 px-3 text-[11.5px]" disabled={pending} onClick={() => run(() => settleBookingAction(eventId, note), close)}>
+              {pending ? "Settling…" : "Settle and lock"}
+            </Button>
+            <Button type="button" variant="secondary" className="min-h-10 px-3 text-[11.5px]" onClick={close}>
+              Not yet
+            </Button>
+          </span>
+          <Outcome result={result} />
+        </>
+      )}
+    </Inline>
+  );
+}
+
+export function ReopenBooking({ eventId }: { eventId: string }) {
+  const { result, pending, run, fe } = useRun();
+  const [reason, setReason] = useState("");
+  if (result?.ok) return <Outcome result={result} />;
+  return (
+    <Inline label="Reopen" variant="ghost">
+      {(close) => (
+        <>
+          <Field label="Why reopen it?" name={`reopen-${eventId}`} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Vendor sent a corrected invoice" error={fe.reason} />
+          <span className="flex gap-1.5">
+            <Button type="button" variant="danger" className="min-h-10 px-3 text-[11.5px]" disabled={pending || reason.trim().length < 5} onClick={() => run(() => reopenBookingAction(eventId, reason), close)}>
+              Reopen booking
+            </Button>
+            <Button type="button" variant="secondary" className="min-h-10 px-3 text-[11.5px]" onClick={close}>
+              Keep settled
+            </Button>
+          </span>
+          <Outcome result={result} />
+        </>
       )}
     </Inline>
   );

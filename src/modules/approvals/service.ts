@@ -15,6 +15,7 @@ import { MEDIA_SELECT, mediaView } from "@/modules/files/media";
 import { decideBudget } from "@/modules/finance/budgets";
 import type { Actor } from "@/modules/identity/actor";
 import { assertCan } from "@/modules/identity/policy";
+import { assertBookingOpen } from "@/modules/events/lock";
 
 export type Decision = "APPROVE" | "REJECT" | "REVISE";
 
@@ -157,6 +158,7 @@ export async function decideApproval(db: Db, actor: Actor, approvalId: string, d
     if (!req) throw new NotFoundError("That approval");
     if (req.state !== "PENDING") throw new ConflictError("This was already decided.");
     if (decision === "REVISE" && req.type !== "QUOTATION") throw new ValidationError("Only quotes can be sent back for revision.");
+    await assertBookingOpen(tx, req.eventId);
     const now = new Date();
     let auditSummary = "";
 

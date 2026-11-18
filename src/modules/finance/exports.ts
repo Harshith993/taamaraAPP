@@ -5,6 +5,7 @@
  *   payments    every payment in and out: date, direction, party, booking, method, reference, amount, status
  *   expenses    expenses: date, booking, kind, what, who, paid by, amount, status
  *   crew-pay    per booking and crew member: agreed, approved extras/deductions, total, paid
+ *   pnl         monthly P&L for the months the range touches (pnl.ts), plus each booking's figures
  *
  * Dates are a range of calendar days in India time. Every export is written to the audit log.
  */
@@ -15,10 +16,11 @@ import { toNumber } from "@/lib/format";
 import { recordAudit, type RequestMeta } from "@/modules/audit/audit";
 import type { Actor } from "@/modules/identity/actor";
 import { assertCan } from "@/modules/identity/policy";
+import { monthlyPnl } from "./pnl";
 
-export const EXPORT_KINDS = ["purchases", "payments", "expenses", "crew-pay"] as const;
+export const EXPORT_KINDS = ["pnl", "purchases", "payments", "expenses", "crew-pay"] as const;
 export type ExportKind = (typeof EXPORT_KINDS)[number];
-export const EXPORT_LABELS: Record<ExportKind, string> = { purchases: "Purchase register (vendor invoices)", payments: "Payments in and out", expenses: "Expenses", "crew-pay": "Crew pay by booking" };
+export const EXPORT_LABELS: Record<ExportKind, string> = { pnl: "Monthly profit and loss", purchases: "Purchase register (vendor invoices)", payments: "Payments in and out", expenses: "Expenses", "crew-pay": "Crew pay by booking" };
 
 const ymd = /^\d{4}-\d{2}-\d{2}$/;
 const day = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "");
@@ -44,7 +46,41 @@ export async function buildExport(db: Db, actor: Actor, kind: string, from: stri
   wb.created = new Date();
   let rows = 0;
 
-  if (kind === "purchases") {
+  if (kind === "pnl") {
+    const pnl = await monthlyPnl(db, actor, { from: from.slice(0, 7), to: to.slice(0, 7) });
+    const ws = sheet(wb, "Monthly P&L", [
+      { header: "Month", key: "month", width: 10 },
+      { header: "Bookings", key: "bookings", width: 9 },
+      { header: "Settled", key: "settled", width: 8 },
+      { header: "Billed (before GST)", key: "billed", width: 15, money: true },
+      { header: "Vendor costs", key: "vendorCost", width: 14, money: true },
+      { header: "Crew pay", key: "crewCost", width: 12, money: true },
+      { header: "Booking expenses", key: "expenseCost", width: 13, money: true },
+      { header: "Margin before tax", key: "margin", width: 15, money: true },
+      { header: "Office expenses", key: "officeCost", width: 13, money: true },
+      { header: "After office costs", key: "afterOffice", width: 15, money: true },
+      { header: "Received (by payment date)", key: "received", width: 16, money: true },
+      { header: "Paid out (by payment date)", key: "paidOut", width: 16, money: true },
+      { header: "Net cash", key: "net", width: 14, money: true },
+    ]);
+    for (const m of pnl.months) ws.addRow(m);
+    ws.addRow(pnl.total).font = { bold: true };
+    const bs = sheet(wb, "Bookings", [
+      { header: "Month", key: "month", width: 10 },
+      { header: "Booking", key: "booking", width: 34 },
+      { header: "Status", key: "status", width: 11 },
+      { header: "Billed (before GST)", key: "billed", width: 15, money: true },
+      { header: "GST billed", key: "gst", width: 12, money: true },
+      { header: "Received", key: "received", width: 14, money: true },
+      { header: "Vendor costs", key: "vendorCost", width: 14, money: true },
+      { header: "Crew pay", key: "crewCost", width: 12, money: true },
+      { header: "Expenses", key: "expenseCost", width: 12, money: true },
+      { header: "Paid out", key: "paidOut", width: 14, money: true },
+      { header: "Margin before tax", key: "margin", width: 15, money: true },
+    ]);
+    for (const b of pnl.bookings) bs.addRow({ ...b, booking: `${b.code} ${b.name}` });
+    rows = pnl.months.length;
+  } else if (kind === "purchases") {
     const ws = sheet(wb, "Purchases", [
       { header: "Invoice date", key: "date", width: 13 },
       { header: "Vendor", key: "vendor", width: 28 },

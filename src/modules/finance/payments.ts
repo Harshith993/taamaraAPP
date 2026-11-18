@@ -20,6 +20,7 @@ import { parseInput } from "@/lib/validate";
 import { recordAudit, type RequestMeta } from "@/modules/audit/audit";
 import type { Actor } from "@/modules/identity/actor";
 import { assertCan, assertEventAccess } from "@/modules/identity/policy";
+import { assertBookingOpen } from "@/modules/events/lock";
 import { notify, ownerUserIds, vendorUserIds } from "@/modules/notifications/notify";
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -95,6 +96,7 @@ export async function preparePayment(db: Db, actor: Actor, input: PreparePayment
       data = { eventId: a.eventId, partyType: "WORKER", workerId: a.worker.id, crewAssignmentId: a.id };
       summary = `${party} · ${a.duty} · ${a.event.name}`;
     }
+    await assertBookingOpen(tx, data.eventId);
     if (left <= 0) throw new ConflictError(`Nothing is left to pay to ${party} here.`);
     if (v.amount > left + 0.005) throw new ConflictError(`That is more than is left to pay (${formatINR(left, { decimals: true })}).`);
 
@@ -129,6 +131,7 @@ export async function markPaid(db: Db, actor: Actor, paymentId: string, input: z
     const p = await tx.payment.findUnique({ where: { id: paymentId }, include: { vendor: { select: { companyName: true } }, worker: { select: { name: true, userId: true } }, event: { select: { name: true } } } });
     if (!p || p.direction !== "OUT") throw new NotFoundError("That payment");
     if (p.status !== "APPROVED") throw new ConflictError(p.status === "PENDING_APPROVAL" ? "An owner has to approve this payment first." : "This payment is not waiting to be paid.");
+    await assertBookingOpen(tx, p.eventId);
     await tx.payment.update({ where: { id: p.id }, data: { status: "PAID", method: v.method, reference: v.reference || null, paidOn: new Date(`${v.paidOn}T00:00:00Z`), paidById: actor.userId } });
     await syncInvoiceStatus(tx, p.vendorInvoiceId);
     const party = p.vendor?.companyName ?? p.worker?.name ?? p.partyName ?? "payee";
@@ -148,6 +151,7 @@ export async function voidPayment(db: Db, actor: Actor, paymentId: string, reaso
     const p = await tx.payment.findUnique({ where: { id: paymentId }, include: { vendor: { select: { companyName: true } }, worker: { select: { name: true } }, client: { select: { name: true } } } });
     if (!p) throw new NotFoundError("That payment");
     if (p.status === "VOIDED" || p.status === "REJECTED") throw new ConflictError("This payment is already closed.");
+    await assertBookingOpen(tx, p.eventId);
     await tx.payment.update({ where: { id: p.id }, data: { status: "VOIDED", voidReason: why, voidedById: actor.userId, voidedAt: new Date() } });
     await tx.approvalRequest.updateMany({ where: { type: "PAYMENT", entityId: p.id, state: "PENDING" }, data: { state: "CANCELLED", decidedAt: new Date(), comment: `Voided: ${why}` } });
     await syncInvoiceStatus(tx, p.vendorInvoiceId);
@@ -168,6 +172,7 @@ export async function recordReceipt(db: Db, actor: Actor, input: z.input<typeof 
   return db.$transaction(async (tx) => {
     const ev = await tx.event.findUnique({ where: { id: v.eventId }, select: { name: true, clientId: true, client: { select: { name: true } } } });
     if (!ev) throw new NotFoundError("That booking");
+    await assertBookingOpen(tx, v.eventId);
     const p = await tx.payment.create({
       data: { direction: "IN", eventId: v.eventId, partyType: "CLIENT", clientId: ev.clientId, amount: v.amount, method: v.method, reference: v.reference || null, paidOn: new Date(`${v.paidOn}T00:00:00Z`), note: v.note || null, status: "PAID", requestedById: actor.userId, paidById: actor.userId },
     });
@@ -192,7 +197,7 @@ export async function addCharge(db: Db, actor: Actor, input: z.input<typeof char
   return db.$transaction(async (tx) => {
     const ev = await tx.event.findUnique({ where: { id: v.eventId }, select: { name: true, clientId: true, status: true } });
     if (!ev) throw new NotFoundError("That booking");
-    if (ev.status === "SETTLED") throw new ConflictError("This booking is settled.");
+    await assertBookingOpen(tx, v.eventId);
     const c = await tx.clientCharge.create({ data: { eventId: v.eventId, clientId: ev.clientId, description: v.description, amount: v.amount, gstRate: v.gstRate, sacCode: v.sacCode || "998596", createdById: actor.userId } });
     await recordAudit(tx, actor, { action: "create", entityType: "client_charge", entityId: c.id, summary: `Charge on ${ev.name}: ${v.description} ${formatINR(v.amount)} + GST ${v.gstRate}%`, financial: true }, meta);
     return { id: c.id };
@@ -205,7 +210,7 @@ export async function removeCharge(db: Db, actor: Actor, chargeId: string, meta:
   return db.$transaction(async (tx) => {
     const c = await tx.clientCharge.findUnique({ where: { id: chargeId }, include: { event: { select: { name: true, status: true } } } });
     if (!c) throw new NotFoundError("That charge");
-    if (c.event.status === "SETTLED") throw new ConflictError("This booking is settled.");
+    await assertBookingOpen(tx, c.eventId);
     await tx.clientCharge.delete({ where: { id: c.id } });
     await recordAudit(tx, actor, { action: "delete", entityType: "client_charge", entityId: c.id, summary: `Removed charge on ${c.event.name}: ${c.description} ${formatINR(c.amount)}`, financial: true }, meta);
   });
@@ -227,6 +232,7 @@ export async function requestAdjustment(db: Db, actor: Actor, input: z.input<typ
     assertCan(actor, permission, "You can't ask for crew extras.");
     await assertEventAccess(tx, actor, a.eventId, permission);
     if (!["CONFIRMED", "COMPLETED"].includes(a.status)) throw new ConflictError("Extras are for crew who are on the booking.");
+    await assertBookingOpen(tx, a.eventId);
     const adj = await tx.crewPayAdjustment.create({ data: { assignmentId: a.id, type: v.type, amount: v.amount, reason: v.reason, requestedById: actor.userId } });
     const summary = `${a.worker.name} · ${v.type === "EXTRA" ? "extra" : "deduction"} · ${v.reason}`;
     await tx.approvalRequest.create({ data: { type: "CREW_ADJUSTMENT", entityId: adj.id, eventId: a.eventId, amount: v.amount, summary, requestedById: actor.userId } });
