@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { formatCalendarDate, formatDate, formatINR, todayInIndia } from "@/lib/format";
 import { EVENT_STATUS_TONE } from "@/modules/events/labels";
 import { moneyOverview } from "@/modules/finance/overview";
+import { EXPORT_KINDS, EXPORT_LABELS } from "@/modules/finance/exports";
 import { can } from "@/modules/identity/policy";
 import { requirePermission } from "@/modules/identity/session";
 
@@ -92,6 +93,34 @@ export default async function MoneyPage() {
           )}
         </Panel>
       </div>
+
+      {can(actor, "reports.finance") && (
+        <Panel title="Exports for the accountant">
+          <form action="/api/v1/exports" method="get" className="flex flex-wrap items-end gap-3 px-3.5 py-3">
+            <label className="flex flex-col gap-1">
+              <span className="label-mono text-[12px]">Report</span>
+              <select name="kind" className="min-h-11 rounded-[3px] border-2 border-ink bg-paper px-2.5 text-[15px]">
+                {EXPORT_KINDS.map((k) => (
+                  <option key={k} value={k}>
+                    {EXPORT_LABELS[k]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="label-mono text-[12px]">From</span>
+              <input type="date" name="from" defaultValue={`${today.slice(0, 7)}-01`} className="min-h-11 rounded-[3px] border-2 border-ink bg-paper px-2.5 text-[15px]" />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="label-mono text-[12px]">To</span>
+              <input type="date" name="to" defaultValue={today} className="min-h-11 rounded-[3px] border-2 border-ink bg-paper px-2.5 text-[15px]" />
+            </label>
+            <button type="submit" className="min-h-11 rounded-[3px] border-2 border-ink px-4 font-mono text-[12.5px] font-semibold uppercase">
+              Download Excel
+            </button>
+          </form>
+        </Panel>
+      )}
 
       <Panel title="By booking">
         <div className="overflow-x-auto">
