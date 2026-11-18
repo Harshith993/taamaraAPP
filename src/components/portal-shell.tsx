@@ -1,8 +1,9 @@
+import Link from "next/link";
 import { signOutAction } from "@/app/actions/auth";
 import { LotusBadge, PetalStripe } from "@/components/brand";
 
 /** Phone-first shell for the vendor portal and the crew app. */
-export function PortalShell({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
+export function PortalShell({ title, subtitle, back, children }: { title: string; subtitle: string; back?: { href: string; label: string }; children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="lattice-plum text-[#F6EFE0]">
@@ -20,7 +21,14 @@ export function PortalShell({ title, subtitle, children }: { title: string; subt
         </div>
       </header>
       <PetalStripe />
-      <main className="mx-auto w-full max-w-[720px] flex-1 px-3.5 pt-3.5 pb-[max(env(safe-area-inset-bottom),24px)]">{children}</main>
+      <main className="mx-auto w-full max-w-[720px] flex-1 px-3.5 pt-3.5 pb-[max(env(safe-area-inset-bottom),24px)]">
+        {back && (
+          <Link href={back.href} className="label-mono mb-3 inline-flex min-h-9 items-center text-[12px] no-underline">
+            ← {back.label}
+          </Link>
+        )}
+        {children}
+      </main>
     </div>
   );
 }

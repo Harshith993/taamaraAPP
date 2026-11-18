@@ -9,7 +9,7 @@ Updated at the end of every working session. Status: ✅ done · 🔄 in progres
 | 3. UI/UX planning | ✅ | Direction C in the lotus palette. 9 screens on the canvas: owner home, design language, crew Today, booking workspace, supervisor event day (night mode), crew proof upload, vendor job, manager home (desktop), owner money (desktop). Screen map for every role in `docs/design/SITEMAP.md`. The owner asked to continue without waiting for approval (18 Nov). |
 | 4. Database | ✅ | Prisma 7 schema (72 tables), 2 migrations with database-level protections (append-only audit log, payment ledger rules, fixed issued invoices, proof one-parent rule), reference + demo seed, 42 database tests. |
 | 5. Authentication & authorization | ✅ | Better Auth (phone or email + password, DB sessions, rate limits, forced first password), policy layer with scoped filters, team & role management for owners, sign-in/home/team/roles screens, vendor and crew homes. 77 automated tests + 23-check browser smoke test. |
-| 6. Core operations (incl. vendor portal, crew app) | 🔄 | Started: owners' approvals inbox, then bookings list and booking workspace. |
+| 6. Core operations (incl. vendor portal, crew app) | 🔄 | Done: owners' approvals inbox; bookings list, new booking and booking workspace; vendor job flow (manager asks for a quote → vendor sends a GST quote from their phone → owners approve or ask to revise → numbered work order → vendor accepts → started / done → manager or supervisor signs off), with in-app notifications at each step. 109 automated tests. See "Next up" below. |
 | 7. Finance | ⬜ | |
 | 8. Communication & notifications | ⬜ | |
 | 9. Testing & security | ⬜ | |
@@ -41,6 +41,13 @@ Updated at the end of every working session. Status: ✅ done · 🔄 in progres
 | D16 | 17 Nov 2026 | Proof defaults: camera or gallery, videos up to 2 minutes, approved proof required before a vendor's final payment | Approved by owners |
 | D17 | 17 Nov 2026 | iPad is a first-class device alongside phone and desktop; the UI must be immersive and not look generic | Requested by owner |
 | D13 | 17 Nov 2026 | Vendors and crew upload photo/video proof of completed work; managers or supervisors approve it; videos are processed with ffmpeg and stored in S3 Mumbai (G17) | Requested by owner; limits are open question 10 |
+
+## Next up (Phase 6)
+
+1. Browser check of the new vendor screens (vendor job page and quote form; Vendors tab actions on a booking). They pass typecheck, lint and the service tests, but have not been clicked through yet.
+2. File storage and proof upload: storage interface with a local-disk driver for development (S3 Mumbai driver in Phase 10), upload route with file-type sniffing and size limits, photo thumbnails (sharp), video length check (ffprobe), permission-checked file serving, proof upload for vendors and crew, proof review for managers and supervisors.
+3. Crew app: accept or decline a job, check-in, tasks; supervisor attendance marking; event-day screen in night mode; task status updates.
+4. Vendor invoices against a work order (needs file upload), then Phase 7 (finance).
 
 ## Earlier prototype (superseded)
 

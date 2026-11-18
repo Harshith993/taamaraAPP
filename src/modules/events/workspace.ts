@@ -73,6 +73,7 @@ export async function getBookingVendors(db: Db, actor: Actor, eventId: string) {
       category: { select: { name: true, color: true } },
       functions: { include: { function: { select: { name: true, startsAt: true } } } },
       quotations: seesQuotes ? { orderBy: { version: "desc" }, take: 1, select: { version: true, total: true, status: true } } : false,
+      workOrders: { orderBy: { issuedAt: "desc" }, take: 1, select: { number: true, status: true } },
       _count: { select: { proofs: true } },
     },
   });
@@ -88,6 +89,7 @@ export async function getBookingVendors(db: Db, actor: Actor, eventId: string) {
     functions: r.functions.map((f) => f.function).sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime()).map((f) => f.name),
     agreed: seesQuotes && r.agreedAmount ? toNumber(r.agreedAmount) : null,
     latestQuote: seesQuotes && Array.isArray(r.quotations) && r.quotations[0] ? { version: r.quotations[0].version, total: toNumber(r.quotations[0].total), status: r.quotations[0].status } : null,
+    workOrder: r.workOrders[0] ?? null,
     proofCount: r._count.proofs,
   }));
 }

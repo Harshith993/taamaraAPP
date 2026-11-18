@@ -5,11 +5,13 @@
  * the creator assigned as manager if they are a manager, and the booking type's checklist turned into tasks.
  */
 import { z } from "zod";
-import type { Db, DbTx } from "@/lib/db";
+import type { Db } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { NotFoundError, ValidationError } from "@/lib/errors";
 import { todayAsDate, todayInIndia } from "@/lib/format";
+import { nextDocumentNumber } from "@/lib/numbering";
 import { normalizePhone } from "@/lib/phone";
+import { parseInput } from "@/lib/validate";
 import { recordAudit, type RequestMeta } from "@/modules/audit/audit";
 import type { Actor } from "@/modules/identity/actor";
 import { assertCan, can, eventWhere } from "@/modules/identity/policy";
@@ -44,28 +46,8 @@ export const createBookingSchema = z
   });
 export type CreateBookingInput = z.input<typeof createBookingSchema>;
 
-function parse<T extends z.ZodTypeAny>(schema: T, input: unknown): z.output<T> {
-  const r = schema.safeParse(input);
-  if (!r.success) {
-    const fieldErrors: Record<string, string> = {};
-    for (const issue of r.error.issues) fieldErrors[issue.path.join(".") || "_"] ??= issue.message;
-    throw new ValidationError(Object.values(fieldErrors)[0] ?? "Please check the form.", fieldErrors);
-  }
-  return r.data;
-}
-
 export function toInstant(day: string, hhmm: string): Date {
   return new Date(`${day}T${hhmm}:00${IST}`);
-}
-
-/** Gap-free numbering per type and year. Runs inside the caller's transaction. */
-export async function nextDocumentNumber(tx: DbTx, docType: string, period: string, prefix: string): Promise<string> {
-  const seq = await tx.documentSequence.upsert({
-    where: { docType_period: { docType, period } },
-    create: { docType, period, nextValue: 2 },
-    update: { nextValue: { increment: 1 } },
-  });
-  return `${prefix}-${period}-${String(seq.nextValue - 1).padStart(4, "0")}`;
 }
 
 /** Clients this person may pick when creating a booking. */
@@ -78,7 +60,7 @@ export async function pickableClients(db: Db, actor: Actor) {
 
 export async function createBooking(db: Db, actor: Actor, input: CreateBookingInput, meta: RequestMeta = {}) {
   assertCan(actor, "bookings.create", "You can't create bookings.");
-  const v = parse(createBookingSchema, input);
+  const v = parseInput(createBookingSchema, input);
 
   const category = await db.eventCategory.findUnique({ where: { id: v.categoryId }, include: { defaultTemplate: { include: { items: { orderBy: { sortOrder: "asc" } } } } } });
   if (!category || !category.active) throw new ValidationError("Pick the type of event.", { categoryId: "Pick the type of event." });
