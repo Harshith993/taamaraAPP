@@ -22,15 +22,18 @@ export function AppHeader({ name, roleLabel, items }: { name: string; roleLabel:
         <div className="mx-auto flex min-h-[58px] max-w-[1400px] flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2 sm:px-8">
           <Link href="/home" className="flex items-center gap-2.5 text-[#F6EFE0] no-underline">
             <LotusBadge />
-            <Wordmark />
+            {/* On iPad landscape the menu needs the room; the badge alone carries the brand there. */}
+            <span className="lg:hidden xl:inline">
+              <Wordmark />
+            </span>
           </Link>
           <MainNav items={items} />
           <div className="flex items-center gap-2">
-            <span className="hidden text-right leading-tight sm:flex sm:flex-col">
+            <span className="hidden text-right leading-tight sm:flex sm:flex-col lg:hidden xl:flex">
               <span className="text-[13px] font-semibold">{name}</span>
               <span className="font-mono text-[10.5px] tracking-[0.08em] text-[#E9CFDA] uppercase">{roleLabel}</span>
             </span>
-            <span aria-hidden="true" className="grid h-11 w-11 place-items-center rounded-full bg-ground text-[14px] font-bold text-plum">
+            <span aria-hidden="true" className="hidden h-11 w-11 place-items-center sm:grid rounded-full bg-ground text-[14px] font-bold text-plum">
               {initials(name)}
             </span>
             <form action={signOutAction}>
