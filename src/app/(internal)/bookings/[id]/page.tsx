@@ -1157,7 +1157,15 @@ async function Money({ actor, eventId }: { actor: Actor; eventId: string }) {
                         {formatINR(c.paid)}
                         {c.waiting ? <span className="block text-[11.5px] text-plum">{formatINR(c.waiting)} waiting</span> : null}
                       </td>
-                      <td className="px-3.5 py-2.5 text-right">{prepares && c.left > 0.005 ? <PreparePayment kind="CREW" id={c.id} left={c.left} label="Pay" /> : c.left <= 0.005 ? <Tag tone="ok">SETTLED</Tag> : null}</td>
+                      <td className="px-3.5 py-2.5 text-right">
+                        {prepares && c.left > 0.005 ? (
+                          <PreparePayment kind="CREW" id={c.id} left={c.left} label="Pay" />
+                        ) : c.left <= 0.005 && c.paid >= c.total - 0.005 ? (
+                          <Tag tone="ok">SETTLED</Tag>
+                        ) : c.left <= 0.005 ? (
+                          <Tag tone="look">BEING PAID</Tag>
+                        ) : null}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

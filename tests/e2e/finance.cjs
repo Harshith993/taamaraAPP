@@ -84,8 +84,12 @@ const { BASE, PHONE, launch, checker, query } = require("./lib.cjs");
       check("crew register shows the approved extra", /\+₹200/.test(await crew.textContent()) && /approved/.test(await crew.textContent()));
       await crew.getByRole("button", { name: "Pay" }).click();
       await crew.getByRole("button", { name: "Send for approval" }).click();
-      await page.getByText("Sent to the owners for approval.").waitFor({ timeout: 10000 });
-      check("accountant sends the crew pay for approval", true);
+      // The row then shows the amount waiting (the form goes away once nothing is left to pay).
+      const sent = await page
+        .waitForFunction(() => [...document.querySelectorAll("tr")].some((tr) => tr.textContent.includes("Arjun Prajapat") && /waiting/.test(tr.textContent)), null, { timeout: 15000 })
+        .then(() => true)
+        .catch(() => false);
+      check("accountant sends the crew pay for approval", sent);
       await page.screenshot({ path: `${out}/a1-booking-money.png`, fullPage: true });
       await ctx.close();
     }
