@@ -6,6 +6,7 @@ import { AutoRefresh } from "@/components/auto-refresh";
 import { LotusBadge, PetalStripe } from "@/components/brand";
 import { DoneToggle } from "@/app/(internal)/bookings/[id]/planning-controls";
 import { AttendanceButtons } from "@/components/crew-controls";
+import { NotificationBell } from "@/components/notifications";
 import { db } from "@/lib/db";
 import { formatCalendarDate, formatTime } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
@@ -59,6 +60,7 @@ export default async function EventDayPage({ searchParams }: { searchParams: Pro
             <Link href="/home?stay=1" className="flex min-h-11 items-center rounded-[3px] border border-white/40 px-3 text-night-text no-underline">
               Back to the app
             </Link>
+            <NotificationBell />
             <form action={signOutAction}>
               <button type="submit" className="min-h-11 rounded-[3px] border border-white/40 px-3 uppercase">
                 Sign out

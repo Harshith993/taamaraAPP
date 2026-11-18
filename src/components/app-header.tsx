@@ -2,6 +2,7 @@ import Link from "next/link";
 import { signOutAction } from "@/app/actions/auth";
 import { LotusBadge, PetalStripe, Wordmark } from "@/components/brand";
 import { MainNav, type NavItem } from "@/components/main-nav";
+import { NotificationBell } from "@/components/notifications";
 
 export type { NavItem };
 
@@ -33,6 +34,7 @@ export function AppHeader({ name, roleLabel, items }: { name: string; roleLabel:
             <span aria-hidden="true" className="hidden h-11 w-11 place-items-center sm:grid rounded-full bg-ground text-[14px] font-bold text-plum">
               {initials(name)}
             </span>
+            <NotificationBell />
             <form action={signOutAction}>
               <button type="submit" className="min-h-11 rounded-[3px] border border-white/40 px-3 font-mono text-[11.5px] font-semibold tracking-[0.06em] text-[#F6EFE0] uppercase hover:bg-white/10">
                 Sign out

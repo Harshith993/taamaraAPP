@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { signOutAction } from "@/app/actions/auth";
 import { LotusBadge, PetalStripe } from "@/components/brand";
+import { NotificationBell } from "@/components/notifications";
 
 /** Phone-first shell for the vendor portal and the crew app. */
 export function PortalShell({ title, subtitle, back, children }: { title: string; subtitle: string; back?: { href: string; label: string }; children: React.ReactNode }) {
@@ -13,6 +14,7 @@ export function PortalShell({ title, subtitle, back, children }: { title: string
             <span className="font-condensed truncate text-[26px] uppercase">{title}</span>
             <span className="mt-1 font-mono text-[10.5px] font-medium tracking-[0.14em] text-[#F0D9E3] uppercase">{subtitle}</span>
           </span>
+          <NotificationBell />
           <form action={signOutAction}>
             <button type="submit" className="min-h-11 rounded-[3px] border border-white/40 px-3 font-mono text-[11px] font-semibold tracking-[0.06em] text-[#F6EFE0] uppercase">
               Sign out
