@@ -5,6 +5,7 @@ import { ROLES } from "@/modules/identity/permissions";
 import { can } from "@/modules/identity/policy";
 import { homePathFor, requireActor } from "@/modules/identity/session";
 import { proofToCheckCount } from "@/modules/proof/service";
+import { invoicesToCheckCount } from "@/modules/vendors/invoices";
 
 /** Internal staff only: owners, event managers, the accountant and supervisors. */
 export default async function InternalLayout({ children }: { children: React.ReactNode }) {
@@ -16,6 +17,7 @@ export default async function InternalLayout({ children }: { children: React.Rea
   if (can(actor, "bookings.view")) items.push({ href: "/bookings", label: "Bookings" });
   if (can(actor, "attendance.mark")) items.push({ href: "/event-day", label: "Event day" });
   if (can(actor, "proof.view")) items.push({ href: "/proof", label: "Proof", badge: await proofToCheckCount(db, actor) });
+  if (can(actor, "payments.prepare")) items.push({ href: "/invoices", label: "Invoices", badge: await invoicesToCheckCount(db, actor) });
   if (can(actor, "approvals.decide")) {
     items.push({ href: "/approvals", label: "Approvals", badge: await db.approvalRequest.count({ where: { state: "PENDING" } }) });
   }

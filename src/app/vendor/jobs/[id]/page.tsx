@@ -17,7 +17,10 @@ import { getJob } from "@/modules/vendors/jobs";
 import { ProofGrid } from "@/components/proof-grid";
 import { ProofUploader } from "@/components/proof-uploader";
 import { listProof, openRedoRequests } from "@/modules/proof/service";
+import { todayInIndia } from "@/lib/format";
+import { invoicesForJob, workOrderBalance } from "@/modules/vendors/invoices";
 import { AcceptWorkOrder, DeclineJob, ProgressButton } from "./job-actions";
+import { InvoiceForm } from "./invoice-form";
 import { QuoteForm } from "./quote-form";
 
 export const metadata: Metadata = { title: "Job" };
@@ -36,6 +39,16 @@ const QUOTE_WORDS = {
   REVISION_REQUESTED: "Please revise",
   WITHDRAWN: "Replaced",
 } as const;
+
+const INVOICE_WORDS: Record<string, string> = {
+  SUBMITTED: "Being checked",
+  VERIFIED: "Checked · waiting for payment",
+  APPROVED: "Approved for payment",
+  PART_PAID: "Part paid",
+  PAID: "Paid",
+  DISPUTED: "Please correct",
+  VOID: "Cancelled",
+};
 
 /** The one thing the vendor should do next, in plain words. */
 function nextStep(job: Awaited<ReturnType<typeof getJob>>) {
@@ -108,6 +121,10 @@ export default async function VendorJobPage({
   const proofOpen = ["ACCEPTED", "IN_PROGRESS", "DELIVERED", "COMPLETED"].includes(job.status);
   const proof = proofOpen ? await listProof(db, actor, { target: { kind: "vendorJob", id: job.id } }) : [];
   const redo = openRedoRequests(proof);
+  const acceptedWO = job.workOrders.find((w) => w.status === "ACKNOWLEDGED" || w.status === "CLOSED");
+  const invoices = acceptedWO ? await invoicesForJob(db, actor, job.id) : [];
+  const balance = acceptedWO ? await workOrderBalance(db, acceptedWO.id) : null;
+  const approvedQuote = job.quotes.find((q) => q.status === "APPROVED");
   const step = nextStep(job);
   const latest = job.quotes[0];
   const openWO = job.workOrders.find((w) => w.status === "ISSUED");
@@ -395,6 +412,49 @@ export default async function VendorJobPage({
               ))}
             </Panel>
           )}
+
+        {acceptedWO && balance && (
+          <Panel title={`Invoices${invoices.length ? ` · ${invoices.length}` : ""}`}>
+            {invoices.length > 0 && (
+              <ul>
+                {invoices.map((inv) => (
+                  <li key={inv.id} className="flex flex-col gap-1 border-b border-rule-soft px-3.5 py-3 last:border-b-0">
+                    <span className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-mono text-[13px] font-semibold">
+                        {inv.number} · {formatCalendarDate(inv.date, { day: "numeric", month: "short" })}
+                      </span>
+                      <Tag tone={inv.status === "VERIFIED" || inv.status === "APPROVED" || inv.status === "PAID" ? "ok" : inv.status === "DISPUTED" ? "now" : inv.status === "VOID" ? "quiet" : "look"}>
+                        {INVOICE_WORDS[inv.status] ?? inv.status}
+                      </Tag>
+                    </span>
+                    <span className="text-[13.5px]">
+                      {formatINR(inv.taxable)} + GST {formatINR(inv.gst)} = <strong className="font-mono">{formatINR(inv.total)}</strong>
+                      {inv.file?.originalUrl && (
+                        <>
+                          {" · "}
+                          <a href={inv.file.originalUrl} target="_blank" rel="noopener">
+                            View file
+                          </a>
+                        </>
+                      )}
+                    </span>
+                    {inv.note && <span className={`text-[13px] ${inv.status === "DISPUTED" ? "font-semibold text-now" : "text-ink-quiet"}`}>{inv.note}</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {can(actor, "quotes.submit") && balance.left > 0.5 ? (
+              <div className={`px-3.5 py-3 ${invoices.length ? "border-t-2 border-ink" : ""}`}>
+                <p className="mb-3 text-[13.5px] text-ink-quiet">
+                  {acceptedWO.number}: {formatINR(balance.amount)}, invoiced {formatINR(balance.invoiced)} so far. Send an invoice for the advance or the balance.
+                </p>
+                <InvoiceForm jobId={job.id} left={balance.left} defaultGstRate={approvedQuote?.items[0]?.gstRate ?? 18} today={todayInIndia()} />
+              </div>
+            ) : (
+              <p className="px-3.5 py-3 text-[13.5px] text-ink-quiet">The whole work order ({formatINR(balance.amount)}) has been invoiced.</p>
+            )}
+          </Panel>
+        )}
 
         <Panel title="Your contacts">
           <ul className="text-[14.5px]">
