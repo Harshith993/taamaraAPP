@@ -14,11 +14,13 @@ export default async function InternalLayout({ children }: { children: React.Rea
   // Only pages that exist and that this person may open appear in the menu.
   const items: NavItem[] = [{ href: "/home", label: "Home" }];
   if (can(actor, "bookings.view")) items.push({ href: "/bookings", label: "Bookings" });
+  if (can(actor, "attendance.mark")) items.push({ href: "/event-day", label: "Event day" });
   if (can(actor, "proof.view")) items.push({ href: "/proof", label: "Proof", badge: await proofToCheckCount(db, actor) });
   if (can(actor, "approvals.decide")) {
     items.push({ href: "/approvals", label: "Approvals", badge: await db.approvalRequest.count({ where: { state: "PENDING" } }) });
   }
   if (can(actor, "admin.users")) items.push({ href: "/team", label: "Team" });
+  if (can(actor, "admin.settings")) items.push({ href: "/settings", label: "Settings" });
 
   const roleLabel = actor.isOwner ? "Owner" : actor.roles.map((r) => ROLES[r].name).join(" · ");
   return (

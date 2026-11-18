@@ -188,11 +188,11 @@ async function seedDemo() {
   const mittal = await db.client.create({ data: { name: "Pooja Mittal", phone: "+919001100005", city: "Jaipur", state: "Rajasthan" } });
   const infotech = await db.client.create({ data: { type: "COMPANY", name: "Infotech Systems Pvt Ltd", phone: "+911412700000", city: "Jaipur", state: "Rajasthan", gstin: "08AABCI1234F1Z5" } });
 
-  const rambagh = await db.venue.create({ data: { name: "Rambagh Gardens", address: "Bhawani Singh Road", city: "Jaipur", capacity: 800 } });
-  const guptaHouse = await db.venue.create({ data: { name: "Gupta Residence", address: "C-Scheme", city: "Jaipur", capacity: 150 } });
-  const fairmont = await db.venue.create({ data: { name: "Fairmont Jaipur", address: "Kukas", city: "Jaipur", capacity: 1000 } });
+  const rambagh = await db.venue.create({ data: { name: "Rambagh Gardens", address: "Bhawani Singh Road", city: "Jaipur", capacity: 800, latitude: 26.8985, longitude: 75.8069 } });
+  const guptaHouse = await db.venue.create({ data: { name: "Gupta Residence", address: "C-Scheme", city: "Jaipur", capacity: 150, latitude: 26.9064, longitude: 75.8016 } });
+  const fairmont = await db.venue.create({ data: { name: "Fairmont Jaipur", address: "Kukas", city: "Jaipur", capacity: 1000, latitude: 27.0418, longitude: 75.8868 } });
   const marigold = await db.venue.create({ data: { name: "Hotel Marigold Banquet", city: "Jaipur", capacity: 200 } });
-  const nahargarh = await db.venue.create({ data: { name: "Nahargarh Fort", city: "Jaipur" } });
+  const nahargarh = await db.venue.create({ data: { name: "Nahargarh Fort", city: "Jaipur", latitude: 26.9373, longitude: 75.8155 } });
 
   // Vendors (two have logins)
   const vendor = async (contactName: string, companyName: string, category: string, phone: string, services: string, gstin?: string) =>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { EmptyState, Notice, Panel, Tag } from "@/components/ui";
 import { db } from "@/lib/db";
 import { firstName, formatCalendarDate, formatDate, formatINR, formatTime, greeting, todayAsDate, toNumber } from "@/lib/format";
@@ -10,10 +11,15 @@ import { requireActor } from "@/modules/identity/session";
 
 export const metadata: Metadata = { title: "Home" };
 
-export default async function HomePage({ searchParams }: { searchParams: Promise<{ denied?: string }> }) {
+export default async function HomePage({ searchParams }: { searchParams: Promise<{ denied?: string; stay?: string }> }) {
   const actor = await requireActor();
-  const { denied } = await searchParams;
+  const { denied, stay } = await searchParams;
   const today = todayAsDate();
+  // Supervisors open straight into Event day when one of their bookings is on today (screen map).
+  if (!stay && !denied && !actor.isOwner && actor.roles.includes("SUPERVISOR") && !actor.roles.includes("EVENT_MANAGER")) {
+    const onToday = await db.eventFunction.count({ where: { date: today, event: { AND: [eventWhere(actor), { status: { notIn: ["CANCELLED", "POSTPONED"] } }] } } });
+    if (onToday) redirect("/event-day");
+  }
   const seesBilling = can(actor, "finance.billing");
 
   const [events, tasks, approvals, toApprove] = await Promise.all([

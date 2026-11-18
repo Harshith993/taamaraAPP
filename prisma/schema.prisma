@@ -1074,17 +1074,21 @@ model WorkerUnavailability {
 
 /// A crew member hired for a booking, paid one agreed amount for the event.
 model CrewAssignment {
-  id          String               @id @default(uuid())
-  eventId     String
-  event       Event                @relation(fields: [eventId], references: [id], onDelete: Restrict)
-  workerId    String
-  worker      Worker               @relation(fields: [workerId], references: [id], onDelete: Restrict)
-  duty        String
-  agreedPay   Decimal              @db.Decimal(14, 2)
-  status      CrewAssignmentStatus @default(ASSIGNED)
-  createdById String?
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
+  id            String               @id @default(uuid())
+  eventId       String
+  event         Event                @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  workerId      String
+  worker        Worker               @relation(fields: [workerId], references: [id], onDelete: Restrict)
+  duty          String
+  agreedPay     Decimal              @db.Decimal(14, 2)
+  status        CrewAssignmentStatus @default(ASSIGNED)
+  /// Why the crew member said no, or why the team took them off the booking.
+  declineReason String?
+  /// When the crew member accepted or declined.
+  respondedAt   DateTime?
+  createdById   String?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
 
   shifts      CrewShift[]
   adjustments CrewPayAdjustment[]

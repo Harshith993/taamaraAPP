@@ -30,6 +30,10 @@ import { requirePermission } from "@/modules/identity/session";
 import { listProof } from "@/modules/proof/service";
 import { invitableVendors } from "@/modules/vendors/jobs";
 import { ProofGrid } from "@/components/proof-grid";
+import { AddCrewForm, AttendanceButtons, RemoveCrew } from "@/components/crew-controls";
+import { AddTaskForm, TaskButtons } from "@/components/task-controls";
+import { attendanceWindow, crewForBooking } from "@/modules/crew/service";
+import { assignableForBooking, taskActions } from "@/modules/tasks/service";
 import { InviteVendorForm, VendorRowActions } from "./vendor-controls";
 
 export const metadata: Metadata = { title: "Booking" };
@@ -533,81 +537,162 @@ async function Vendors({ actor, eventId }: { actor: Actor; eventId: string }) {
 }
 
 async function Crew({ actor, eventId }: { actor: Actor; eventId: string }) {
-  const rows = await getBookingCrew(db, actor, eventId);
+  const staff = actor.accountType === "INTERNAL";
+  const [rows, onBooking] = await Promise.all([
+    getBookingCrew(db, actor, eventId),
+    isOnBooking(actor, eventId),
+  ]);
   const seesPay = can(actor, "crew.pay.view");
+  const canAssign = staff && can(actor, "crew.assign") && (actor.grants.get("crew.assign") === "ALL" || onBooking);
+  const canMark = staff && can(actor, "attendance.mark") && (actor.grants.get("attendance.mark") === "ALL" || onBooking);
+  const [workers, functions] = canAssign
+    ? await Promise.all([
+        crewForBooking(db, actor, eventId),
+        db.eventFunction.findMany({ where: { eventId }, orderBy: { startsAt: "asc" }, select: { id: true, name: true, startsAt: true } }),
+      ])
+    : [[], []];
+  const add = canAssign ? (
+    <AddCrewForm
+      eventId={eventId}
+      seesPay={seesPay}
+      workers={workers}
+      functions={functions.map((f) => ({
+        id: f.id,
+        name: f.name,
+        when: `${formatDate(f.startsAt, { weekday: "short", day: "numeric", month: "short" })} ${formatTime(f.startsAt)}`,
+        defaultReport: formatTime(new Date(f.startsAt.getTime() - 2 * 3600_000)),
+      }))}
+    />
+  ) : null;
+  const active = rows.filter((r) => !["DECLINED", "CANCELLED"].includes(r.status));
+  const closed = rows.filter((r) => ["DECLINED", "CANCELLED"].includes(r.status));
   if (!rows.length)
     return (
-      <Panel>
-        <EmptyState title="No crew yet">
-          Crew booked for this event appear here.
-        </EmptyState>
-      </Panel>
+      <div className="flex flex-col gap-3">
+        {add}
+        <Panel>
+          <EmptyState title="No crew yet">
+            Crew booked for this event appear here.
+          </EmptyState>
+        </Panel>
+      </div>
     );
+  const now = new Date();
+  const waiting = active.filter((r) => r.status === "ASSIGNED").length;
   return (
-    <Panel title={`Crew · ${rows.length}`}>
-      <ul>
-        {rows.map((r) => (
-          <li
-            key={r.id}
-            className="grid grid-cols-1 gap-2 border-b border-rule-soft px-3.5 py-3 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_auto] sm:items-center"
-          >
-            <span className="flex flex-col leading-tight">
-              <span className="font-bold">{r.name}</span>
-              <span className="text-[12.5px] text-ink-quiet">
-                {r.duty}
-                {r.skills.length ? ` · ${r.skills.join(", ")}` : ""} ·{" "}
-                {formatPhone(r.phone)}
-              </span>
-            </span>
-            <span className="flex flex-wrap gap-1.5">
-              {r.shifts.map((s) => (
-                <span
-                  key={s.id}
-                  className="flex items-center gap-1.5 rounded-[3px] border border-rule-soft px-2 py-1 text-[12px]"
-                >
-                  {s.function ?? "Shift"} ·{" "}
-                  {formatDate(s.reportAt, { weekday: "short", day: "numeric" })}{" "}
-                  {formatTime(s.reportAt)}
-                  <Tag
-                    tone={
-                      s.attendance === "PRESENT"
-                        ? "ok"
-                        : s.attendance === "LATE"
-                          ? "look"
-                          : s.attendance === "ABSENT"
-                            ? "now"
-                            : "quiet"
-                    }
-                  >
-                    {s.attendance}
-                  </Tag>
+    <div className="flex flex-col gap-3">
+      {add}
+      <Panel title={`Crew · ${active.length}${waiting ? ` · ${waiting} not answered yet` : ""}`}>
+        <ul>
+          {active.map((r) => (
+            <li
+              key={r.id}
+              className="grid grid-cols-1 gap-2 border-b border-rule-soft px-3.5 py-3 last:border-b-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] lg:items-start"
+            >
+              <span className="flex flex-col leading-tight">
+                <span className="flex flex-wrap items-center gap-2">
+                  <span className="font-bold">{r.name}</span>
+                  {r.status === "ASSIGNED" && <Tag tone="look">Not answered</Tag>}
+                  {r.status === "CONFIRMED" && <Tag tone="ok">Confirmed</Tag>}
                 </span>
-              ))}
-            </span>
-            {seesPay && (
-              <span className="text-right font-mono text-[13.5px]">
-                {formatINR(r.pay)}
-                {r.pendingExtras ? (
-                  <span className="block text-[11.5px] text-plum">
-                    {r.pendingExtras} extra waiting
-                  </span>
-                ) : null}
+                <span className="text-[12.5px] text-ink-quiet">
+                  {r.duty}
+                  {r.skills.length ? ` · ${r.skills.join(", ")}` : ""} ·{" "}
+                  {formatPhone(r.phone)}
+                </span>
               </span>
-            )}
-          </li>
-        ))}
-      </ul>
-    </Panel>
+              <ul className="flex flex-col gap-2">
+                {r.shifts.map((s) => {
+                  const window = attendanceWindow(s.reportAt, now);
+                  return (
+                    <li key={s.id} className="grid grid-cols-1 items-center gap-1.5 sm:grid-cols-[minmax(0,1fr)_260px]">
+                      <span className="text-[13px]">
+                        <strong>{s.function ?? "Shift"}</strong> ·{" "}
+                        {formatDate(s.reportAt, { weekday: "short", day: "numeric" })}{" "}
+                        <span className="font-mono">{formatTime(s.reportAt)}</span>
+                        {s.location ? ` · ${s.location}` : ""}
+                        {s.checkInAt ? (
+                          <span className="text-ink-quiet"> · in at {formatTime(s.checkInAt)}{s.selfCheckIn ? " (self)" : ""}</span>
+                        ) : null}
+                      </span>
+                      {canMark ? (
+                        <AttendanceButtons
+                          shiftId={s.id}
+                          name={r.name}
+                          current={s.attendance}
+                          disabledReason={window === "early" ? "Opens on the day" : window === "closed" && !actor.isOwner ? "Shift over" : null}
+                        />
+                      ) : (
+                        <Tag tone={s.attendance === "PRESENT" ? "ok" : s.attendance === "LATE" ? "look" : s.attendance === "ABSENT" ? "now" : "quiet"}>{s.attendance}</Tag>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              <span className="flex flex-col items-end gap-1 text-right">
+                {seesPay && (
+                  <span className="font-mono text-[13.5px]">
+                    {formatINR(r.pay)}
+                    {r.pendingExtras ? (
+                      <span className="block text-[11.5px] text-plum">
+                        {r.pendingExtras} extra waiting
+                      </span>
+                    ) : null}
+                  </span>
+                )}
+                {canAssign && r.shifts.every((s) => s.attendance === "PENDING") && <RemoveCrew assignmentId={r.id} name={r.name} />}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </Panel>
+      {closed.length > 0 && (
+        <Panel title={`Declined or taken off · ${closed.length}`}>
+          <ul>
+            {closed.map((r) => (
+              <li key={r.id} className="flex flex-wrap justify-between gap-2 border-b border-rule-soft px-3.5 py-2 text-[13.5px] text-ink-quiet last:border-b-0">
+                <span>
+                  <strong className="text-ink">{r.name}</strong> · {r.duty}
+                </span>
+                <span>
+                  {r.status === "DECLINED" ? "Declined" : "Taken off"}
+                  {r.declineReason ? `: ${r.declineReason}` : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      )}
+    </div>
   );
 }
 
+async function isOnBooking(actor: Actor, eventId: string) {
+  if (actor.isOwner) return true;
+  return (await db.eventMember.count({ where: { eventId, userId: actor.userId } })) > 0;
+}
+
 async function Tasks({ actor, eventId }: { actor: Actor; eventId: string }) {
-  const tasks = await getBookingTasks(db, actor, eventId);
+  const [tasks, onBooking] = await Promise.all([
+    getBookingTasks(db, actor, eventId),
+    isOnBooking(actor, eventId),
+  ]);
+  const canCreate = actor.accountType === "INTERNAL" && can(actor, "tasks.create") && (actor.grants.get("tasks.create") === "ALL" || onBooking);
+  const [people, functions] = canCreate
+    ? await Promise.all([
+        assignableForBooking(db, eventId),
+        db.eventFunction.findMany({ where: { eventId }, orderBy: { startsAt: "asc" }, select: { id: true, name: true } }),
+      ])
+    : [[], []];
+  const add = canCreate ? <AddTaskForm eventId={eventId} people={people} functions={functions} /> : null;
   if (!tasks.length)
     return (
-      <Panel>
-        <EmptyState title="No tasks" />
-      </Panel>
+      <div className="flex flex-col gap-3">
+        {add}
+        <Panel>
+          <EmptyState title="No tasks" />
+        </Panel>
+      </div>
     );
   const tone = (s: string) =>
     s === "DELAYED"
@@ -621,31 +706,49 @@ async function Tasks({ actor, eventId }: { actor: Actor; eventId: string }) {
             : s === "PENDING"
               ? "quiet"
               : "outline";
+  const waiting = tasks.filter((t) => t.status === "UNDER_REVIEW").length;
   return (
-    <Panel title={`Tasks · ${tasks.length}`}>
-      <ul>
-        {tasks.map((t) => (
-          <li
-            key={t.id}
-            className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-rule-soft px-3.5 py-2.5 last:border-b-0"
-          >
-            <span className="flex flex-col leading-tight">
-              <span className="text-[14.5px] font-semibold">{t.title}</span>
-              <span className="text-[12.5px] text-ink-quiet">
-                {t.function?.name ? `${t.function.name} · ` : ""}
-                {t.assignee?.name ?? "Not assigned"}
-                {t.dueAt
-                  ? ` · due ${formatDate(t.dueAt)} ${formatTime(t.dueAt)}`
-                  : ""}
-                {t.needsProof ? " · needs proof" : ""}
-                {t._count.proofs ? ` · ${t._count.proofs} proof sent` : ""}
-              </span>
-            </span>
-            <Tag tone={tone(t.status)}>{t.status.replace("_", " ")}</Tag>
-          </li>
-        ))}
-      </ul>
-    </Panel>
+    <div className="flex flex-col gap-3">
+      {add}
+      <Panel title={`Tasks · ${tasks.length}${waiting ? ` · ${waiting} to check` : ""}`}>
+        <ul>
+          {tasks.map((t) => {
+            const actions = taskActions(actor, t, { onBooking, proofCount: t._count.proofs });
+            return (
+              <li
+                key={t.id}
+                className="grid grid-cols-1 items-center gap-2 border-b border-rule-soft px-3.5 py-2.5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto_auto]"
+              >
+                <span className="flex flex-col leading-tight">
+                  <span className="text-[14.5px] font-semibold">{t.title}</span>
+                  <span className="text-[12.5px] text-ink-quiet">
+                    {t.function?.name ? `${t.function.name} · ` : ""}
+                    {t.assignee?.name ?? "Not assigned"}
+                    {t.dueAt
+                      ? ` · due ${formatDate(t.dueAt)} ${formatTime(t.dueAt)}`
+                      : ""}
+                    {t.needsProof ? " · needs proof" : ""}
+                    {t._count.proofs ? (
+                      <>
+                        {" · "}
+                        <Link href={`/bookings/${eventId}?tab=proof`}>{t._count.proofs} proof sent</Link>
+                      </>
+                    ) : null}
+                  </span>
+                  {t.comments[0] && t.status !== "COMPLETED" && (
+                    <span className="text-[12.5px] font-semibold text-now">
+                      {t.comments[0].author?.name ?? "Team"}: {t.comments[0].body}
+                    </span>
+                  )}
+                </span>
+                <Tag tone={tone(t.status)}>{t.status.replace("_", " ")}</Tag>
+                <TaskButtons taskId={t.id} actions={actions} />
+              </li>
+            );
+          })}
+        </ul>
+      </Panel>
+    </div>
   );
 }
 

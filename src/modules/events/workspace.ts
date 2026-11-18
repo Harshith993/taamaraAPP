@@ -115,7 +115,8 @@ export async function getBookingCrew(db: Db, actor: Actor, eventId: string) {
       skills: r.worker.skills.map((s) => s.skill.name),
       duty: r.duty,
       status: r.status,
-      shifts: r.shifts.map((s) => ({ id: s.id, function: s.function?.name ?? null, reportAt: s.reportAt, attendance: s.attendance, location: s.location })),
+      declineReason: r.declineReason,
+      shifts: r.shifts.map((s) => ({ id: s.id, function: s.function?.name ?? null, reportAt: s.reportAt, attendance: s.attendance, location: s.location, checkInAt: s.checkInAt, selfCheckIn: s.method === "SELF_GPS" })),
       pay: seesPay ? toNumber(r.agreedPay) + approvedExtras : null,
       pendingExtras: seesPay ? adjustments.filter((a) => a.state === "PENDING").length : 0,
     };
@@ -135,6 +136,12 @@ export async function getBookingTasks(db: Db, actor: Actor, eventId: string) {
   return db.task.findMany({
     where: { AND: [{ eventId }, taskWhere(actor)] },
     orderBy: [{ status: "asc" }, { dueAt: "asc" }],
-    include: { assignee: { select: { name: true } }, function: { select: { name: true } }, _count: { select: { proofs: true } } },
+    include: {
+      assignee: { select: { name: true } },
+      function: { select: { name: true } },
+      comments: { orderBy: { createdAt: "desc" }, take: 1, select: { body: true, author: { select: { name: true } } } },
+      // Proof that still counts (waiting or approved), so a redo request means "add another".
+      _count: { select: { proofs: { where: { status: { in: ["PENDING_REVIEW", "APPROVED"] } } } } },
+    },
   });
 }

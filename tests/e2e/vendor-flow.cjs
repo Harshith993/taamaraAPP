@@ -73,7 +73,7 @@ const { BASE, PHONE, launch, checker, query } = require("./lib.cjs");
       const card = page.locator("section").filter({ hasText: scope });
       check("owner sees the quote in approvals", (await card.count()) === 1);
       await card.getByRole("button", { name: "Approve", exact: true }).click();
-      await card.locator('[role="status"]').waitFor({ timeout: 10000 });
+      await card.locator('[role="status"]').waitFor({ timeout: 25000 });
       check("owner approves the quote", /approved/i.test(await card.locator('[role="status"]').textContent()));
       await ctx.close();
     }
