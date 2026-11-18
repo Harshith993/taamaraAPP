@@ -34,6 +34,8 @@ import { AddCrewForm, AttendanceButtons, RemoveCrew } from "@/components/crew-co
 import { AddTaskForm, TaskButtons } from "@/components/task-controls";
 import { attendanceWindow, crewForBooking } from "@/modules/crew/service";
 import { assignableForBooking, taskActions } from "@/modules/tasks/service";
+import { getRequirements, teamCandidates } from "@/modules/events/planning";
+import { CancelBooking, DetailsEditor, DoneToggle, FunctionEditor, RequirementEditor, ScheduleEditor, TeamEditor } from "./planning-controls";
 import { InviteVendorForm, VendorRowActions } from "./vendor-controls";
 
 export const metadata: Metadata = { title: "Booking" };
@@ -41,6 +43,7 @@ export const metadata: Metadata = { title: "Booking" };
 const TABS = [
   { key: "overview", label: "Overview" },
   { key: "schedule", label: "Schedule" },
+  { key: "needs", label: "Needs" },
   { key: "vendors", label: "Vendors" },
   { key: "crew", label: "Crew" },
   { key: "tasks", label: "Tasks" },
@@ -165,6 +168,7 @@ export default async function BookingPage({
 
       {tab === "overview" && <Overview actor={actor} header={header} />}
       {tab === "schedule" && <Schedule actor={actor} eventId={id} />}
+      {tab === "needs" && <Needs actor={actor} eventId={id} />}
       {tab === "vendors" && <Vendors actor={actor} eventId={id} />}
       {tab === "crew" && <Crew actor={actor} eventId={id} />}
       {tab === "tasks" && <Tasks actor={actor} eventId={id} />}
@@ -177,7 +181,19 @@ type Actor = Awaited<ReturnType<typeof requirePermission>>;
 type Header = Awaited<ReturnType<typeof getBookingHeader>>;
 
 async function Overview({ actor, header }: { actor: Actor; header: Header }) {
-  const money = await getBookingMoney(db, actor, header.id);
+  const onBooking = await isOnBooking(actor, header.id);
+  const edits = actor.accountType === "INTERNAL" && can(actor, "bookings.edit") && (actor.grants.get("bookings.edit") === "ALL" || onBooking) && !["CANCELLED", "SETTLED"].includes(header.status);
+  const assignsTeam = can(actor, "bookings.assignTeam") && header.status !== "CANCELLED";
+  const [money, fnRows, venues, categories, event, members, candidates] = await Promise.all([
+    getBookingMoney(db, actor, header.id),
+    edits ? db.eventFunction.findMany({ where: { eventId: header.id }, select: { id: true, venueId: true, venueText: true, notes: true, date: true, _count: { select: { crewShifts: true, vendorLinks: true, proofs: true } } } }) : [],
+    edits ? db.venue.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true }, take: 300 }) : [],
+    edits ? db.eventCategory.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" }, select: { id: true, name: true } }) : [],
+    edits ? db.event.findUnique({ where: { id: header.id }, select: { categoryId: true, shareHostContactWithVendors: true } }) : null,
+    assignsTeam ? db.eventMember.findMany({ where: { eventId: header.id }, select: { userId: true, role: true } }) : [],
+    assignsTeam ? teamCandidates(db) : [],
+  ]);
+  const fnExtra = new Map(fnRows.map((f) => [f.id, f]));
   return (
     <div className="flex flex-wrap items-start gap-4">
       <div className="flex min-w-0 flex-[999_1_520px] flex-col gap-4">
@@ -186,7 +202,7 @@ async function Overview({ actor, header }: { actor: Actor; header: Header }) {
             {header.functions.map((f) => (
               <li
                 key={f.id}
-                className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 border-b border-rule-soft px-3.5 py-2.5 last:border-b-0"
+                className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1 border-b border-rule-soft px-3.5 py-2.5 last:border-b-0"
               >
                 <span className="flex flex-col leading-tight">
                   <span className="text-[15px] font-bold">{f.name}</span>
@@ -205,10 +221,42 @@ async function Overview({ actor, header }: { actor: Actor; header: Header }) {
                   {formatTime(f.startsAt)}
                   {f.endsAt ? `–${formatTime(f.endsAt)}` : ""}
                 </span>
+                {edits && fnExtra.get(f.id) && (
+                  <span className="col-span-2">
+                    <FunctionEditor
+                      eventId={header.id}
+                      venues={venues}
+                      canRemove={header.functions.length > 1 && Object.values(fnExtra.get(f.id)!._count).every((n) => n === 0)}
+                      fn={{
+                        id: f.id,
+                        name: f.name,
+                        date: fnExtra.get(f.id)!.date.toISOString().slice(0, 10),
+                        startTime: formatTime(f.startsAt),
+                        endTime: f.endsAt ? formatTime(f.endsAt) : "",
+                        venueId: fnExtra.get(f.id)!.venueId,
+                        venueText: fnExtra.get(f.id)!.venueText,
+                        guests: f.guests,
+                        notes: fnExtra.get(f.id)!.notes,
+                      }}
+                    />
+                  </span>
+                )}
               </li>
             ))}
           </ul>
+          {edits && (
+            <div className="border-t-2 border-ink px-3.5 py-3">
+              <FunctionEditor eventId={header.id} venues={venues} />
+            </div>
+          )}
         </Panel>
+        {edits && event && (
+          <DetailsEditor
+            eventId={header.id}
+            categories={categories}
+            initial={{ name: header.name, categoryId: event.categoryId, status: header.status, expectedGuests: header.expectedGuests, description: header.description, shareHostContactWithVendors: event.shareHostContactWithVendors }}
+          />
+        )}
         {header.description && (
           <Panel title="Notes">
             <p className="px-3.5 py-3 text-[14.5px] whitespace-pre-line">
@@ -288,53 +336,172 @@ async function Overview({ actor, header }: { actor: Actor; header: Header }) {
               {header.supervisors.join(", ") || "not assigned"}
             </p>
           </div>
+          {assignsTeam && (
+            <TeamEditor
+              eventId={header.id}
+              candidates={candidates}
+              managerIds={members.filter((m) => m.role === "MANAGER").map((m) => m.userId)}
+              supervisorIds={members.filter((m) => m.role === "SUPERVISOR").map((m) => m.userId)}
+            />
+          )}
         </Panel>
+        {can(actor, "bookings.cancel") && !["CANCELLED", "SETTLED", "COMPLETED"].includes(header.status) && <CancelBooking eventId={header.id} />}
+        {header.status === "CANCELLED" && <Notice tone="info">This booking was cancelled.</Notice>}
       </div>
     </div>
   );
 }
 
 async function Schedule({ actor, eventId }: { actor: Actor; eventId: string }) {
-  const items = await getBookingSchedule(db, actor, eventId);
+  const [items, onBooking, functions] = await Promise.all([
+    getBookingSchedule(db, actor, eventId),
+    isOnBooking(actor, eventId),
+    db.eventFunction.findMany({ where: { eventId }, orderBy: { startsAt: "asc" }, select: { id: true, name: true, date: true } }),
+  ]);
+  const staff = actor.accountType === "INTERNAL";
+  const edits = staff && can(actor, "schedule.edit") && (actor.grants.get("schedule.edit") === "ALL" || onBooking);
+  const ticks = staff && (edits || (can(actor, "attendance.mark") && onBooking));
+  const fnOptions = functions.map((f) => ({ id: f.id, name: f.name, date: f.date.toISOString().slice(0, 10) }));
+  const add = edits ? <ScheduleEditor eventId={eventId} functions={fnOptions} defaultDate={fnOptions[0]?.date ?? ""} /> : null;
   if (!items.length)
     return (
-      <Panel>
-        <EmptyState title="No run sheet yet">
-          Schedule items for each function appear here.
-        </EmptyState>
-      </Panel>
+      <div className="flex flex-col gap-3">
+        {add}
+        <Panel>
+          <EmptyState title="No run sheet yet">
+            Setup, reporting times, ceremonies and dismantling for each function. Mark which ones vendors and crew see.
+          </EmptyState>
+        </Panel>
+      </div>
     );
   const now = new Date();
   return (
-    <Panel title={`Run sheet · ${items.length}`}>
-      <ol>
-        {items.map((s) => {
-          const past = (s.endsAt ?? s.startsAt) < now;
-          return (
-            <li
-              key={s.id}
-              className={`grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-3 border-b border-rule-soft px-3.5 py-2.5 last:border-b-0 ${past ? "text-ink-quiet" : ""}`}
-            >
-              <span className="font-mono text-[13.5px] font-semibold">
-                {formatTime(s.startsAt)}
-              </span>
-              <span className="flex flex-col leading-tight">
-                <span className="text-[14.5px] font-semibold">{s.title}</span>
-                <span className="text-[12.5px] text-ink-quiet">
-                  {s.function?.name ?? "Whole booking"} ·{" "}
-                  {formatDate(s.startsAt)}
-                  {s.visibleToVendors ? " · vendors see this" : ""}
-                  {s.visibleToCrew ? " · crew see this" : ""}
+    <div className="flex flex-col gap-3">
+      {add}
+      <Panel title={`Run sheet · ${items.length}`}>
+        <ol>
+          {items.map((s) => {
+            const past = (s.endsAt ?? s.startsAt) < now;
+            return (
+              <li
+                key={s.id}
+                className={`grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-b border-rule-soft px-3.5 py-2.5 last:border-b-0 ${past || s.done ? "text-ink-quiet" : ""}`}
+              >
+                <span className="font-mono text-[13.5px] font-semibold">
+                  {formatTime(s.startsAt)}
                 </span>
+                <span className="flex flex-col leading-tight">
+                  <span className={`text-[14.5px] font-semibold ${s.done ? "line-through" : ""}`}>{s.title}</span>
+                  <span className="text-[12.5px] text-ink-quiet">
+                    {s.function?.name ?? "Whole booking"} ·{" "}
+                    {formatDate(s.startsAt)}
+                    {s.endsAt ? `–${formatTime(s.endsAt)}` : ""}
+                    {s.location ? ` · ${s.location}` : ""}
+                    {s.visibleToVendors ? " · vendors see this" : ""}
+                    {s.visibleToCrew ? " · crew see this" : ""}
+                  </span>
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="label-mono hidden text-[10.5px] sm:inline">
+                    {s.type.replace("_", " ")}
+                  </span>
+                  {ticks && <DoneToggle itemId={s.id} done={s.done} />}
+                </span>
+                {edits && (
+                  <span className="col-span-3">
+                    <ScheduleEditor
+                      eventId={eventId}
+                      functions={fnOptions}
+                      defaultDate={fnOptions[0]?.date ?? ""}
+                      item={{
+                        id: s.id,
+                        functionId: s.function?.id ?? null,
+                        type: s.type,
+                        title: s.title,
+                        date: new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(s.startsAt),
+                        time: formatTime(s.startsAt),
+                        endTime: s.endsAt ? formatTime(s.endsAt) : "",
+                        location: s.location,
+                        visibleToVendors: s.visibleToVendors,
+                        visibleToCrew: s.visibleToCrew,
+                      }}
+                    />
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      </Panel>
+    </div>
+  );
+}
+
+const NEED_TONE = { OPEN: "look", QUOTING: "plum", COVERED: "ok", DROPPED: "quiet" } as const;
+const NEED_WORDS = { OPEN: "Open", QUOTING: "Being quoted", COVERED: "Covered", DROPPED: "Dropped" } as const;
+
+async function Needs({ actor, eventId }: { actor: Actor; eventId: string }) {
+  const [rows, onBooking] = await Promise.all([getRequirements(db, actor, eventId), isOnBooking(actor, eventId)]);
+  const edits = actor.accountType === "INTERNAL" && can(actor, "requirements.edit") && (actor.grants.get("requirements.edit") === "ALL" || onBooking);
+  const [functions, categories, jobs] = edits
+    ? await Promise.all([
+        db.eventFunction.findMany({ where: { eventId }, orderBy: { startsAt: "asc" }, select: { id: true, name: true } }),
+        db.vendorCategory.findMany({ orderBy: { sortOrder: "asc" }, select: { id: true, name: true } }),
+        db.vendorAssignment.findMany({ where: { eventId, status: { notIn: ["DECLINED", "CANCELLED"] } }, select: { id: true, scopeOfWork: true, vendor: { select: { companyName: true } } } }),
+      ])
+    : [[], [], []];
+  const jobOptions = jobs.map((j) => ({ id: j.id, label: `${j.vendor.companyName} · ${j.scopeOfWork}` }));
+  const add = edits ? <RequirementEditor eventId={eventId} functions={functions} categories={categories} jobs={jobOptions} /> : null;
+  if (!rows.length)
+    return (
+      <div className="flex flex-col gap-3">
+        {add}
+        <Panel>
+          <EmptyState title="No requirements yet">
+            What each function needs: from the client or our own plan. Link one to a vendor and they see it in their app.
+          </EmptyState>
+        </Panel>
+      </div>
+    );
+  const open = rows.filter((r) => r.status === "OPEN").length;
+  return (
+    <div className="flex flex-col gap-3">
+      {add}
+      <Panel title={`Requirements · ${rows.length}${open ? ` · ${open} open` : ""}`}>
+        <ul>
+          {rows.map((r) => (
+            <li key={r.id} className="grid grid-cols-[8px_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-1 border-b border-rule-soft px-3.5 py-2.5 last:border-b-0">
+              <span className="mt-0.5 h-8 w-2" style={{ background: r.vendorCategory?.color ?? "#E6DCCB" }} aria-hidden="true" />
+              <span className="flex flex-col leading-tight">
+                <span className="text-[14.5px] font-semibold">
+                  {r.title}
+                  {r.quantity ? ` · ${Number(r.quantity)}${r.unit ? ` ${r.unit}` : ""}` : ""}
+                </span>
+                <span className="text-[12.5px] text-ink-quiet">
+                  {r.function?.name ?? "Whole booking"}
+                  {r.vendorCategory ? ` · ${r.vendorCategory.name}` : ""}
+                  {r.source === "CLIENT" ? " · asked by the client" : ""}
+                  {r.vendorAssignment ? ` · ${r.vendorAssignment.vendor.companyName}` : ""}
+                </span>
+                {r.description && <span className="text-[13px]">{r.description}</span>}
               </span>
-              <span className="label-mono text-[10.5px]">
-                {s.type.replace("_", " ")}
-              </span>
+              <Tag tone={NEED_TONE[r.status]}>{NEED_WORDS[r.status]}</Tag>
+              {edits && (
+                <span className="col-span-3 col-start-2">
+                  <RequirementEditor
+                    eventId={eventId}
+                    functions={functions}
+                    categories={categories}
+                    jobs={jobOptions}
+                    req={{ id: r.id, functionId: r.functionId, vendorCategoryId: r.vendorCategoryId, title: r.title, description: r.description, quantity: r.quantity ? Number(r.quantity) : null, unit: r.unit, source: r.source, status: r.status, vendorAssignmentId: r.vendorAssignmentId }}
+                  />
+                </span>
+              )}
             </li>
-          );
-        })}
-      </ol>
-    </Panel>
+          ))}
+        </ul>
+      </Panel>
+    </div>
   );
 }
 

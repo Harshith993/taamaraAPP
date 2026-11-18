@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { signOutAction } from "@/app/actions/auth";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { LotusBadge, PetalStripe } from "@/components/brand";
+import { DoneToggle } from "@/app/(internal)/bookings/[id]/planning-controls";
 import { AttendanceButtons } from "@/components/crew-controls";
 import { db } from "@/lib/db";
 import { formatCalendarDate, formatTime } from "@/lib/format";
@@ -144,7 +145,7 @@ export default async function EventDayPage({ searchParams }: { searchParams: Pro
                           const past = (s.endsAt ?? s.startsAt) < now && s.id !== current?.id;
                           const isNow = s.id === current?.id;
                           return (
-                            <li key={s.id} className={`grid grid-cols-[62px_minmax(0,1fr)] gap-3 border-b border-night-rule px-3.5 py-2.5 last:border-b-0 ${isNow ? "bg-night-plum/15" : ""} ${past ? "text-[#9C8593]" : ""}`}>
+                            <li key={s.id} className={`grid grid-cols-[62px_minmax(0,1fr)_auto] items-center gap-3 border-b border-night-rule px-3.5 py-2.5 last:border-b-0 ${isNow ? "bg-night-plum/15" : ""} ${past || s.done ? "text-[#9C8593]" : ""}`}>
                               <span className={`font-mono text-[15px] font-semibold ${isNow ? "text-look" : ""}`}>{formatTime(s.startsAt)}</span>
                               <span className="flex flex-col leading-tight">
                                 <span className="text-[15px] font-semibold">
@@ -156,6 +157,7 @@ export default async function EventDayPage({ searchParams }: { searchParams: Pro
                                   {s.location ? ` · ${s.location}` : ""}
                                 </span>
                               </span>
+                              {b.onTeam && (can(actor, "schedule.edit") || canMark) ? <DoneToggle itemId={s.id} done={s.done} night /> : <span />}
                             </li>
                           );
                         })}
