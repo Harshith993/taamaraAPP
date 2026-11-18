@@ -103,9 +103,8 @@ describe("the workspace shows each role only what they may see", () => {
     expect(await getBookingCrew(testDb, s.actors.vendor, s.events.e1.id)).toEqual([]);
   });
 
-  it("client contact details are hidden from crew and vendors", async () => {
-    const forVendor = await getBookingHeader(testDb, s.actors.vendor, s.events.e1.id);
-    expect(forVendor.client).toBeNull();
+  it("the booking workspace is for staff only; client contact details need clients.view", async () => {
+    await expect(getBookingHeader(testDb, s.actors.vendor, s.events.e1.id)).rejects.toThrow(/access/);
     const forOwner = await getBookingHeader(testDb, s.actors.owner, s.events.e1.id);
     expect(forOwner.client?.name).toBeTruthy();
   });

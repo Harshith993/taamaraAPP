@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const isProd = process.env.NODE_ENV === "production";
 
-/** Baseline security headers for every response. A nonce-based CSP is added in Phase 9 (docs: guides/content-security-policy). */
+/** Baseline security headers for every response. The nonce-based Content-Security-Policy is set per request in src/proxy.ts. */
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },

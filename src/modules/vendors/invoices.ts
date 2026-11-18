@@ -19,7 +19,7 @@ import { parseInput } from "@/lib/validate";
 import { recordAudit, type RequestMeta } from "@/modules/audit/audit";
 import { MEDIA_SELECT, mediaView } from "@/modules/files/media";
 import type { Actor } from "@/modules/identity/actor";
-import { assertCan, assertEventAccess, can } from "@/modules/identity/policy";
+import { assertCan, assertEventAccess, can, vendorAssignmentWhere } from "@/modules/identity/policy";
 import { notify, ownerUserIds, vendorUserIds } from "@/modules/notifications/notify";
 import { assertBookingOpen } from "@/modules/events/lock";
 
@@ -206,7 +206,12 @@ export async function invoicesForJob(db: Db, actor: Actor, assignmentId: string)
   if (actor.accountType === "VENDOR") {
     const job = await db.vendorAssignment.findFirst({ where: { id: assignmentId, vendorId: { in: actor.vendorIds } }, select: { id: true } });
     if (!job) return [];
-  } else if (!can(actor, "quotes.view") && !can(actor, "payments.prepare")) return [];
+  } else {
+    if (actor.accountType !== "INTERNAL" || (!can(actor, "quotes.view") && !can(actor, "payments.prepare"))) return [];
+    // Staff only for jobs on bookings they can reach (managers: their own bookings).
+    const perm = can(actor, "payments.prepare") ? "payments.prepare" : "quotes.view";
+    if (!(await db.vendorAssignment.count({ where: { AND: [{ id: assignmentId }, vendorAssignmentWhere(actor, perm)] } }))) return [];
+  }
   const rows = await loadRows(db, { workOrder: { assignmentId } });
   return rows.map((r) => shape(actor, r));
 }

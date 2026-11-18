@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { connection } from "next/server";
 import "./globals.css";
 
 // Fonts are downloaded at build time and served from our own server: no requests to Google from users' phones.
@@ -21,7 +22,9 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // Every page is rendered per request, so each gets its own CSP nonce (src/proxy.ts).
+  await connection();
   return (
     <html lang="en-IN" className={`${archivo.variable} ${plexSans.variable} ${plexMono.variable}`}>
       <body className="min-h-dvh">{children}</body>

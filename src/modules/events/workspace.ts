@@ -3,11 +3,14 @@
  * so they cannot leak into a page by mistake.
  */
 import type { Db } from "@/lib/db";
+import { ForbiddenError } from "@/lib/errors";
 import { toNumber } from "@/lib/format";
 import type { Actor } from "@/modules/identity/actor";
 import { assertEventAccess, can, crewAssignmentWhere, taskWhere, vendorAssignmentWhere } from "@/modules/identity/policy";
 
 export async function getBookingHeader(db: Db, actor: Actor, eventId: string) {
+  // The booking workspace is for staff; vendors and crew see their own job and shifts instead.
+  if (actor.accountType !== "INTERNAL") throw new ForbiddenError();
   await assertEventAccess(db, actor, eventId);
   const event = await db.event.findUniqueOrThrow({
     where: { id: eventId },
@@ -43,7 +46,9 @@ export async function getBookingHeader(db: Db, actor: Actor, eventId: string) {
 export async function getBookingMoney(db: Db, actor: Actor, eventId: string) {
   const billing = can(actor, "finance.billing");
   const costs = can(actor, "finance.budget");
-  if (!billing && !costs) return null;
+  if (actor.accountType !== "INTERNAL" || (!billing && !costs)) return null;
+  // Only for bookings this person can reach (managers: their own bookings).
+  await assertEventAccess(db, actor, eventId, costs ? "finance.budget" : "finance.billing");
   const [charges, received, vendorAgreed, crewPay, paidOut, budget] = await Promise.all([
     billing ? db.clientCharge.aggregate({ where: { eventId }, _sum: { amount: true } }) : null,
     billing ? db.payment.aggregate({ where: { eventId, direction: "IN", status: "PAID" }, _sum: { amount: true } }) : null,

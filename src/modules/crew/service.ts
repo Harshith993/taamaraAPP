@@ -226,6 +226,7 @@ export async function selfCheckIn(db: Db, actor: Actor, shiftId: string, input: 
 /** Crew a manager can put on a booking, with what they need to decide. */
 export async function crewForBooking(db: Db, actor: Actor, eventId: string) {
   if (!can(actor, "crew.assign")) return [];
+  await assertEventAccess(db, actor, eventId, "crew.assign");
   const fns = await db.eventFunction.findMany({ where: { eventId }, select: { date: true } });
   const dates = [...new Set(fns.map((f) => f.date.toISOString()))].map((d) => new Date(d));
   const seesPay = can(actor, "crew.pay.view");
