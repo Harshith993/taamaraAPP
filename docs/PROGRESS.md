@@ -9,7 +9,7 @@ Updated at the end of every working session. Status: ✅ done · 🔄 in progres
 | 3. UI/UX planning | ✅ | Direction C in the lotus palette. 9 screens on the canvas: owner home, design language, crew Today, booking workspace, supervisor event day (night mode), crew proof upload, vendor job, manager home (desktop), owner money (desktop). Screen map for every role in `docs/design/SITEMAP.md`. The owner asked to continue without waiting for approval (18 Nov). |
 | 4. Database | ✅ | Prisma 7 schema (72 tables), 2 migrations with database-level protections (append-only audit log, payment ledger rules, fixed issued invoices, proof one-parent rule), reference + demo seed, 42 database tests. |
 | 5. Authentication & authorization | ✅ | Better Auth (phone or email + password, DB sessions, rate limits, forced first password), policy layer with scoped filters, team & role management for owners, sign-in/home/team/roles screens, vendor and crew homes. 77 automated tests + 23-check browser smoke test. |
-| 6. Core operations (incl. vendor portal, crew app) | 🔄 | Done: owners' approvals inbox; bookings list, new booking and booking workspace; vendor job flow (manager asks for a quote → vendor sends a GST quote from their phone → owners approve or ask to revise → numbered work order → vendor accepts → started / done → manager or supervisor signs off), with in-app notifications at each step. 109 automated tests. See "Next up" below. |
+| 6. Core operations (incl. vendor portal, crew app) | 🔄 | Done: approvals inbox; bookings list, new booking, booking workspace; vendor job flow (quote → owner approval → work order → accept → started / done → sign-off); **file storage and resumable uploads**; **photo/video work proof with review**; **crew hiring, accept/decline, attendance (supervisor marks, optional self check-in)**; **tasks with photo proof and sign-off**; **night-mode Event day**; **vendor invoices checked by the accountant**; **owner settings**. 156 automated tests + 7 browser check scripts (97 checks). See "Next up" below. |
 | 7. Finance | ⬜ | |
 | 8. Communication & notifications | ⬜ | |
 | 9. Testing & security | ⬜ | |
@@ -40,14 +40,38 @@ Updated at the end of every working session. Status: ✅ done · 🔄 in progres
 | D18 | 17 Nov 2026 | Visual direction C (Cue Sheet), recoloured from the company logo: cream ground, aubergine ink, plum brand, one lotus petal colour per department, lotus-lattice and petal-stripe patterns, and a night mode for event days | Decided by owner |
 | D16 | 17 Nov 2026 | Proof defaults: camera or gallery, videos up to 2 minutes, approved proof required before a vendor's final payment | Approved by owners |
 | D17 | 17 Nov 2026 | iPad is a first-class device alongside phone and desktop; the UI must be immersive and not look generic | Requested by owner |
+| D23 | 18 Nov 2026 | Uploads go to our own server in 4 MB pieces that resume after a dropped connection, then into storage (local disk now, S3 Mumbai in Phase 10). Simpler than browser-to-S3 multipart, identical in development and production, and stays under the Next.js proxy's 10 MB request buffer. Revisit if busy days strain the server. | Technical decision |
+| D24 | 18 Nov 2026 | Every file is served through a signed link made for one signed-in person, expiring in 20–30 minutes; nothing in storage is public. The file type is read from the file's bytes, never its name. | Technical decision |
+| D25 | 18 Nov 2026 | Photos and videos are processed on the app server right after upload (one video at a time, so the app stays responsive); anything a restart interrupts resumes on startup. Moves to pg-boss jobs in Phase 8. Location and other metadata are removed from the copies people view; the original is kept. | Technical decision |
+| D26 | 18 Nov 2026 | Open question 4 (attendance) answered as "both, owners choose": supervisors and managers always mark attendance; crew self check-in with location is an owner switch, off by default. Marking opens 6 h before reporting time and closes 18 h after; more than 15 min late counts as late. | Assumption, owners can change in Settings |
+| D27 | 18 Nov 2026 | Nobody but an owner approves their own proof or signs off their own task. | Technical decision |
+| D28 | 18 Nov 2026 | Owners control five switches on a Settings page: crew see their pay (Q5, default on), crew self check-in (Q4, off), proof from the gallery (on), longest proof video (120 s), vendor's final payment needs approved proof (on). Every change is audited. | Technical decision |
+| D29 | 18 Nov 2026 | Vendor invoices can't add up to more than the work order; disputed and void invoices don't count; invoices are checked by people with "prepare payments" (accountant, owners). | Technical decision |
+| D30 | 18 Nov 2026 | iPhone HEIC photos are converted to JPEG on the phone before upload; the server's image tools can't read HEIC, so one that slips through is refused with a clear message. | Technical decision |
 | D13 | 17 Nov 2026 | Vendors and crew upload photo/video proof of completed work; managers or supervisors approve it; videos are processed with ffmpeg and stored in S3 Mumbai (G17) | Requested by owner; limits are open question 10 |
 
-## Next up (Phase 6)
+## What was built on 18 Nov (owner away; review afterwards)
 
-1. Browser check of the new vendor screens (vendor job page and quote form; Vendors tab actions on a booking). They pass typecheck, lint and the service tests, but have not been clicked through yet.
-2. File storage and proof upload: storage interface with a local-disk driver for development (S3 Mumbai driver in Phase 10), upload route with file-type sniffing and size limits, photo thumbnails (sharp), video length check (ffprobe), permission-checked file serving, proof upload for vendors and crew, proof review for managers and supervisors.
-3. Crew app: accept or decline a job, check-in, tasks; supervisor attendance marking; event-day screen in night mode; task status updates.
-4. Vendor invoices against a work order (needs file upload), then Phase 7 (finance).
+| Area | What it does | Where |
+|---|---|---|
+| Vendor screens browser check | Quote request → GST quote on a phone → owner approval → work order → accept → start → done → sign-off, clicked through by four people. Found and fixed: after "We've started" the "Work is done" button didn't appear until a reload. | `tests/e2e/vendor-flow.cjs` |
+| File storage and uploads | Local-disk storage behind an interface (S3 Mumbai later), uploads in resumable 4 MB pieces, file type read from the bytes, size limits, signed per-person links, video byte ranges. | `src/lib/storage/`, `src/modules/files/`, `/api/v1/uploads`, `/api/v1/files` |
+| Media processing | Photos: upright, 1600 px copy, thumbnail, metadata removed. Videos: length checked, thumbnail, H.264 MP4 without location. | `src/modules/files/processing.ts` |
+| Work proof | Vendors (after the work order is accepted) and crew (from Today or a task) take a photo or record a video, add a note and their location; the booking's manager or supervisor approves or asks to redo. Proof page with a count in the menu, Proof tab on each booking. | `/proof`, `src/modules/proof/` |
+| Crew | Hire from the Crew tab (pay, reporting time and place per function; days off refused, double bookings warned), crew accept or decline on their phone, take off with a reason. New crew Today screen. | `src/modules/crew/`, `/crew` |
+| Attendance | Present / Late / Absent per shift on the booking or on Event day; optional self check-in with location. | `src/modules/crew/service.ts` |
+| Tasks | Add tasks for the team or crew on a booking; tasks that need a photo can't be done without one; sign off or send back with a note. | `src/modules/tasks/` |
+| Event day | Night mode for dark venues: next cue, crew in, vendors due, proof to check, run sheet with a now marker, check-in board, tasks due, the team's numbers. Supervisors land here when a booking is on today. | `/event-day` |
+| Vendor invoices | Vendor sends an invoice (PDF or photo) against the work order; the accountant verifies, asks to correct or voids; never more than the work order. | `/invoices`, `src/modules/vendors/invoices.ts` |
+| Settings | The five owner switches above. | `/settings` |
+
+Browser check scripts (dev server on :3000 with the demo seed): `smoke` 23, `bookings` 9, `approvals`, `vendor-flow` 15, `proof` 12, `crew-day` 15, `invoices` 8. Run each with `node tests/e2e/<name>.cjs <screenshot-folder>`.
+
+## Next up
+
+1. Rest of Phase 6: edit a booking and its functions; run sheet editor; requirements editor; documents tab (uses the new uploads); vendor directory with add and edit; crew roster with register and edit; calendar.
+2. Phase 7 (finance): vendor payments from verified invoices with owner approval (and the approved-proof check), crew pay register, client charges and payments, expenses with receipts, budgets, P&L, exports.
+3. Owners to confirm D26 (attendance) and D28 defaults, and answer open questions 2, 3, 6, 7, 8, 9.
 
 ## Earlier prototype (superseded)
 
@@ -63,5 +87,7 @@ npm run db:seed               # reference data + demo data (demo password: Taama
 npm run dev                   # http://localhost:3000
 npm test                      # automated tests (needs TEST_DATABASE_URL)
 ```
+
+Uploaded files go to `./data/storage` (set `STORAGE_DIR` to change it). Video processing needs `ffmpeg` and `ffprobe` on the PATH (`apt-get install ffmpeg`); photos use `sharp`, which `npm install` brings.
 
 Demo sign-ins (development only): owner `98000 00001`, co-founder `98000 00002`, event manager `priya@demo.taamara.in`, accountant `accounts@demo.taamara.in`, supervisor `98000 00006`, vendor (Roshni Lights) `98110 00005`, crew (Sunil) `99220 00002`.

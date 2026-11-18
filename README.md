@@ -2,7 +2,7 @@
 
 Internal operations system for the company: bookings with multiple functions, vendors, crew, tasks, schedules, money and communication in one place. Founder and co-founder are equal owners. Event managers, the accountant, supervisors, vendors and crew each get their own login and see only what their role allows.
 
-**Status:** Phase 3, screen designs. Plan v1.1 approved. No application code yet.
+**Status:** Phase 6, core operations, in progress. Phases 1–5 are done. See [`docs/PROGRESS.md`](docs/PROGRESS.md).
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): requirements, architecture, permission matrix, database design and roadmap (v1.1, approved 17 Nov 2026)
 - [`docs/PROGRESS.md`](docs/PROGRESS.md): phase status and decisions log
