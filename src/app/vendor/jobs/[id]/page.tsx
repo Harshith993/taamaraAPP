@@ -161,6 +161,11 @@ export default async function VendorJobPage({
             <span className="label-mono text-[11px] text-ink-quiet">
               {job.event.name}
             </span>
+            {!["DECLINED", "CANCELLED"].includes(job.status) && (
+              <a href={`/api/v1/channels/open?type=VENDOR_THREAD&eventId=${job.event.id}&vendorId=${job.vendorId}`} className="label-mono ml-auto inline-flex min-h-11 items-center border-2 border-ink px-3 text-[11.5px] font-semibold no-underline">
+                Message the team
+              </a>
+            )}
           </span>
           <h1 className="font-condensed text-[34px] leading-[0.95] uppercase">
             {job.scope}

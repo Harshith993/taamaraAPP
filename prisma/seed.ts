@@ -374,14 +374,14 @@ async function seedDemo() {
   await db.workProof.create({ data: { eventId: wedding.id, functionId: sangeet.id, crewAssignmentId: arjunA.id, kind: "VIDEO", fileId: (await proofFile("walkthrough.mp4", arjunUser.id, "canopy", "video")).id, caption: "Setup walkthrough", uploadedById: arjunUser.id } });
 
   // Messages
-  const team = await db.channel.create({ data: { type: "BOOKING_TEAM", eventId: wedding.id, name: "Aditi & Karan · team", members: { create: [founder, cofounder, priya, ramesh].map((u) => ({ userId: u.id })) } } });
+  const team = await db.channel.create({ data: { type: "BOOKING_TEAM", eventId: wedding.id, name: "Team · Aditi & Karan", members: { create: [founder, cofounder, priya, ramesh].map((u) => ({ userId: u.id })) } } });
   await db.message.createMany({
     data: [
       { channelId: team.id, senderId: priya.id, body: "Gulmohar can do the pastel mandap but need the colour swatches by Friday." },
       { channelId: team.id, senderId: founder.id, body: "Gupta ji wants two extra live counters at the reception. I'll revise the charges." },
     ],
   });
-  const lightsThread = await db.channel.create({ data: { type: "VENDOR_THREAD", eventId: wedding.id, vendorId: roshni.id, name: "Roshni Lights · Wedding", members: { create: [{ userId: priya.id }, { userId: roshniUser.id }] } } });
+  const lightsThread = await db.channel.create({ data: { type: "VENDOR_THREAD", eventId: wedding.id, vendorId: roshni.id, name: "Roshni Lights · Aditi & Karan", members: { create: [{ userId: priya.id }, { userId: roshniUser.id }] } } });
   await db.message.create({ data: { channelId: lightsThread.id, senderId: priya.id, body: "Can you add 4 uplighters at the entrance?" } });
 
   // ── Booking 2: Kabir's 1st birthday, today ──

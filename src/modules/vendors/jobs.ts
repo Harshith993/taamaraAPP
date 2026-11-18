@@ -824,6 +824,7 @@ export async function getJob(db: Db, actor: Actor, assignmentId: string) {
     .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
   return {
     id: job.id,
+    vendorId: job.vendorId,
     status: job.status,
     vendor: job.vendor.companyName,
     department: job.category,

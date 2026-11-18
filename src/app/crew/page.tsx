@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CheckInButton, RespondButtons } from "@/components/crew-controls";
+import { WaitingAnnouncements } from "@/components/messages";
 import { PortalShell } from "@/components/portal-shell";
 import { TaskButtons } from "@/components/task-controls";
 import { ButtonLink, EmptyState, Notice, Panel, Tag } from "@/components/ui";
@@ -87,6 +88,7 @@ export default async function CrewHome() {
         <Link href="/crew/me" className="label-mono self-end text-[12px] no-underline">
           Me: days off, pay, password →
         </Link>
+        <WaitingAnnouncements actor={actor} />
         {offers.map((o) => (
           <section key={o.id} aria-label={`New booking: ${o.event.name}`} className="flex flex-col gap-2.5 rounded-[4px] border-2 border-ink bg-paper p-3.5">
             <span className="flex items-center justify-between gap-2">
@@ -147,6 +149,11 @@ export default async function CrewHome() {
                 <ButtonLink href={`/crew/proof?a=${next.assignment.id}`} variant="look" className="min-h-[58px] w-full text-[13px]">
                   Add proof of work
                 </ButtonLink>
+              )}
+              {can(actor, "chat.direct") && (
+                <a href={`/api/v1/channels/open?type=CREW&eventId=${next.assignment.eventId}`} className="flex min-h-11 items-center justify-center rounded-[3px] border-2 border-ink px-3 font-mono text-[12.5px] font-semibold uppercase no-underline">
+                  Crew chat · {next.assignment.event.name}
+                </a>
               )}
               {contacts.filter((c) => c.user.phoneNumber).length > 0 && (
                 <span className="grid grid-cols-1 gap-1.5 pt-1">

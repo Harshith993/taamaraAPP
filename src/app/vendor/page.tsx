@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { WaitingAnnouncements } from "@/components/messages";
 import { PortalShell } from "@/components/portal-shell";
 import { EmptyState, Panel, Tag } from "@/components/ui";
 import { db } from "@/lib/db";
@@ -91,6 +92,7 @@ export default async function VendorHome() {
         <Link href="/vendor/profile" className="label-mono self-end text-[12px] no-underline">
           Your details, GST and bank →
         </Link>
+        <WaitingAnnouncements actor={actor} />
         <Panel title={`Upcoming jobs · ${upcoming.length}`}>
           {upcoming.length === 0 ? (
             <EmptyState title="No jobs right now">

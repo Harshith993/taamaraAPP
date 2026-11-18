@@ -130,7 +130,19 @@ export default async function BookingPage({
             {header.client ? ` · Client ${header.client.name}` : ""}
           </p>
         </div>
-        <Tag tone={EVENT_STATUS_TONE[header.status]}>{header.status}</Tag>
+        <span className="flex flex-wrap items-center gap-2">
+          {actor.accountType === "INTERNAL" && can(actor, "chat.booking") && (
+            <a href={`/api/v1/channels/open?type=BOOKING_TEAM&eventId=${header.id}`} className="label-mono inline-flex min-h-11 items-center border-2 border-ink px-3 text-[12px] font-semibold no-underline">
+              Team chat
+            </a>
+          )}
+          {actor.accountType === "INTERNAL" && can(actor, "chat.direct") && (
+            <a href={`/api/v1/channels/open?type=CREW&eventId=${header.id}`} className="label-mono inline-flex min-h-11 items-center border-2 border-ink px-3 text-[12px] font-semibold no-underline">
+              Crew chat
+            </a>
+          )}
+          <Tag tone={EVENT_STATUS_TONE[header.status]}>{header.status}</Tag>
+        </span>
       </div>
 
       <ul
@@ -692,6 +704,11 @@ async function Vendors({ actor, eventId }: { actor: Actor; eventId: string }) {
                     </td>
                     {staff && (
                       <td className="px-3.5 py-2.5 text-right">
+                        {can(actor, "chat.direct") && !["DECLINED", "CANCELLED"].includes(r.status) && (
+                          <a href={`/api/v1/channels/open?type=VENDOR_THREAD&eventId=${eventId}&vendorId=${r.vendorId}`} className="label-mono mr-2 inline-flex min-h-9 items-center text-[11.5px] font-semibold">
+                            Message
+                          </a>
+                        )}
                         <VendorRowActions
                           eventId={eventId}
                           jobId={r.id}

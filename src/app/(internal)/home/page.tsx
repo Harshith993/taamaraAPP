@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { WaitingAnnouncements } from "@/components/messages";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { EmptyState, Notice, Panel, Tag } from "@/components/ui";
@@ -73,6 +74,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           </p>
         </div>
       </div>
+
+      <WaitingAnnouncements actor={actor} />
 
       <div className="flex flex-wrap items-start gap-4">
         <Panel title={`Upcoming bookings · ${events.length}`} className="min-w-0 flex-[999_1_560px]">

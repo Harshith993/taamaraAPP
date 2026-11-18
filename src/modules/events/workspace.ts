@@ -79,6 +79,7 @@ export async function getBookingVendors(db: Db, actor: Actor, eventId: string) {
   });
   return rows.map((r) => ({
     id: r.id,
+    vendorId: r.vendorId,
     vendor: r.vendor.companyName,
     contact: r.vendor.contactName,
     phone: r.vendor.phone,
