@@ -9,8 +9,8 @@ Updated at the end of every working session. Status: ✅ done · 🔄 in progres
 | 3. UI/UX planning | ✅ | Direction C in the lotus palette. 9 screens on the canvas: owner home, design language, crew Today, booking workspace, supervisor event day (night mode), crew proof upload, vendor job, manager home (desktop), owner money (desktop). Screen map for every role in `docs/design/SITEMAP.md`. The owner asked to continue without waiting for approval (18 Nov). |
 | 4. Database | ✅ | Prisma 7 schema (72 tables), 2 migrations with database-level protections (append-only audit log, payment ledger rules, fixed issued invoices, proof one-parent rule), reference + demo seed, 42 database tests. |
 | 5. Authentication & authorization | ✅ | Better Auth (phone or email + password, DB sessions, rate limits, forced first password), policy layer with scoped filters, team & role management for owners, sign-in/home/team/roles screens, vendor and crew homes. 77 automated tests + 23-check browser smoke test. |
-| 6. Core operations (incl. vendor portal, crew app) | ✅ | Everything in the roadmap row is built: booking workspace (overview, functions, schedule/run sheet, needs, vendors, crew, tasks, proof, documents, money), calendar, vendor directory, quote → approval → work order, vendor portal, crew roster and hiring, attendance, crew app, night-mode Event day, photo/video proof with review, notifications. Still to add: vendor portal profile and payment-status screens, crew "Me" screen (days off, password). |
-| 7. Finance | 🔄 | Done: vendor invoices checked by the accountant; vendor and crew payments (prepare → owner approves → mark paid; void with reason); client charges and receipts; crew extras and deductions; Money tab per booking; Money page with P&L per booking. Next: expenses with receipts, budgets, client GST invoices (needs open question 2), monthly P&L, Excel exports for the outside accountant. |
+| 6. Core operations (incl. vendor portal, crew app) | ✅ | Everything in the roadmap row is built: booking workspace (overview, functions, schedule/run sheet, needs, vendors, crew, tasks, proof, documents, money), calendar, vendor directory, quote → approval → work order, vendor portal (jobs, quotes, proof, invoices, payments, own profile and bank details), crew roster and hiring, attendance, crew app (Today, proof, tasks, pay, Me), night-mode Event day, photo/video proof with review, notifications. |
+| 7. Finance | 🔄 | Done: vendor invoices checked by the accountant; vendor and crew payments (prepare → owner approves → mark paid; void with reason); vendor bank changes held until confirmed by phone; client charges and receipts; crew extras and deductions; expenses with receipts (approve, repay); Money tab per booking; Money page with P&L per booking; Excel exports (purchase register, payments, expenses, crew pay). Next: budgets (estimate vs actual), client GST invoices (needs open question 2), monthly P&L, settling a booking. |
 | 8. Communication & notifications | 🔄 | In-app notifications with a bell and list for every login (built early, since every flow sends them). Next: booking team chat, vendor/crew threads, announcements, web push, email, reminder jobs. |
 | 9. Testing & security | ⬜ | |
 | 10. Deployment (AWS Mumbai) | ⬜ | Needs an AWS account in the company's name. |
@@ -51,6 +51,8 @@ Updated at the end of every working session. Status: ✅ done · 🔄 in progres
 | D31 | 18 Nov 2026 | Crew extras and deductions are asked for by the booking's manager or supervisor and decided by an owner; only approved ones change what the crew member is owed. | Technical decision |
 | D32 | 18 Nov 2026 | Vendor payments are prepared against a checked invoice; advances paid before an invoice still count towards what the vendor has been paid. A payment can't exceed what is left on the invoice (or what crew are owed), counting payments already waiting. | Technical decision |
 | D33 | 18 Nov 2026 | "Margin before tax" on screens is what the client is charged before GST minus vendor costs (as quoted, GST included) and crew pay. It is a planning figure, not the accounts; GST credits and overheads are for the outside accountant. | Assumption, owners to confirm |
+| D34 | 18 Nov 2026 | Expenses above ₹500 need a bill or receipt attached; smaller ones (tea, auto fare) may go without. Owners can't approve their own expense while the other owner is active. | Assumption, owners to confirm the amount |
+| D35 | 18 Nov 2026 | When a vendor changes their own bank details, owners and the accountant are told and no payment can be prepared until someone calls the vendor on their usual number and confirms. Guards against payment-redirection fraud. | Technical decision |
 | D13 | 17 Nov 2026 | Vendors and crew upload photo/video proof of completed work; managers or supervisors approve it; videos are processed with ffmpeg and stored in S3 Mumbai (G17) | Requested by owner; limits are open question 10 |
 
 ## What was built on 18 Nov (owner away; review afterwards)
@@ -73,19 +75,22 @@ All of this is on the branch `claude/gallant-dirac-mw3e53`, one commit per piece
 | Calendar | The month's functions on a grid (iPad, desktop) or a day list (phone). | `/calendar` |
 | Vendor invoices | Vendor sends an invoice against the work order; the accountant verifies, asks to correct or voids. | `/invoices` |
 | Payments and client money | Prepare → owner approves → mark paid, void with a reason; client charges and receipts; crew extras; Money tab per booking; Money page. | `/money`, Money tab, `src/modules/finance/` |
+| Expenses | Managers and supervisors record spends with a bill photo; owners approve; money from someone's own pocket is repaid and recorded. | `/expenses` |
+| Exports | Excel for the outside accountant: purchase register with GSTIN and GST, payments in and out, expenses, crew pay. | Money page |
+| Vendor and crew self-service | Vendors keep their contact, GST and bank details (bank changes held for a confirmation call) and see payments per job; crew have a Me page for days off, pay history and password. | `/vendor/profile`, `/crew/me` |
 | Notifications | A bell with the unread count for every login, and a list; tapping one opens what it is about. | `src/components/notifications.tsx` |
 | Settings | Owner switches: crew see their pay, crew self check-in, proof from the gallery, video length, proof before a vendor's final payment. | `/settings` |
 
-Tests: 183 automated tests (`npm test`) and 13 browser check scripts with 150+ checks, run against both the dev server and a production build on a fresh demo database: `smoke` 23, `bookings` 9, `approvals`, `vendor-flow` 15, `proof` 12, `crew-day` 15, `invoices` 8, `planning` 8, `directory` 10, `docs-calendar` 9, `notifications` 6, `finance` 12. Run each with `node tests/e2e/<name>.cjs <screenshot-folder>` while the app runs on :3000 with the demo seed.
+Tests: 194 automated tests (`npm test`) and 14 browser check scripts with 170+ checks, all passing against a production build on a fresh demo database: `smoke` 23, `bookings` 9, `approvals`, `vendor-flow` 15, `proof` 12, `crew-day` 15, `invoices` 8, `planning` 8, `directory` 10, `docs-calendar` 9, `notifications` 6, `finance` 12, `expenses` 5, `self-service` 5. Run each with `node tests/e2e/<name>.cjs <screenshot-folder>` while the app runs on :3000 with the demo seed.
 
 Known: the `pg` driver prints a deprecation warning from inside Prisma's own query engine during some transactions. Our own code no longer overlaps queries in transactions (`inSequence`). Check Prisma's adapter before upgrading to `pg` 9.
 
 ## Next up
 
-1. Phase 7: expenses with receipts (manager/supervisor submit, owner approves, reimburse), budgets (estimate vs actual), client GST invoices once open question 2 is answered, monthly P&L, Excel exports for the outside accountant.
-2. Small Phase 6 leftovers: vendor portal profile (GST, bank, extra logins) and payments screen; crew "Me" screen (days off, password).
-3. Phase 8: booking team chat, vendor and crew threads, announcements with acknowledgement, web push and email, reminder jobs.
-4. Owners to review the 18 Nov work and confirm D26 (attendance), D28 (switch defaults) and D33 (margin), and answer open questions 2, 3, 6, 7, 8, 9.
+1. Phase 7: budgets (estimate vs actual per booking), client GST invoices once open question 2 is answered, monthly P&L, settling a booking (lock its records once everyone is paid).
+2. Phase 8: booking team chat, vendor and crew threads, announcements with acknowledgement, web push and email, reminder jobs (deadlines, overdue tasks, shifts tomorrow).
+3. Phase 9: a security pass (content security policy, upload hardening review, permission test across every action), load test of a busy day with many video uploads, backup-restore drill.
+4. Owners: review the 18 Nov work and confirm D26 (attendance), D28 (switch defaults), D33 (margin), D34 (receipt amount); answer open questions 2, 3, 6, 7, 8, 9; create the AWS account in the company's name for Phase 10.
 
 ## Earlier prototype (superseded)
 
