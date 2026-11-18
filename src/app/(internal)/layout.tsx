@@ -1,0 +1,23 @@
+import { redirect } from "next/navigation";
+import { AppHeader, type NavItem } from "@/components/app-header";
+import { ROLES } from "@/modules/identity/permissions";
+import { can } from "@/modules/identity/policy";
+import { homePathFor, requireActor } from "@/modules/identity/session";
+
+/** Internal staff only: owners, event managers, the accountant and supervisors. */
+export default async function InternalLayout({ children }: { children: React.ReactNode }) {
+  const actor = await requireActor();
+  if (actor.accountType !== "INTERNAL") redirect(homePathFor(actor));
+
+  // Only pages that exist and that this person may open appear in the menu.
+  const items: NavItem[] = [{ href: "/home", label: "Home" }];
+  if (can(actor, "admin.users")) items.push({ href: "/team", label: "Team" });
+
+  const roleLabel = actor.isOwner ? "Owner" : actor.roles.map((r) => ROLES[r].name).join(" · ");
+  return (
+    <div className="flex min-h-dvh flex-col">
+      <AppHeader name={actor.name} roleLabel={roleLabel} items={items} />
+      <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 pt-5 pb-10 sm:px-8">{children}</main>
+    </div>
+  );
+}

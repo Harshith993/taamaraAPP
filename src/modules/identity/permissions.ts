@@ -116,7 +116,10 @@ export type PermissionKey = (typeof PERMISSIONS)[number]["key"];
 
 export const PERMISSION_KEYS: readonly PermissionKey[] = PERMISSIONS.map((p) => p.key);
 
-const BY_KEY = new Map<string, PermissionDef>(PERMISSIONS.map((p) => [p.key, p]));
+/** The catalogue typed loosely, for looping and filtering. */
+export const PERMISSION_LIST: readonly PermissionDef[] = PERMISSIONS;
+
+const BY_KEY = new Map<string, PermissionDef>(PERMISSION_LIST.map((p) => [p.key, p]));
 
 export function getPermission(key: string): PermissionDef | undefined {
   return BY_KEY.get(key);
