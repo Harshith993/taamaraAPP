@@ -7,7 +7,7 @@
  *  - a vendor's final payment needs approved proof of work when the company switch is on;
  *  - rejecting needs a reason; every decision is audited and the requester is notified.
  */
-import type { Db, DbTx } from "@/lib/db";
+import { inSequence, type Db, type DbTx } from "@/lib/db";
 import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
 import { formatINR, toNumber } from "@/lib/format";
 import { recordAudit, type RequestMeta } from "@/modules/audit/audit";
@@ -153,7 +153,7 @@ export async function decideApproval(db: Db, actor: Actor, approvalId: string, d
           const company = await tx.companyProfile.findUnique({ where: { id: 1 }, select: { settings: true } });
           const needsProof = (company?.settings as { finalVendorPaymentNeedsProof?: boolean } | null)?.finalVendorPaymentNeedsProof ?? true;
           if (needsProof) {
-            const [paid, agreed] = await Promise.all([
+            const [paid, agreed] = await inSequence([
               tx.payment.aggregate({ where: { vendorId: p.vendorId, eventId: p.eventId, direction: "OUT", status: "PAID" }, _sum: { amount: true } }),
               tx.vendorAssignment.aggregate({ where: { vendorId: p.vendorId, eventId: p.eventId, status: { notIn: ["CANCELLED", "DECLINED"] } }, _sum: { agreedAmount: true } }),
             ]);

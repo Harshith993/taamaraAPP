@@ -73,8 +73,15 @@ const { BASE, PHONE, launch, checker, query } = require("./lib.cjs");
       const card = page.locator("section").filter({ hasText: scope });
       check("owner sees the quote in approvals", (await card.count()) === 1);
       await card.getByRole("button", { name: "Approve", exact: true }).click();
-      await card.locator('[role="status"]').waitFor({ timeout: 25000 });
-      check("owner approves the quote", /approved/i.test(await card.locator('[role="status"]').textContent()));
+      // The card shows "Approved" and then leaves the waiting list when the page refreshes.
+      const approved = await page
+        .waitForFunction((s) => {
+          const cards = [...document.querySelectorAll("section")].filter((el) => el.textContent.includes(s));
+          return cards.length === 0 || cards.some((el) => /approved/i.test(el.querySelector('[role="status"]')?.textContent ?? ""));
+        }, scope, { timeout: 25000 })
+        .then(() => true)
+        .catch(() => false);
+      check("owner approves the quote", approved);
       await ctx.close();
     }
 
@@ -108,7 +115,8 @@ const { BASE, PHONE, launch, checker, query } = require("./lib.cjs");
       await page.getByRole("button", { name: "Work is done" }).waitFor({ timeout: 10000 });
       await page.fill('input[placeholder="All lights tested"]', "All 12 uplighters tested");
       await page.getByRole("button", { name: "Work is done" }).click();
-      await page.getByText(/Marked as done/).waitFor({ timeout: 10000 });
+      // The "On the day" panel goes away once the job moves on; the next-step notice says what happened.
+      await page.getByText("The team is checking your work").waitFor({ timeout: 15000 });
       await page.reload();
       const body = await page.textContent("main");
       check("vendor reports start and finish", /The team is checking your work/.test(body) && /All 12 uplighters tested/.test(body));

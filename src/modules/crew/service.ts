@@ -12,7 +12,7 @@
  *    Marking opens 6 hours before the reporting time and closes 18 hours after it.
  */
 import { z } from "zod";
-import type { Db, DbTx } from "@/lib/db";
+import { inSequence, type Db, type DbTx } from "@/lib/db";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
 import { formatCalendarDate, formatDate, formatINR, formatTime, toNumber } from "@/lib/format";
 import { parseInput } from "@/lib/validate";
@@ -51,7 +51,7 @@ export async function assignCrew(db: Db, actor: Actor, input: AssignCrewInput, m
   const v = parseInput(assignCrewSchema, input);
   return db.$transaction(async (tx) => {
     await assertStaffOn(tx, actor, v.eventId, "crew.assign", "You can't add crew to this booking.");
-    const [event, worker, fns] = await Promise.all([
+    const [event, worker, fns] = await inSequence([
       tx.event.findUniqueOrThrow({ where: { id: v.eventId }, select: { name: true, status: true } }),
       tx.worker.findFirst({ where: { id: v.workerId, deletedAt: null }, select: { id: true, name: true, status: true, userId: true, usualEventRate: true } }),
       tx.eventFunction.findMany({ where: { eventId: v.eventId, id: { in: v.shifts.map((s) => s.functionId) } }, select: { id: true, name: true, date: true } }),

@@ -10,7 +10,7 @@
  *    sees under "What's needed".
  */
 import { z } from "zod";
-import type { Db, DbTx } from "@/lib/db";
+import { inSequence, type Db, type DbTx } from "@/lib/db";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
 import { formatDate, formatTime } from "@/lib/format";
 import { parseInput } from "@/lib/validate";
@@ -72,7 +72,7 @@ export async function cancelBooking(db: Db, actor: Actor, eventId: string, reaso
     const event = await assertOn(tx, actor, eventId, "bookings.cancel", "Only owners cancel bookings.");
     if (CLOSED.includes(event.status)) throw new ConflictError("This booking is already closed.");
     await tx.event.update({ where: { id: eventId }, data: { status: "CANCELLED", cancelledReason: why } });
-    const [members, jobs, crew] = await Promise.all([
+    const [members, jobs, crew] = await inSequence([
       tx.eventMember.findMany({ where: { eventId }, select: { userId: true } }),
       tx.vendorAssignment.findMany({ where: { eventId, status: { notIn: ["DECLINED", "CANCELLED", "COMPLETED"] } }, select: { id: true, vendorId: true } }),
       tx.crewAssignment.findMany({ where: { eventId, status: { in: ["ASSIGNED", "CONFIRMED"] } }, select: { worker: { select: { userId: true } } } }),

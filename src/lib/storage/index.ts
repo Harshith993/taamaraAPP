@@ -39,19 +39,20 @@ export function assertSafeKey(key: string): void {
 
 /** The folder for files on this server: uploads in progress always land here, whatever the driver. */
 export function localRoot(): string {
-  return path.resolve(process.env.STORAGE_DIR || path.join(process.cwd(), "data", "storage"));
+  // Runtime data, not code: keep the bundler from tracing it into the server build.
+  return path.resolve(/*turbopackIgnore: true*/ process.env.STORAGE_DIR || path.join(process.cwd(), "data", "storage"));
 }
 
 export class LocalDiskStorage implements StorageDriver {
   readonly name = "local";
   private readonly root: string;
   constructor(root: string = localRoot()) {
-    this.root = path.resolve(root);
+    this.root = path.resolve(/*turbopackIgnore: true*/ root);
   }
 
   private pathFor(key: string): string {
     assertSafeKey(key);
-    const full = path.resolve(this.root, key);
+    const full = path.resolve(/*turbopackIgnore: true*/ this.root, key);
     if (!full.startsWith(this.root + path.sep)) throw new Error(`Unsafe storage key: ${key}`);
     return full;
   }

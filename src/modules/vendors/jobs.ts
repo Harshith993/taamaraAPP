@@ -13,7 +13,7 @@
  *  - A manager or supervisor signs the job off once the work is delivered.
  */
 import { z } from "zod";
-import type { Db, DbTx } from "@/lib/db";
+import { inSequence, type Db, type DbTx } from "@/lib/db";
 import {
   ConflictError,
   ForbiddenError,
@@ -112,7 +112,7 @@ export async function inviteVendor(
       "quotes.request",
       "You can't ask vendors for quotes on this booking.",
     );
-    const [event, vendor, fns] = await Promise.all([
+    const [event, vendor, fns] = await inSequence([
       tx.event.findUniqueOrThrow({
         where: { id: v.eventId },
         select: { name: true, status: true },

@@ -11,7 +11,7 @@
  *  - Approving needs tasks.approve on the booking, and someone other than the assignee (owners excepted).
  */
 import { z } from "zod";
-import type { Db, DbTx } from "@/lib/db";
+import { inSequence, type Db, type DbTx } from "@/lib/db";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/lib/errors";
 import { formatDate, formatTime } from "@/lib/format";
 import { parseInput } from "@/lib/validate";
@@ -24,7 +24,7 @@ const IST = "+05:30";
 
 /** People a task on this booking can go to: its managers and supervisors, the owners, and crew on it who have a login. */
 export async function assignableForBooking(db: DbTx, eventId: string) {
-  const [members, owners, crew] = await Promise.all([
+  const [members, owners, crew] = await inSequence([
     db.eventMember.findMany({ where: { eventId }, select: { role: true, user: { select: { id: true, name: true, status: true } } } }),
     db.user.findMany({ where: { status: "ACTIVE", accountType: "INTERNAL", roles: { some: { role: { isOwner: true } } } }, select: { id: true, name: true } }),
     db.crewAssignment.findMany({ where: { eventId, status: { in: ["ASSIGNED", "CONFIRMED"] }, worker: { userId: { not: null } } }, select: { duty: true, worker: { select: { name: true, user: { select: { id: true, status: true } } } } } }),
