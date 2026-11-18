@@ -64,3 +64,25 @@ export async function requestAdjustmentAction(input: z.input<typeof adjustmentSc
   const actor = await requireActor();
   return run(async () => requestAdjustment(db, actor, input, await requestMeta()), "Sent to the owners for approval.");
 }
+
+import { addBudgetLine, removeBudgetLine, reviseBudget, submitBudget, type budgetLineSchema } from "@/modules/finance/budgets";
+
+export async function addBudgetLineAction(eventId: string, input: z.input<typeof budgetLineSchema>) {
+  const actor = await requireActor();
+  return run(async () => addBudgetLine(db, actor, eventId, input, await requestMeta()), "Line added.");
+}
+
+export async function removeBudgetLineAction(eventId: string, lineId: string) {
+  const actor = await requireActor();
+  return run(async () => removeBudgetLine(db, actor, eventId, lineId, await requestMeta()), "Removed.");
+}
+
+export async function reviseBudgetAction(eventId: string) {
+  const actor = await requireActor();
+  return run(async () => reviseBudget(db, actor, eventId), "A new draft was started from the approved budget.");
+}
+
+export async function submitBudgetAction(eventId: string) {
+  const actor = await requireActor();
+  return run(async () => submitBudget(db, actor, eventId, await requestMeta()), "Sent to the owners for approval.");
+}

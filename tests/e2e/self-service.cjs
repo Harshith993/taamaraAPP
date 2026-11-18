@@ -8,7 +8,6 @@ const { BASE, PHONE, launch, checker } = require("./lib.cjs");
   const { browser, signIn } = await launch();
   const acct = `5010${String(Date.now()).slice(-8)}`;
   try {
-    let vendorPage;
     {
       const { ctx, page } = await signIn("98110 00005", PHONE);
       await page.getByRole("link", { name: /Your details, GST and bank/ }).click();
@@ -28,7 +27,6 @@ const { BASE, PHONE, launch, checker } = require("./lib.cjs");
       await page.goto(`${BASE}/vendors`);
       await page.getByRole("link", { name: "Roshni Lights" }).click();
       await page.waitForURL(/\/vendors\/[0-9a-f-]{36}/);
-      vendorPage = page.url();
       check("the office sees the change flagged", /changed their bank details/.test(await page.textContent("main")));
       await page.getByRole("button", { name: /I called them/ }).click();
       await page.getByText("Confirmed. Payments can go ahead.").waitFor({ timeout: 10000 });

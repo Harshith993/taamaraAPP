@@ -37,6 +37,8 @@ import { assignableForBooking, taskActions } from "@/modules/tasks/service";
 import { getRequirements, teamCandidates } from "@/modules/events/planning";
 import { listDocuments } from "@/modules/documents/service";
 import { bookingLedger } from "@/modules/finance/overview";
+import { budgetView } from "@/modules/finance/budgets";
+import { BudgetButtons, BudgetLineForm, RemoveBudgetLine } from "@/components/budget-controls";
 import { AdjustmentForm, ChargeForm, MarkPaid, PreparePayment, ReceiptForm, RemoveCharge, VoidPayment } from "@/components/finance-controls";
 import { todayInIndia } from "@/lib/format";
 import { DocumentList } from "@/components/document-list";
@@ -997,7 +999,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "ok
 }
 
 async function Money({ actor, eventId }: { actor: Actor; eventId: string }) {
-  const ledger = await bookingLedger(db, actor, eventId);
+  const [ledger, budget] = await Promise.all([bookingLedger(db, actor, eventId), budgetView(db, actor, eventId)]);
   if (!ledger)
     return (
       <Panel>
@@ -1022,6 +1024,8 @@ async function Money({ actor, eventId }: { actor: Actor; eventId: string }) {
         <Stat label="Paid out" value={formatINR(ledger.paidOut)} />
         {ledger.margin !== null && <Stat label="Margin before tax" value={formatINR(ledger.margin)} tone={ledger.margin < 0 ? "now" : "ok"} />}
       </dl>
+
+      {budget && <BudgetPanel eventId={eventId} budget={budget} />}
 
       {ledger.billing && (
         <div className="flex flex-wrap items-start gap-4">
@@ -1209,5 +1213,76 @@ async function Money({ actor, eventId }: { actor: Actor; eventId: string }) {
         )}
       </Panel>
     </div>
+  );
+}
+
+function BudgetPanel({ eventId, budget }: { eventId: string; budget: NonNullable<Awaited<ReturnType<typeof budgetView>>> }) {
+  const editing = budget.draft && !budget.pending;
+  return (
+    <Panel
+      title={`Budget${budget.approved ? ` · v${budget.approved.version} approved` : budget.draft ? " · draft" : ""}`}
+      action={budget.pending ? <Tag tone="look">WAITING FOR OWNER</Tag> : undefined}
+    >
+      {budget.rows.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[560px] border-collapse text-[13.5px]">
+            <thead>
+              <tr className="label-mono border-b-2 border-ink text-left text-[11px] text-ink-quiet">
+                <th scope="col" className="px-3.5 py-2 font-semibold">Kind of cost</th>
+                <th scope="col" className="px-3 py-2 text-right font-semibold">Estimate</th>
+                <th scope="col" className="px-3 py-2 text-right font-semibold">Actual so far</th>
+                <th scope="col" className="px-3.5 py-2 text-right font-semibold">Left</th>
+              </tr>
+            </thead>
+            <tbody>
+              {budget.rows.map((r) => (
+                <tr key={r.category} className={`border-b border-rule-soft ${r.over ? "bg-[#B5391C10]" : ""}`}>
+                  <td className="px-3.5 py-2">{r.category}</td>
+                  <td className="px-3 py-2 text-right font-mono">{r.estimate ? formatINR(r.estimate) : "—"}</td>
+                  <td className={`px-3 py-2 text-right font-mono ${r.over ? "font-semibold text-now" : ""}`}>{formatINR(r.actual)}</td>
+                  <td className={`px-3.5 py-2 text-right font-mono ${r.over ? "text-now" : ""}`}>{r.estimate ? formatINR(r.estimate - r.actual) : "—"}</td>
+                </tr>
+              ))}
+              <tr className="font-semibold">
+                <td className="px-3.5 py-2">Total</td>
+                <td className="px-3 py-2 text-right font-mono">{formatINR(budget.estimateTotal)}</td>
+                <td className={`px-3 py-2 text-right font-mono ${budget.actualTotal > budget.estimateTotal && budget.estimateTotal > 0 ? "text-now" : ""}`}>{formatINR(budget.actualTotal)}</td>
+                <td className="px-3.5 py-2 text-right font-mono">{budget.estimateTotal ? formatINR(budget.estimateTotal - budget.actualTotal) : "—"}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+      {budget.draft && (
+        <div className="flex flex-col gap-2 border-t-2 border-ink px-3.5 py-3">
+          <p className="label-mono text-[11.5px]">
+            Draft v{budget.draft.version} · {formatINR(budget.draft.total)}
+            {budget.approved ? ` (approved: ${formatINR(budget.approved.total)})` : ""}
+          </p>
+          <ul className="flex flex-col">
+            {budget.draft.lines.map((l) => (
+              <li key={l.id} className="flex items-center justify-between gap-3 border-b border-rule-soft py-1 text-[13.5px]">
+                <span>
+                  {l.category}
+                  {l.description ? <span className="text-ink-quiet"> · {l.description}</span> : null}
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="font-mono">{formatINR(l.amount)}</span>
+                  {editing && <RemoveBudgetLine eventId={eventId} lineId={l.id} />}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {editing && <BudgetLineForm eventId={eventId} categories={budget.categories} />}
+          {editing && budget.draft.lines.length > 0 && <BudgetButtons eventId={eventId} mode="submit" />}
+        </div>
+      )}
+      {!budget.draft && (
+        <div className="flex flex-col gap-2 px-3.5 py-3">
+          {!budget.approved && <p className="text-[14px] text-ink-quiet">No budget yet. Add what each kind of cost should come to; the owners approve it.</p>}
+          {budget.approved ? <BudgetButtons eventId={eventId} mode="revise" /> : <BudgetLineForm eventId={eventId} categories={budget.categories} />}
+        </div>
+      )}
+    </Panel>
   );
 }

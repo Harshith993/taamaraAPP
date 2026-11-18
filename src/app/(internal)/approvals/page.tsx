@@ -8,7 +8,7 @@ import { DecisionButtons } from "./decision-buttons";
 
 export const metadata: Metadata = { title: "Approvals" };
 
-const KIND_LABEL = { quote: "Vendor quote", payment: "Payment", crew: "Crew pay extra", expense: "Expense", missing: "Needs attention" } as const;
+const KIND_LABEL = { quote: "Vendor quote", payment: "Payment", crew: "Crew pay extra", expense: "Expense", budget: "Booking budget", missing: "Needs attention" } as const;
 
 export default async function ApprovalsPage() {
   const actor = await requirePermission("approvals.decide");
@@ -143,6 +143,21 @@ function ApprovalCard({ item }: { item: PendingApproval }) {
             <span className="font-mono">{formatINR(item.agreedPay)}</span>
             <span className="text-ink-quiet">{item.adjustmentType === "EXTRA" ? "Extra" : "Deduction"}</span>
             <span>{item.reason}</span>
+          </div>
+        )}
+
+        {item.kind === "budget" && (
+          <div className="flex flex-col gap-1 text-[13.5px]">
+            {item.lines.map((l, i) => (
+              <p key={i} className="flex justify-between gap-3 border-b border-rule-soft pb-1">
+                <span>
+                  {l.category}
+                  {l.description ? <span className="text-ink-quiet"> · {l.description}</span> : null}
+                </span>
+                <span className="font-mono">{formatINR(l.amount)}</span>
+              </p>
+            ))}
+            {item.previousTotal !== null && <p className="text-ink-quiet">Approved before: {formatINR(item.previousTotal)} (version {item.version - 1})</p>}
           </div>
         )}
 

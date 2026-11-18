@@ -6,7 +6,7 @@ import { confirmVendorBank, saveVendorBank, updateOwnVendorProfile } from "@/mod
 import { makeUser, makeVendor, makeWorker, testDb } from "./support/factories";
 
 const actorOf = async (u: { id: string }) => (await loadActor(testDb, u.id))!;
-let owner: Actor, accountant: Actor, vendor: Actor, otherVendor: Actor, crew: Actor;
+let owner: Actor, accountant: Actor, vendor: Actor, crew: Actor;
 let vendorId: string, otherVendorId: string, invoiceId: string, workerId: string;
 
 beforeAll(async () => {
@@ -20,7 +20,6 @@ beforeAll(async () => {
   const vu2 = await makeUser({ name: "VS Lights login", roleKey: "VENDOR", accountType: "VENDOR" });
   await testDb.vendorUser.createMany({ data: [{ vendorId: v.id, userId: vu.id }, { vendorId: v2.id, userId: vu2.id }] });
   vendor = await actorOf(vu);
-  otherVendor = await actorOf(vu2);
   invoiceId = (await testDb.vendorInvoice.create({ data: { vendorId: v.id, invoiceNumber: "VS/1", invoiceDate: new Date(), taxableAmount: 1000, total: 1000, status: "VERIFIED" } })).id;
   const w = await makeWorker("VS Crew");
   const cu = await makeUser({ name: "VS Crew login", roleKey: "LABOUR", accountType: "LABOUR" });

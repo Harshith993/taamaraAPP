@@ -12,6 +12,7 @@ import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
 import { formatINR, toNumber } from "@/lib/format";
 import { recordAudit, type RequestMeta } from "@/modules/audit/audit";
 import { MEDIA_SELECT, mediaView } from "@/modules/files/media";
+import { decideBudget } from "@/modules/finance/budgets";
 import type { Actor } from "@/modules/identity/actor";
 import { assertCan } from "@/modules/identity/policy";
 
@@ -111,6 +112,19 @@ export async function listPendingApprovals(db: Db, actor: Actor) {
           reason: a.reason,
         };
       }
+      if (r.type === "BUDGET") {
+        const b = await db.budget.findUnique({ where: { id: r.entityId }, include: { event: { select: { id: true, name: true } }, lines: { include: { category: { select: { name: true } } } } } });
+        if (!b) return { ...base, kind: "missing" as const };
+        const previous = await db.budget.findFirst({ where: { eventId: b.eventId, status: "APPROVED", version: { lt: b.version } }, orderBy: { version: "desc" }, include: { lines: { select: { estimatedAmount: true } } } });
+        return {
+          ...base,
+          kind: "budget" as const,
+          event: b.event,
+          version: b.version,
+          lines: b.lines.map((l) => ({ category: l.category.name, description: l.description, amount: toNumber(l.estimatedAmount) })),
+          previousTotal: previous ? previous.lines.reduce((s, l) => s + toNumber(l.estimatedAmount), 0) : null,
+        };
+      }
       if (r.type === "EXPENSE") {
         const e = await db.expense.findUnique({ where: { id: r.entityId }, include: { category: { select: { name: true } }, event: { select: { id: true, name: true } }, receiptFile: { select: MEDIA_SELECT } } });
         if (!e) return { ...base, kind: "missing" as const };
@@ -194,6 +208,8 @@ export async function decideApproval(db: Db, actor: Actor, approvalId: string, d
       if (a.state !== "PENDING") throw new ConflictError("This crew extra was already decided.");
       await tx.crewPayAdjustment.update({ where: { id: a.id }, data: { state: decision === "APPROVE" ? "APPROVED" : "REJECTED", decidedById: actor.userId, decidedAt: now } });
       auditSummary = `${decision === "APPROVE" ? "Approved" : "Rejected"} ${a.type === "EXTRA" ? "extra" : "deduction"} ${formatINR(a.amount)} for ${a.assignment.worker.name}`;
+    } else if (req.type === "BUDGET") {
+      auditSummary = await decideBudget(tx, actor.userId, req.entityId, decision === "APPROVE", now);
     } else if (req.type === "EXPENSE") {
       const e = await tx.expense.findUnique({ where: { id: req.entityId } });
       if (!e) throw new NotFoundError("That expense");
@@ -215,7 +231,7 @@ export async function decideApproval(db: Db, actor: Actor, approvalId: string, d
           type: `approval.${decision.toLowerCase()}`,
           title: `${decision === "APPROVE" ? "Approved" : decision === "REVISE" ? "Sent back" : "Not approved"}: ${req.summary}`,
           body: note,
-          link: req.type === "PAYMENT" ? "/money" : req.type === "EXPENSE" ? "/expenses" : req.eventId ? `/bookings/${req.eventId}?tab=${req.type === "QUOTATION" ? "vendors" : "crew"}` : null,
+          link: req.type === "PAYMENT" ? "/money" : req.type === "EXPENSE" ? "/expenses" : req.type === "BUDGET" && req.eventId ? `/bookings/${req.eventId}?tab=money` : req.eventId ? `/bookings/${req.eventId}?tab=${req.type === "QUOTATION" ? "vendors" : "crew"}` : null,
           entityType: req.type.toLowerCase(),
           entityId: req.entityId,
         },
