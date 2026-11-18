@@ -12,6 +12,7 @@ export default async function InternalLayout({ children }: { children: React.Rea
 
   // Only pages that exist and that this person may open appear in the menu.
   const items: NavItem[] = [{ href: "/home", label: "Home" }];
+  if (can(actor, "bookings.view")) items.push({ href: "/bookings", label: "Bookings" });
   if (can(actor, "approvals.decide")) {
     items.push({ href: "/approvals", label: "Approvals", badge: await db.approvalRequest.count({ where: { state: "PENDING" } }) });
   }

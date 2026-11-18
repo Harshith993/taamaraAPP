@@ -3,13 +3,12 @@ import Link from "next/link";
 import { EmptyState, Notice, Panel, Tag } from "@/components/ui";
 import { db } from "@/lib/db";
 import { firstName, formatCalendarDate, formatDate, formatINR, formatTime, greeting, todayAsDate, toNumber } from "@/lib/format";
+import { EVENT_STATUS_TONE } from "@/modules/events/labels";
 import { ROLES } from "@/modules/identity/permissions";
 import { can, eventWhere, scopeOf, taskWhere } from "@/modules/identity/policy";
 import { requireActor } from "@/modules/identity/session";
 
 export const metadata: Metadata = { title: "Home" };
-
-const STATUS_TONE = { TENTATIVE: "quiet", CONFIRMED: "outline", PLANNING: "outline", LIVE: "now", COMPLETED: "ok", SETTLED: "ok", POSTPONED: "quiet", CANCELLED: "quiet" } as const;
 
 export default async function HomePage({ searchParams }: { searchParams: Promise<{ denied?: string }> }) {
   const actor = await requireActor();
@@ -83,8 +82,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                     <span className="h-9 w-2.5" style={{ background: e.category.color }} aria-hidden="true" />
                     <span className="flex min-w-0 flex-col leading-tight">
                       <span className="flex flex-wrap items-center gap-2">
-                        <span className="text-[15px] font-bold">{e.name}</span>
-                        <Tag tone={STATUS_TONE[e.status]}>{e.status.replace("_", " ")}</Tag>
+                        <Link href={`/bookings/${e.id}`} className="text-[15px] font-bold text-ink">{e.name}</Link>
+                        <Tag tone={EVENT_STATUS_TONE[e.status]}>{e.status.replace("_", " ")}</Tag>
                       </span>
                       <span className="text-[13px] text-ink-quiet">
                         {e.category.name} · {e.code} · {formatCalendarDate(e.startDate)}
