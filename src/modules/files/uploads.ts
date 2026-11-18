@@ -33,6 +33,9 @@ export const CHUNK_BYTES = 4 * MB;
 /** Unfinished uploads a person may have open at once. */
 const MAX_OPEN_UPLOADS = 40;
 
+/** What one person may upload in 24 hours (a busy event day of videos fits comfortably). */
+export const DAILY_UPLOAD_BYTES = 5 * 1024 * MB;
+
 interface KindRule {
   maxBytes: number;
   label: string;
@@ -147,6 +150,8 @@ export async function startUpload(db: DbTx, actor: Actor, input: z.input<typeof 
   if (v.size > max) throw new ValidationError(`This file is too big. The limit is ${Math.round(max / MB)} MB.`);
   const open = await db.file.count({ where: { uploadedById: actor.userId, status: "UPLOADING" } });
   if (open >= MAX_OPEN_UPLOADS) throw new ConflictError("Too many uploads are unfinished. Please wait for them, or refresh the page.");
+  const today = await db.file.aggregate({ where: { uploadedById: actor.userId, createdAt: { gte: new Date(Date.now() - 24 * 3600_000) } }, _sum: { sizeBytes: true } });
+  if (Number(today._sum.sizeBytes ?? 0) + v.size > DAILY_UPLOAD_BYTES) throw new ConflictError("You have uploaded a lot today. Please try again tomorrow, or ask the office.");
 
   const id = randomUUID();
   const month = new Date().toISOString().slice(0, 7);

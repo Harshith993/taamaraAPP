@@ -24,6 +24,10 @@ import { notify } from "@/modules/notifications/notify";
 const run = promisify(execFile);
 const FFMPEG = process.env.FFMPEG_PATH || "ffmpeg";
 const FFPROBE = process.env.FFPROBE_PATH || "ffprobe";
+/** Photos larger than this are refused before decoding (a "decompression bomb" can't use up memory). */
+export const MAX_PHOTO_PIXELS = 100_000_000;
+/** ffmpeg and ffprobe may only read the local file: a crafted file can't make them fetch URLs or read other files. */
+const LOCAL_ONLY = ["-protocol_whitelist", "file"];
 
 /** A reason shown to the uploader. */
 class ProcessingRefused extends Error {}
@@ -37,14 +41,15 @@ export function describeLength(seconds: number): string {
 async function processPhoto(input: string, dir: string) {
   let meta;
   try {
-    meta = await sharp(input).metadata();
+    meta = await sharp(input, { limitInputPixels: MAX_PHOTO_PIXELS }).metadata();
   } catch {
     throw new ProcessingRefused(
       "This photo could not be opened. Please take it again, or send it as a JPEG (on iPhone: Settings → Camera → Formats → Most Compatible).",
     );
   }
   if (!meta.width || !meta.height) throw new ProcessingRefused("This photo could not be opened. Please take it again.");
-  const base = sharp(input, { failOn: "error" }).rotate();
+  if (meta.width * meta.height > MAX_PHOTO_PIXELS) throw new ProcessingRefused("This photo is too large. Please send a smaller one.");
+  const base = sharp(input, { failOn: "error", limitInputPixels: MAX_PHOTO_PIXELS }).rotate();
   const view = path.join(dir, "view.jpg");
   const thumb = path.join(dir, "thumb.jpg");
   const info = await base.clone().resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true }).jpeg({ quality: 82, mozjpeg: true }).toFile(view);
@@ -60,7 +65,7 @@ interface Probe {
 
 export async function probeVideo(input: string): Promise<Probe | null> {
   try {
-    const { stdout } = await run(FFPROBE, ["-v", "error", "-print_format", "json", "-show_format", "-show_streams", input], { timeout: 60_000 });
+    const { stdout } = await run(FFPROBE, ["-v", "error", ...LOCAL_ONLY, "-print_format", "json", "-show_format", "-show_streams", input], { timeout: 60_000 });
     const data = JSON.parse(stdout) as { format?: { duration?: string }; streams?: { codec_type?: string; width?: number; height?: number; duration?: string }[] };
     const video = data.streams?.find((s) => s.codec_type === "video");
     if (!video) return null;
@@ -80,13 +85,13 @@ async function processVideo(input: string, dir: string, maxSeconds: number) {
   const thumb = path.join(dir, "thumb.jpg");
   const view = path.join(dir, "play.mp4");
   const at = Math.min(1, probe.duration / 2).toFixed(2);
-  await run(FFMPEG, ["-y", "-v", "error", "-ss", at, "-i", input, "-frames:v", "1", "-vf", "scale='if(gt(iw,ih),min(640,iw),-2)':'if(gt(iw,ih),-2,min(640,ih))'", "-q:v", "4", thumb], {
+  await run(FFMPEG, ["-y", "-v", "error", "-ss", at, ...LOCAL_ONLY, "-i", input, "-frames:v", "1", "-vf", "scale='if(gt(iw,ih),min(640,iw),-2)':'if(gt(iw,ih),-2,min(640,ih))'", "-q:v", "4", thumb], {
     timeout: 120_000,
   });
   await run(
     FFMPEG,
     [
-      "-y", "-v", "error", "-i", input,
+      "-y", "-v", "error", ...LOCAL_ONLY, "-i", input,
       "-map", "0:v:0", "-map", "0:a:0?",
       "-c:v", "libx264", "-preset", "veryfast", "-crf", "27", "-pix_fmt", "yuv420p", "-profile:v", "high",
       "-vf", "scale='if(gt(iw,ih),min(1280,iw),-2)':'if(gt(iw,ih),-2,min(1280,ih))'",

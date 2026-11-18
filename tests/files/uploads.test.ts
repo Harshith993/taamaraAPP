@@ -1,4 +1,5 @@
 import path from "node:path";
+import { crc32 } from "node:zlib";
 import sharp from "sharp";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { localRoot, storage } from "@/lib/storage";
@@ -7,7 +8,7 @@ import { loadActor, type Actor } from "@/modules/identity/actor";
 import { checkFileLink, fileLink } from "@/modules/files/links";
 import { mediaView } from "@/modules/files/media";
 import { describeLength, processFile } from "@/modules/files/processing";
-import { appendChunk, CHUNK_BYTES, cleanFilename, cleanupAbandonedUploads, completeUpload, discardUpload, OffsetMismatchError, startUpload, uploadStatus } from "@/modules/files/uploads";
+import { appendChunk, CHUNK_BYTES, DAILY_UPLOAD_BYTES, cleanFilename, cleanupAbandonedUploads, completeUpload, discardUpload, OffsetMismatchError, startUpload, uploadStatus } from "@/modules/files/uploads";
 import { makeUser, testDb } from "../support/factories";
 import { ffprobeTags, jpegWithLocation, mp4WithLocation } from "../support/media";
 
@@ -99,6 +100,37 @@ describe("chunked uploads", () => {
     expect(done.mime).toBe("application/pdf");
     const video = mp4WithLocation(1, "doc.mp4");
     await expect(upload(vendor, video, { purpose: "DOCUMENT", name: "invoice.pdf", type: "application/pdf" })).rejects.toThrow(/PDF or a photo/);
+  });
+});
+
+describe("limits", () => {
+  it("caps how much one person uploads in a day", async () => {
+    const u = await actorOf(await makeUser({ name: "Up Heavy", roleKey: "LABOUR", accountType: "LABOUR" }));
+    await testDb.file.create({ data: { storageKey: `test/heavy-${Date.now()}`, filename: "v.mp4", mimeType: "video/mp4", sizeBytes: BigInt(DAILY_UPLOAD_BYTES - 1024), uploadedById: u.userId, status: "READY", purpose: "PROOF" } });
+    await expect(startUpload(testDb, u, { purpose: "PROOF", filename: "one-more.jpg", size: 4096, type: "image/jpeg" })).rejects.toThrow(/a lot today/);
+    expect((await startUpload(testDb, u, { purpose: "PROOF", filename: "tiny.jpg", size: 512, type: "image/jpeg" })).id).toBeTruthy();
+  });
+
+  it("refuses a photo whose header claims a huge size, without decoding it", async () => {
+    // A PNG that says 20,000 × 20,000 pixels but has no image data.
+    const chunk = (type: string, data: Buffer) => {
+      const body = Buffer.concat([Buffer.from(type), data]);
+      const len = Buffer.alloc(4);
+      len.writeUInt32BE(data.length);
+      const crc = Buffer.alloc(4);
+      crc.writeUInt32BE(crc32(body));
+      return Buffer.concat([len, body, crc]);
+    };
+    const ihdr = Buffer.alloc(13);
+    ihdr.writeUInt32BE(20000, 0);
+    ihdr.writeUInt32BE(20000, 4);
+    ihdr.set([8, 2, 0, 0, 0], 8);
+    const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk("IHDR", ihdr), chunk("IEND", Buffer.alloc(0))]);
+    const done = await upload(crew, png, { name: "bomb.png", type: "image/png" });
+    await processFile(testDb, done.id);
+    const f = await testDb.file.findUniqueOrThrow({ where: { id: done.id } });
+    expect(f.status).toBe("FAILED");
+    expect(f.processingError).toMatch(/could not be opened|too large/);
   });
 });
 

@@ -1,6 +1,6 @@
 // Browser check: vendor profile and bank change (with the office's confirmation call); crew "Me".
 // Usage: node tests/e2e/self-service.cjs <screenshot-dir>
-const { BASE, PHONE, launch, checker } = require("./lib.cjs");
+const { BASE, PHONE, launch, checker, query } = require("./lib.cjs");
 
 (async () => {
   const out = process.argv[2] || "/tmp";
@@ -27,10 +27,17 @@ const { BASE, PHONE, launch, checker } = require("./lib.cjs");
       await page.goto(`${BASE}/vendors`);
       await page.getByRole("link", { name: "Roshni Lights" }).click();
       await page.waitForURL(/\/vendors\/[0-9a-f-]{36}/);
+      await page.waitForLoadState("networkidle"); // let the page finish loading before pressing its buttons
       check("the office sees the change flagged", /changed their bank details/.test(await page.textContent("main")));
       await page.getByRole("button", { name: /I called them/ }).click();
-      await page.getByText("Confirmed. Payments can go ahead.").waitFor({ timeout: 10000 });
-      check("accountant confirms after calling", true);
+      // The page refreshes at once and the warning (with its button) goes away.
+      let bank;
+      for (let i = 0; i < 20; i++) {
+        [bank] = await query(`SELECT b."needsCheck" FROM vendor_bank_details b JOIN vendors v ON v.id = b."vendorId" WHERE v."companyName" = 'Roshni Lights'`);
+        if (bank.needsCheck === false) break;
+        await page.waitForTimeout(500);
+      }
+      check("accountant confirms after calling", bank.needsCheck === false);
       await ctx.close();
     }
     {
