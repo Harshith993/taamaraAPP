@@ -22,7 +22,10 @@ const { BASE, PHONE, launch, checker } = require("./lib.cjs");
       await page.waitForLoadState("networkidle");
       const after = Number(/(\d+) unread/.exec(await page.getByRole("link", { name: /^Notifications/ }).getAttribute("aria-label"))?.[1] ?? 0);
       check(`${login}: opening one goes where it points and marks it read`, after === before - 1 && !page.url().endsWith(path), `${firstText} → ${new URL(page.url()).pathname}`);
-      if (login.startsWith("98000")) await page.goto(`${BASE}${path}`), await page.screenshot({ path: `${out}/90-notifications.png`, fullPage: true });
+      if (login.startsWith("98000")) {
+        await page.goto(`${BASE}${path}`);
+        await page.screenshot({ path: `${out}/90-notifications.png`, fullPage: true });
+      }
       await ctx.close();
     }
   } catch (err) {
