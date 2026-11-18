@@ -7,9 +7,9 @@ Updated at the end of every working session. Status: ✅ done · 🔄 in progres
 | 1. Requirements analysis | ✅ | v1.1 approved by the owners on 17 Nov. 8 non-blocking questions remain open (section 3), each answered before its phase. |
 | 2. System architecture | ✅ | v1.1 approved on 17 Nov: stack, access model, matrix, schema outline, AWS Mumbai hosting, media pipeline. |
 | 3. UI/UX planning | ✅ | Direction C in the lotus palette. 9 screens on the canvas: owner home, design language, crew Today, booking workspace, supervisor event day (night mode), crew proof upload, vendor job, manager home (desktop), owner money (desktop). Screen map for every role in `docs/design/SITEMAP.md`. The owner asked to continue without waiting for approval (18 Nov). |
-| 4. Database | ⬜ | Repository ready: `Harshith993/taamaraAPP`. |
-| 5. Authentication & authorization | ⬜ | |
-| 6. Core operations (incl. vendor portal, crew app) | ⬜ | |
+| 4. Database | ✅ | Prisma 7 schema (72 tables), 2 migrations with database-level protections (append-only audit log, payment ledger rules, fixed issued invoices, proof one-parent rule), reference + demo seed, 42 database tests. |
+| 5. Authentication & authorization | ✅ | Better Auth (phone or email + password, DB sessions, rate limits, forced first password), policy layer with scoped filters, team & role management for owners, sign-in/home/team/roles screens, vendor and crew homes. 77 automated tests + 23-check browser smoke test. |
+| 6. Core operations (incl. vendor portal, crew app) | 🔄 | Started: owners' approvals inbox, then bookings list and booking workspace. |
 | 7. Finance | ⬜ | |
 | 8. Communication & notifications | ⬜ | |
 | 9. Testing & security | ⬜ | |
@@ -34,6 +34,9 @@ Updated at the end of every working session. Status: ✅ done · 🔄 in progres
 | D14 | 17 Nov 2026 | Plan v1.1 approved, with assumptions A1–A4 (either owner approves; managers see costs but not billing; crew extras as approved lines; managers create bookings) | Approved by owners |
 | D15 | 17 Nov 2026 | The company and app are **Taamara Taamara** (events & beyond) | Decided by owner (corrected from "Taamara") |
 | D19 | 18 Nov 2026 | Owner asked to keep building without stopping for approvals while away; review happens afterwards | Owner instruction |
+| D20 | 18 Nov 2026 | Next.js server caching (Cache Components) is off: nearly every screen is per-user and permission-scoped, so nothing is cached on the server | Technical decision |
+| D21 | 18 Nov 2026 | Tests rebuild a separate `*_test` database from the migrations on every run; the development database is never reset by tools (Prisma also asks for a person's consent first) | Technical decision |
+| D22 | 18 Nov 2026 | Vendor and crew logins can never hold an "every record" scope, even if misconfigured; their widest access is their own records | Technical decision |
 | D18 | 17 Nov 2026 | Visual direction C (Cue Sheet), recoloured from the company logo: cream ground, aubergine ink, plum brand, one lotus petal colour per department, lotus-lattice and petal-stripe patterns, and a night mode for event days | Decided by owner |
 | D16 | 17 Nov 2026 | Proof defaults: camera or gallery, videos up to 2 minutes, approved proof required before a vendor's final payment | Approved by owners |
 | D17 | 17 Nov 2026 | iPad is a first-class device alongside phone and desktop; the UI must be immersive and not look generic | Requested by owner |
@@ -42,3 +45,16 @@ Updated at the end of every working session. Status: ✅ done · 🔄 in progres
 ## Earlier prototype (superseded)
 
 Before the full brief arrived, a small Express + SQLite prototype was started. It has no screens and does not match the chosen stack. It was moved to `archive/prototype-express-sqlite/` for reference and is not part of the product.
+
+## How to run it locally
+
+```bash
+cp .env.example .env          # then put random secrets in BETTER_AUTH_SECRET and FIELD_ENCRYPTION_KEY
+npm install
+npx prisma migrate deploy     # create the tables
+npm run db:seed               # reference data + demo data (demo password: Taamara@2026)
+npm run dev                   # http://localhost:3000
+npm test                      # automated tests (needs TEST_DATABASE_URL)
+```
+
+Demo sign-ins (development only): owner `98000 00001`, co-founder `98000 00002`, event manager `priya@demo.taamara.in`, accountant `accounts@demo.taamara.in`, supervisor `98000 00006`, vendor (Roshni Lights) `98110 00005`, crew (Sunil) `99220 00002`.
