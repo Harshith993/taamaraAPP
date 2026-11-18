@@ -177,7 +177,9 @@ export default async function VendorJobPage({
           (job.status === "ACCEPTED" || job.status === "IN_PROGRESS") && (
             <Panel title="On the day">
               <div className="px-3.5 py-3">
+                {/* Keyed by stage so the next button appears as soon as the page refreshes. */}
                 <ProgressButton
+                  key={job.status}
                   jobId={job.id}
                   stage={
                     job.status === "ACCEPTED" ? "IN_PROGRESS" : "DELIVERED"

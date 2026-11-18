@@ -1,5 +1,6 @@
 // Browser checks for bookings across roles. Needs the dev server on :3000 with the demo seed.
 const { chromium } = require("playwright");
+const { resetLoginLimits } = require("./lib.cjs");
 const BASE = "http://localhost:3000";
 const results = [];
 const check = (name, ok, detail = "") => results.push(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? `  (${detail})` : ""}`);
@@ -8,6 +9,7 @@ const check = (name, ok, detail = "") => results.push(`${ok ? "PASS" : "FAIL"}  
   const browser = await chromium.launch();
   const out = process.argv[2];
   const signIn = async (login, viewport = { width: 1440, height: 1000 }) => {
+    await resetLoginLimits();
     const ctx = await browser.newContext({ viewport });
     const page = await ctx.newPage();
     await page.goto(`${BASE}/login`);

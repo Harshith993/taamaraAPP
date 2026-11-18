@@ -2,6 +2,7 @@
 // Run: node tests/e2e/smoke.cjs <screenshot-dir>
 // Signs in as each role, checks what they can see, and saves screenshots.
 const { chromium } = require("playwright");
+const { resetLoginLimits } = require("./lib.cjs");
 
 const BASE = "http://localhost:3000";
 const OUT = process.argv[2];
@@ -9,6 +10,7 @@ const results = [];
 const check = (name, ok, detail = "") => results.push(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? `  (${detail})` : ""}`);
 
 async function signIn(browser, login, password, viewport) {
+  await resetLoginLimits();
   const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1 });
   const page = await ctx.newPage();
   await page.goto(`${BASE}/login`);
