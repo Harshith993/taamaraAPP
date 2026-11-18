@@ -21,6 +21,8 @@ export interface CompanySwitches {
   proofFromGallery: boolean;
   maxVideoSeconds: number;
   finalVendorPaymentNeedsProof: boolean;
+  /** Open question 2: the app issues GST tax invoices to clients (off until the owners decide). */
+  clientInvoices: boolean;
 }
 
 export const DEFAULT_SWITCHES: CompanySwitches = {
@@ -29,6 +31,7 @@ export const DEFAULT_SWITCHES: CompanySwitches = {
   proofFromGallery: true,
   maxVideoSeconds: 120,
   finalVendorPaymentNeedsProof: true,
+  clientInvoices: false,
 };
 
 export interface Actor {

@@ -26,13 +26,15 @@ export default async function InternalLayout({ children }: { children: React.Rea
     items.push({ href: "/approvals", label: "Approvals", badge: await db.approvalRequest.count({ where: { state: "PENDING" } }) });
   }
   if (can(actor, "admin.users")) items.push({ href: "/team", label: "Team" });
-  if (can(actor, "admin.settings")) items.push({ href: "/settings", label: "Settings" });
+  if (can(actor, "admin.settings") || can(actor, "admin.taxSettings")) items.push({ href: "/settings", label: "Settings" });
 
   const roleLabel = actor.isOwner ? "Owner" : actor.roles.map((r) => ROLES[r].name).join(" · ");
   return (
     <div className="flex min-h-dvh flex-col">
-      <AppHeader name={actor.name} roleLabel={roleLabel} items={items} />
-      <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 pt-5 pb-10 sm:px-8">{children}</main>
+      <div className="print:hidden">
+        <AppHeader name={actor.name} roleLabel={roleLabel} items={items} />
+      </div>
+      <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 pt-5 pb-10 sm:px-8 print:max-w-none print:p-0">{children}</main>
     </div>
   );
 }

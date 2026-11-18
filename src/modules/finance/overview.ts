@@ -65,6 +65,7 @@ export async function bookingLedger(db: Db, actor: Actor, eventId: string) {
   const billed = round2(chargeRows.reduce((s, c) => s + c.amount, 0));
   const billedGst = round2(chargeRows.reduce((s, c) => s + c.gst, 0));
   const received = sum(payments.filter((p) => p.direction === "IN") as never, ["PAID"]);
+  const tds = round2(payments.filter((p) => p.direction === "IN" && p.status === "PAID").reduce((s, p) => s + toNumber(p.tdsAmount), 0));
 
   const vendorRows = jobs.map((j) => {
     const invoices = j.workOrders.flatMap((w) =>
@@ -125,7 +126,8 @@ export async function bookingLedger(db: Db, actor: Actor, eventId: string) {
     billed,
     billedGst,
     received,
-    clientBalance: billing ? round2(billed + billedGst - received) : null,
+    tds,
+    clientBalance: billing ? round2(billed + billedGst - received - tds) : null,
     vendors: vendorRows,
     crew: crewRows,
     vendorCost,
@@ -145,6 +147,7 @@ export async function bookingLedger(db: Db, actor: Actor, eventId: string) {
       paidOn: p.paidOn,
       createdAt: p.createdAt,
       invoice: p.vendorInvoice?.invoiceNumber ?? null,
+      tds: toNumber(p.tdsAmount),
       note: p.note,
       voidReason: p.voidReason,
     })),
@@ -176,7 +179,7 @@ export async function moneyOverview(db: Db, actor: Actor) {
       startDate: e.startDate,
       client: e.client.name,
       billed: f.billed,
-      due: round2(f.billed + f.gst - f.received),
+      due: f.due,
       received: f.received,
       costs: round2(f.vendorCost + f.crewCost + f.expenseCost),
       paidOut: f.paidOut,

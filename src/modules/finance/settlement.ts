@@ -77,7 +77,7 @@ async function computeChecks(tx: DbTx, eventId: string) {
   });
   checks.push({ key: "charged", ok: figures.billed > 0, level: "warn", label: "The client has been charged", details: figures.billed > 0 ? [] : ["Nothing is charged to the client on this booking."] });
 
-  const balance = round2(figures.billed + figures.gst - figures.received);
+  const balance = figures.due;
   checks.push({ key: "client", ok: balance <= TOLERANCE, level: "block", label: "The client has paid in full", details: balance > TOLERANCE ? [`The client still owes ${formatINR(balance, { decimals: true })} (with GST).`] : [] });
   if (balance < -TOLERANCE) checks.push({ key: "client", ok: false, level: "warn", label: "The client paid more than was billed", details: [`${formatINR(-balance, { decimals: true })} more than billed. Add the missing charge, or note the refund.`] });
 

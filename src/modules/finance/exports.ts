@@ -5,6 +5,7 @@
  *   payments    every payment in and out: date, direction, party, booking, method, reference, amount, status
  *   expenses    expenses: date, booking, kind, what, who, paid by, amount, status
  *   crew-pay    per booking and crew member: agreed, approved extras/deductions, total, paid
+ *   sales       client GST invoices issued (and cancelled) in the range: the sales register for GSTR-1
  *   pnl         monthly P&L for the months the range touches (pnl.ts), plus each booking's figures
  *
  * Dates are a range of calendar days in India time. Every export is written to the audit log.
@@ -13,14 +14,15 @@ import ExcelJS from "exceljs";
 import type { Db } from "@/lib/db";
 import { ForbiddenError, ValidationError } from "@/lib/errors";
 import { toNumber } from "@/lib/format";
+import { stateName } from "@/lib/gst";
 import { recordAudit, type RequestMeta } from "@/modules/audit/audit";
 import type { Actor } from "@/modules/identity/actor";
 import { assertCan } from "@/modules/identity/policy";
 import { monthlyPnl } from "./pnl";
 
-export const EXPORT_KINDS = ["pnl", "purchases", "payments", "expenses", "crew-pay"] as const;
+export const EXPORT_KINDS = ["pnl", "sales", "purchases", "payments", "expenses", "crew-pay"] as const;
 export type ExportKind = (typeof EXPORT_KINDS)[number];
-export const EXPORT_LABELS: Record<ExportKind, string> = { pnl: "Monthly profit and loss", purchases: "Purchase register (vendor invoices)", payments: "Payments in and out", expenses: "Expenses", "crew-pay": "Crew pay by booking" };
+export const EXPORT_LABELS: Record<ExportKind, string> = { pnl: "Monthly profit and loss", sales: "Sales register (client GST invoices)", purchases: "Purchase register (vendor invoices)", payments: "Payments in and out", expenses: "Expenses", "crew-pay": "Crew pay by booking" };
 
 const ymd = /^\d{4}-\d{2}-\d{2}$/;
 const day = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "");
@@ -80,6 +82,37 @@ export async function buildExport(db: Db, actor: Actor, kind: string, from: stri
     ]);
     for (const b of pnl.bookings) bs.addRow({ ...b, booking: `${b.code} ${b.name}` });
     rows = pnl.months.length;
+  } else if (kind === "sales") {
+    const ws = sheet(wb, "Sales", [
+      { header: "Invoice date", key: "date", width: 13 },
+      { header: "Invoice no.", key: "number", width: 17 },
+      { header: "Client", key: "client", width: 28 },
+      { header: "Client GSTIN", key: "gstin", width: 18 },
+      { header: "Place of supply", key: "pos", width: 18 },
+      { header: "B2B / B2C", key: "b2x", width: 9 },
+      { header: "Type", key: "type", width: 11 },
+      { header: "Taxable", key: "taxable", width: 14, money: true },
+      { header: "CGST", key: "cgst", width: 12, money: true },
+      { header: "SGST", key: "sgst", width: 12, money: true },
+      { header: "IGST", key: "igst", width: 12, money: true },
+      { header: "Total", key: "total", width: 14, money: true },
+      { header: "Status", key: "status", width: 11 },
+      { header: "Booking", key: "booking", width: 28 },
+      { header: "Cancelled because", key: "reason", width: 28 },
+    ]);
+    const list = await db.clientInvoice.findMany({
+      where: { status: { not: "DRAFT" }, issueDate: { gte: start, lte: end } },
+      orderBy: [{ issueDate: "asc" }, { number: "asc" }],
+      include: { event: { select: { code: true, name: true } } },
+    });
+    for (const i of list) {
+      const r = (i.recipient ?? {}) as { name?: string; gstin?: string | null };
+      const cancelled = i.status === "CANCELLED";
+      // Cancelled invoices keep their number in the register, with nothing to report.
+      const amt = (d: unknown) => (cancelled ? 0 : toNumber(d as number));
+      ws.addRow({ date: day(i.issueDate), number: i.number, client: r.name ?? "", gstin: r.gstin ?? "", pos: i.placeOfSupply ? `${i.placeOfSupply}-${stateName(i.placeOfSupply) ?? ""}` : "", b2x: r.gstin ? "B2B" : "B2C", type: i.type, taxable: amt(i.subtotal), cgst: amt(i.cgst), sgst: amt(i.sgst), igst: amt(i.igst), total: amt(i.total), status: i.status, booking: `${i.event.code} ${i.event.name}`, reason: i.cancelReason ?? "" });
+    }
+    rows = list.length;
   } else if (kind === "purchases") {
     const ws = sheet(wb, "Purchases", [
       { header: "Invoice date", key: "date", width: 13 },
@@ -112,6 +145,7 @@ export async function buildExport(db: Db, actor: Actor, kind: string, from: stri
       { header: "Method", key: "method", width: 9 },
       { header: "Reference", key: "ref", width: 18 },
       { header: "Amount", key: "amount", width: 14, money: true },
+      { header: "TDS by client", key: "tds", width: 12, money: true },
       { header: "Status", key: "status", width: 10 },
       { header: "Note", key: "note", width: 30 },
     ]);
@@ -131,6 +165,7 @@ export async function buildExport(db: Db, actor: Actor, kind: string, from: stri
         method: p.method,
         ref: p.reference ?? "",
         amount: (p.direction === "OUT" ? -1 : 1) * toNumber(p.amount),
+        tds: toNumber(p.tdsAmount),
         status: p.status,
         note: [p.note, p.voidReason ? `Void: ${p.voidReason}` : null].filter(Boolean).join(" · "),
       });

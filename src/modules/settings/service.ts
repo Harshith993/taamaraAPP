@@ -17,6 +17,7 @@ export const switchesSchema = z.object({
   proofFromGallery: z.boolean(),
   maxVideoSeconds: z.coerce.number().int().min(15, "At least 15 seconds.").max(300, "At most 5 minutes."),
   finalVendorPaymentNeedsProof: z.boolean(),
+  clientInvoices: z.boolean(),
 });
 
 export const SWITCH_LABELS: Record<keyof CompanySwitches, { label: string; help: string }> = {
@@ -25,6 +26,7 @@ export const SWITCH_LABELS: Record<keyof CompanySwitches, { label: string; help:
   proofFromGallery: { label: "Proof can come from the gallery", help: "When off, vendors and crew must use the camera, so photos are taken on the spot." },
   maxVideoSeconds: { label: "Longest proof video (seconds)", help: "Longer videos are refused on the phone and on the server." },
   finalVendorPaymentNeedsProof: { label: "Vendor's final payment needs approved proof", help: "Owners are warned before paying a vendor whose work has no approved photo or video." },
+  clientInvoices: { label: "Issue GST invoices to clients from the app", help: "Owners and the accountant draft and issue numbered GST tax invoices from a booking's client charges. Leave off if your accountant raises invoices elsewhere." },
 };
 
 export async function getSwitches(db: Db): Promise<CompanySwitches> {

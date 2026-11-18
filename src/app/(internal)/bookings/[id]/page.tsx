@@ -41,6 +41,8 @@ import { budgetView } from "@/modules/finance/budgets";
 import { BudgetButtons, BudgetLineForm, RemoveBudgetLine } from "@/components/budget-controls";
 import { AdjustmentForm, ChargeForm, MarkPaid, PreparePayment, ReceiptForm, RemoveCharge, ReopenBooking, SettleBooking, VoidPayment } from "@/components/finance-controls";
 import { settlementView, type SettlementView } from "@/modules/finance/settlement";
+import { bookingInvoices, type BookingInvoices } from "@/modules/finance/client-invoices";
+import { BillingDetailsForm, CancelInvoice, DeleteDraft, IssueInvoice, NewInvoiceForm } from "@/components/client-invoice-controls";
 import { todayInIndia } from "@/lib/format";
 import { DocumentList } from "@/components/document-list";
 import { AddDocumentForm } from "@/components/document-controls";
@@ -1000,7 +1002,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "ok
 }
 
 async function Money({ actor, eventId }: { actor: Actor; eventId: string }) {
-  const [ledger, budget, settlement, ev] = await Promise.all([bookingLedger(db, actor, eventId), budgetView(db, actor, eventId), settlementView(db, actor, eventId), db.event.findUnique({ where: { id: eventId }, select: { status: true } })]);
+  const [ledger, budget, settlement, invoices, ev] = await Promise.all([bookingLedger(db, actor, eventId), budgetView(db, actor, eventId), settlementView(db, actor, eventId), bookingInvoices(db, actor, eventId), db.event.findUnique({ where: { id: eventId }, select: { status: true } })]);
   if (!ledger)
     return (
       <Panel>
@@ -1063,6 +1065,7 @@ async function Money({ actor, eventId }: { actor: Actor; eventId: string }) {
                       {p.paidOn ? formatCalendarDate(p.paidOn, { day: "numeric", month: "short", year: "numeric" }) : ""} · {p.method.toLowerCase()}
                       {p.reference ? ` · ${p.reference}` : ""}
                     </span>
+                    {p.tds > 0 && <span className="text-[12.5px] text-ink-quiet">+ TDS kept by the client {formatINR(p.tds, { decimals: true })}</span>}
                     {p.voidReason && <span className="text-[12.5px] text-now">Void: {p.voidReason}</span>}
                   </span>
                   <span className="flex items-center gap-2">
@@ -1081,6 +1084,8 @@ async function Money({ actor, eventId }: { actor: Actor; eventId: string }) {
           </Panel>
         </div>
       )}
+
+      {invoices && <ClientInvoicesPanel eventId={eventId} inv={invoices} locked={locked} today={today} />}
 
       <Panel title={`Vendors · ${ledger.vendors.length}`}>
         {ledger.vendors.length === 0 ? (
@@ -1220,6 +1225,69 @@ async function Money({ actor, eventId }: { actor: Actor; eventId: string }) {
         )}
       </Panel>
     </div>
+  );
+}
+
+const INVOICE_TONE: Record<string, "ok" | "look" | "quiet" | "plum" | "outline"> = { DRAFT: "outline", ISSUED: "plum", PART_PAID: "look", PAID: "ok", CANCELLED: "quiet" };
+
+function ClientInvoicesPanel({ eventId, inv, locked, today }: { eventId: string; inv: BookingInvoices; locked: boolean; today: string }) {
+  const manage = inv.manages && !locked;
+  const c = inv.client;
+  return (
+    <Panel title={`Client GST invoices · ${inv.invoices.filter((i) => i.status !== "DRAFT").length}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-rule-soft px-3.5 py-2.5 text-[13.5px]">
+        <span className="flex flex-col leading-snug">
+          <span className="label-mono text-[11px] text-ink-quiet">Bill to</span>
+          <span className="font-semibold">
+            {c.name}
+            {c.gstin ? <span className="font-mono text-[12.5px]"> · GSTIN {c.gstin}</span> : <span className="text-ink-quiet"> · not GST registered</span>}
+          </span>
+          <span className="text-ink-quiet">{[c.address, c.city, c.state].filter(Boolean).join(", ") || "No billing address yet"}</span>
+          <span>
+            Place of supply: {c.placeName ?? "not known"} · {c.interState ? "IGST" : "CGST + SGST"}
+          </span>
+        </span>
+        {manage && <BillingDetailsForm eventId={eventId} client={c} />}
+      </div>
+      {inv.manages && !inv.companyReady && (
+        <p className="border-b border-rule-soft px-3.5 py-2 text-[13px] text-now">
+          Add the company&apos;s GSTIN and address in <Link href="/settings">Settings</Link> before issuing invoices.
+        </p>
+      )}
+      <ul>
+        {inv.invoices.map((i) => (
+          <li key={i.id} className="flex flex-col gap-1.5 border-b border-rule-soft px-3.5 py-2.5 last:border-b-0">
+            <span className="flex flex-wrap items-center justify-between gap-2">
+              <span className="flex flex-col leading-tight">
+                <span className="font-semibold">
+                  <Link href={`/invoices/client/${i.id}`} className={`font-mono ${i.status === "CANCELLED" ? "line-through" : ""}`}>
+                    {i.number ?? "Draft"}
+                  </Link>{" "}
+                  · {i.type.toLowerCase()} · <span className="font-mono">{formatINR(i.total, { decimals: true })}</span>
+                </span>
+                <span className="text-[12.5px] text-ink-quiet">
+                  {i.issueDate ? `${formatCalendarDate(i.issueDate, { day: "numeric", month: "short", year: "numeric" })} · ` : ""}
+                  {formatINR(i.subtotal)} + GST {formatINR(i.tax, { decimals: true })} · {i.lines.map((l) => l.description).join(", ")}
+                </span>
+                {i.cancelReason && <span className="text-[12.5px] text-now">Cancelled: {i.cancelReason}</span>}
+              </span>
+              <span className="flex flex-wrap items-center justify-end gap-1.5">
+                <Tag tone={INVOICE_TONE[i.status] ?? "outline"}>{i.status.replace("_", " ")}</Tag>
+                {manage && i.status === "DRAFT" && <IssueInvoice invoiceId={i.id} today={today} />}
+                {manage && i.status === "DRAFT" && <DeleteDraft invoiceId={i.id} />}
+                {manage && ["ISSUED", "PART_PAID", "PAID"].includes(i.status) && <CancelInvoice invoiceId={i.id} />}
+              </span>
+            </span>
+          </li>
+        ))}
+        {inv.invoices.length === 0 && <li className="px-3.5 py-3 text-[14px] text-ink-quiet">No invoices yet.</li>}
+      </ul>
+      {manage && (
+        <div className="border-t-2 border-ink px-3.5 py-2.5">
+          <NewInvoiceForm eventId={eventId} charges={inv.charges} />
+        </div>
+      )}
+    </Panel>
   );
 }
 

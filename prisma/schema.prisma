@@ -1281,18 +1281,19 @@ model BudgetLine {
 
 /// What the client is billed. Hidden from event managers and supervisors.
 model ClientCharge {
-  id          String   @id @default(uuid())
-  eventId     String
-  event       Event    @relation(fields: [eventId], references: [id], onDelete: Restrict)
-  clientId    String
-  client      Client   @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  description String
-  sacCode     String?
-  amount      Decimal  @db.Decimal(14, 2)
-  gstRate     Decimal  @default(18) @db.Decimal(5, 2)
-  createdById String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String              @id @default(uuid())
+  eventId      String
+  event        Event               @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  clientId     String
+  client       Client              @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  description  String
+  sacCode      String?
+  amount       Decimal             @db.Decimal(14, 2)
+  gstRate      Decimal             @default(18) @db.Decimal(5, 2)
+  createdById  String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  invoiceItems ClientInvoiceItem[]
 
   @@index([eventId])
   @@map("client_charges")
@@ -1311,7 +1312,12 @@ model ClientInvoice {
   status        ClientInvoiceStatus @default(DRAFT)
   issueDate     DateTime?           @db.Date
   dueDate       DateTime?           @db.Date
+  /// State code of the place of supply, e.g. "08" (Rajasthan).
   placeOfSupply String?
+  /// The company's name, GSTIN, address and state as printed, frozen when issued.
+  supplier      Json?
+  /// The client's name, GSTIN, address and state as printed, frozen when issued.
+  recipient     Json?
   subtotal      Decimal             @db.Decimal(14, 2)
   cgst          Decimal             @default(0) @db.Decimal(14, 2)
   sgst          Decimal             @default(0) @db.Decimal(14, 2)
@@ -1334,6 +1340,9 @@ model ClientInvoiceItem {
   id          String        @id @default(uuid())
   invoiceId   String
   invoice     ClientInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  /// The client charge this line bills (a charge can be split across invoices, never billed twice).
+  chargeId    String?
+  charge      ClientCharge? @relation(fields: [chargeId], references: [id], onDelete: Restrict)
   description String
   sacCode     String?
   quantity    Decimal       @default(1) @db.Decimal(10, 2)
@@ -1366,6 +1375,8 @@ model Payment {
   crewAssignmentId String?
   crewAssignment   CrewAssignment?  @relation(fields: [crewAssignmentId], references: [id], onDelete: Restrict)
   amount           Decimal          @db.Decimal(14, 2)
+  /// Client receipts: income tax the client deducted at source (TDS). Counts towards what they owe.
+  tdsAmount        Decimal          @default(0) @db.Decimal(14, 2)
   method           PaymentMethod
   reference        String?
   paidOn           DateTime?        @db.Date

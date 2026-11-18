@@ -12,7 +12,7 @@ export function SwitchesForm({ initial, labels }: { initial: CompanySwitches; la
   const [v, setV] = useState(initial);
   const [result, setResult] = useState<ActionResult | null>(null);
   const [pending, start] = useTransition();
-  const toggles = (["crewSelfCheckIn", "crewCanSeePay", "proofFromGallery", "finalVendorPaymentNeedsProof"] as const).map((k) => (
+  const toggles = (["crewSelfCheckIn", "crewCanSeePay", "proofFromGallery", "finalVendorPaymentNeedsProof", "clientInvoices"] as const).map((k) => (
     <label key={k} className="grid min-h-14 cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-rule-soft px-3.5 py-3 last:border-b-0">
       <span className="flex flex-col">
         <span className="text-[15px] font-semibold">{labels[k].label}</span>

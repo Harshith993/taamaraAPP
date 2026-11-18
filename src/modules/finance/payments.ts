@@ -162,11 +162,22 @@ export async function voidPayment(db: Db, actor: Actor, paymentId: string, reaso
 
 // ───────────────────────────── Client money ─────────────────────────────
 
-export const receiptSchema = z.object({ eventId: z.string().uuid(), amount: money, method: z.enum(METHODS), reference: z.string().trim().max(80).optional(), paidOn: date, note: z.string().trim().max(300).optional() });
+export const receiptSchema = z.object({
+  eventId: z.string().uuid(),
+  amount: money,
+  /** Income tax the client deducted at source (corporate clients often deduct 1–2%). */
+  tdsAmount: z.union([z.literal(""), z.coerce.number().min(0, "TDS can't be negative.").max(10_000_000)]).optional(),
+  method: z.enum(METHODS),
+  reference: z.string().trim().max(80).optional(),
+  paidOn: date,
+  note: z.string().trim().max(300).optional(),
+});
 
 export async function recordReceipt(db: Db, actor: Actor, input: z.input<typeof receiptSchema>, meta: RequestMeta = {}) {
   const v = parseInput(receiptSchema, input);
   if (v.paidOn > todayInIndia()) throw new ValidationError("The date is in the future.", { paidOn: "Pick today or earlier." });
+  const tds = v.tdsAmount === "" || v.tdsAmount === undefined ? 0 : round2(v.tdsAmount);
+  if (tds > v.amount * 0.25) throw new ValidationError("TDS looks too high for this payment.", { tdsAmount: "Check the TDS amount." });
   staff(actor);
   assertCan(actor, "payments.recordIn", "You can't record client payments.");
   return db.$transaction(async (tx) => {
@@ -174,10 +185,10 @@ export async function recordReceipt(db: Db, actor: Actor, input: z.input<typeof 
     if (!ev) throw new NotFoundError("That booking");
     await assertBookingOpen(tx, v.eventId);
     const p = await tx.payment.create({
-      data: { direction: "IN", eventId: v.eventId, partyType: "CLIENT", clientId: ev.clientId, amount: v.amount, method: v.method, reference: v.reference || null, paidOn: new Date(`${v.paidOn}T00:00:00Z`), note: v.note || null, status: "PAID", requestedById: actor.userId, paidById: actor.userId },
+      data: { direction: "IN", eventId: v.eventId, partyType: "CLIENT", clientId: ev.clientId, amount: v.amount, tdsAmount: tds, method: v.method, reference: v.reference || null, paidOn: new Date(`${v.paidOn}T00:00:00Z`), note: v.note || null, status: "PAID", requestedById: actor.userId, paidById: actor.userId },
     });
     await notify(tx, await ownerUserIds(tx), { type: "payment.received", title: `Received ${formatINR(v.amount)} from ${ev.client.name}`, body: ev.name, link: `/bookings/${v.eventId}?tab=money`, entityType: "payment", entityId: p.id }, { exceptUserId: actor.userId });
-    await recordAudit(tx, actor, { action: "receive", entityType: "payment", entityId: p.id, summary: `Received ${formatINR(v.amount)} from ${ev.client.name} for ${ev.name} by ${v.method.toLowerCase()}`, financial: true }, meta);
+    await recordAudit(tx, actor, { action: "receive", entityType: "payment", entityId: p.id, summary: `Received ${formatINR(v.amount)}${tds ? ` (+ TDS ${formatINR(tds, { decimals: true })})` : ""} from ${ev.client.name} for ${ev.name} by ${v.method.toLowerCase()}`, financial: true }, meta);
     return { id: p.id };
   });
 }
@@ -211,6 +222,7 @@ export async function removeCharge(db: Db, actor: Actor, chargeId: string, meta:
     const c = await tx.clientCharge.findUnique({ where: { id: chargeId }, include: { event: { select: { name: true, status: true } } } });
     if (!c) throw new NotFoundError("That charge");
     await assertBookingOpen(tx, c.eventId);
+    if (await tx.clientInvoiceItem.count({ where: { chargeId: c.id } })) throw new ConflictError("This charge is on a client invoice, so it stays. Add a new charge for any change.");
     await tx.clientCharge.delete({ where: { id: c.id } });
     await recordAudit(tx, actor, { action: "delete", entityType: "client_charge", entityId: c.id, summary: `Removed charge on ${c.event.name}: ${c.description} ${formatINR(c.amount)}`, financial: true }, meta);
   });

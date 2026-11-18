@@ -150,7 +150,7 @@ export function ReceiptForm({ eventId, today }: { eventId: string; today: string
             e.preventDefault();
             const f = new FormData(e.currentTarget);
             const get = (k: string) => String(f.get(k) ?? "");
-            run(() => recordReceiptAction({ eventId, amount: get("amount"), method: get("method") as "BANK", reference: get("reference"), paidOn: get("paidOn"), note: get("note") }), close);
+            run(() => recordReceiptAction({ eventId, amount: get("amount"), tdsAmount: get("tdsAmount"), method: get("method") as "BANK", reference: get("reference"), paidOn: get("paidOn"), note: get("note") }), close);
           }}
         >
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -159,7 +159,10 @@ export function ReceiptForm({ eventId, today }: { eventId: string; today: string
             <Field label="Received on" name="paidOn" type="date" max={today} defaultValue={today} error={fe.paidOn} />
             <Field label="Reference" name="reference" placeholder="UTR / cheque" />
           </div>
-          <Field label="Note (optional)" name="note" placeholder="Second instalment" />
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+            <Field label="TDS deducted ₹ (if any)" name="tdsAmount" inputMode="decimal" error={fe.tdsAmount} hint="Tax the client kept back; it counts as paid." />
+            <Field label="Note (optional)" name="note" placeholder="Second instalment" />
+          </div>
           <span className="flex gap-1.5">
             <Button type="submit" className="min-h-10 px-3 text-[11.5px]" disabled={pending}>
               {pending ? "Saving…" : "Record"}
