@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { EmptyState, Notice, Panel, Tag } from "@/components/ui";
 import { db } from "@/lib/db";
 import { firstName, formatCalendarDate, formatDate, formatINR, formatTime, greeting, todayAsDate, toNumber } from "@/lib/format";
@@ -117,7 +118,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
 
         <div className="flex min-w-0 flex-[1_1_340px] flex-col gap-4">
           {can(actor, "approvals.decide") && (
-            <Panel title={`Approvals waiting · ${approvals.length}`}>
+            <Panel title={`Approvals waiting · ${approvals.length}`} action={approvals.length ? <Link href="/approvals" className="label-mono text-[11.5px] no-underline">Open →</Link> : undefined}>
               {approvals.length === 0 ? (
                 <EmptyState title="Nothing waiting" />
               ) : (
