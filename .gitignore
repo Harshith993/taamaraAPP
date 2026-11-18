@@ -19,3 +19,13 @@ backups/
 
 .DS_Store
 *.log
+
+# Next.js / tooling
+/.next/
+/out/
+/build
+*.tsbuildinfo
+next-env.d.ts
+.vercel
+npm-debug.log*
+/src/generated/

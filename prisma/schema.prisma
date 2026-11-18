@@ -1,0 +1,1706 @@
+// Taamara Taamara ERP: database schema.
+// Design notes: docs/ARCHITECTURE.md section 7. Conventions:
+//  - ids are UUID strings; tables are snake_case plurals; money is NUMERIC(14,2)
+//  - times are stored in UTC (timestamptz) and shown in Asia/Kolkata
+//  - financial records are never deleted (database triggers enforce this; see migrations)
+//  - "createdById" without a relation is informational; the audit log is the full history
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────────────────────── Enums ─────────────────────────────
+
+enum AccountType {
+  INTERNAL
+  VENDOR
+  LABOUR
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum PermissionScope {
+  ALL
+  ASSIGNED
+  OWN
+}
+
+enum EventStatus {
+  TENTATIVE
+  CONFIRMED
+  PLANNING
+  LIVE
+  COMPLETED
+  SETTLED
+  POSTPONED
+  CANCELLED
+}
+
+enum EventMemberRole {
+  MANAGER
+  SUPERVISOR
+}
+
+enum ClientType {
+  INDIVIDUAL
+  COMPANY
+}
+
+enum RequirementSource {
+  CLIENT
+  INTERNAL
+}
+
+enum RequirementStatus {
+  OPEN
+  QUOTING
+  COVERED
+  DROPPED
+}
+
+enum ScheduleItemType {
+  SETUP
+  VENDOR_REPORTING
+  CREW_REPORTING
+  CEREMONY
+  MEAL
+  PERFORMANCE
+  DISMANTLE
+  DEADLINE
+  OTHER
+}
+
+enum VendorStatus {
+  ACTIVE
+  INACTIVE
+  BLACKLISTED
+}
+
+enum VendorAssignmentStatus {
+  INVITED
+  QUOTED
+  APPROVED
+  ACCEPTED
+  DECLINED
+  IN_PROGRESS
+  DELIVERED
+  COMPLETED
+  CANCELLED
+}
+
+enum QuotationStatus {
+  SUBMITTED
+  REVISION_REQUESTED
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+enum WorkOrderStatus {
+  ISSUED
+  ACKNOWLEDGED
+  CLOSED
+  CANCELLED
+}
+
+enum VendorInvoiceStatus {
+  SUBMITTED
+  VERIFIED
+  APPROVED
+  PART_PAID
+  PAID
+  DISPUTED
+  VOID
+}
+
+enum WorkerStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum CrewAssignmentStatus {
+  ASSIGNED
+  CONFIRMED
+  DECLINED
+  COMPLETED
+  NO_SHOW
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  PENDING
+  PRESENT
+  LATE
+  ABSENT
+}
+
+enum AttendanceMethod {
+  SUPERVISOR
+  SELF_GPS
+  QR
+}
+
+enum AdjustmentType {
+  EXTRA
+  DEDUCTION
+}
+
+enum ApprovalState {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  PENDING
+  ASSIGNED
+  IN_PROGRESS
+  UNDER_REVIEW
+  COMPLETED
+  DELAYED
+  CANCELLED
+}
+
+enum ExpenseGroup {
+  VENDOR
+  LABOUR
+  TRANSPORT
+  EQUIPMENT
+  FOOD
+  ACCOMMODATION
+  MISC
+}
+
+enum BudgetStatus {
+  DRAFT
+  APPROVED
+}
+
+enum ClientInvoiceType {
+  ADVANCE
+  FINAL
+  ADDITIONAL
+}
+
+enum ClientInvoiceStatus {
+  DRAFT
+  ISSUED
+  PART_PAID
+  PAID
+  CANCELLED
+}
+
+enum PaymentDirection {
+  IN
+  OUT
+}
+
+enum PartyType {
+  CLIENT
+  VENDOR
+  WORKER
+  OTHER
+}
+
+enum PaymentMethod {
+  CASH
+  UPI
+  BANK
+  CHEQUE
+  CARD
+}
+
+enum PaymentStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  PAID
+  VOIDED
+}
+
+enum ExpenseStatus {
+  SUBMITTED
+  APPROVED
+  REJECTED
+  REIMBURSED
+}
+
+enum ExpensePaidVia {
+  COMPANY
+  CASH_ADVANCE
+  OWN_POCKET
+}
+
+enum ApprovalType {
+  QUOTATION
+  PAYMENT
+  EXPENSE
+  CREW_ADJUSTMENT
+  BUDGET
+}
+
+enum DocumentKind {
+  CONTRACT
+  QUOTATION
+  INVOICE
+  PLAN
+  DESIGN
+  PHOTO
+  VIDEO
+  OTHER
+}
+
+enum DocumentVisibility {
+  OWNER_ONLY
+  INTERNAL
+  BOOKING_TEAM
+  SHARED
+}
+
+enum ShareTarget {
+  USER
+  VENDOR
+  BOOKING_CREW
+}
+
+enum FileStatus {
+  UPLOADING
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum ProofKind {
+  PHOTO
+  VIDEO
+}
+
+enum ProofStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum ChannelType {
+  BOOKING_TEAM
+  VENDOR_THREAD
+  CREW
+  DIRECT
+}
+
+enum AnnouncementAudience {
+  ALL_STAFF
+  ALL_CREW
+  ALL_VENDORS
+  BOOKING_TEAM
+  BOOKING_CREW
+  BOOKING_VENDORS
+}
+
+enum InventoryCondition {
+  GOOD
+  NEEDS_REPAIR
+  RETIRED
+}
+
+// ─────────────────────── Company, identity & access ───────────────────────
+
+/// Exactly one row (id = 1), enforced by a CHECK constraint.
+model CompanyProfile {
+  id          Int      @id @default(1)
+  legalName   String
+  tradeName   String   @default("Taamara Taamara")
+  tagline     String?  @default("events & beyond")
+  gstin       String?
+  pan         String?
+  address     String?
+  city        String?
+  state       String?
+  stateCode   String?  @db.VarChar(2)
+  phone       String?
+  email       String?
+  logoFileId  String?
+  /// Bank details printed on invoices (encrypted JSON string).
+  bankDetails String?
+  timezone    String   @default("Asia/Kolkata")
+  currency    String   @default("INR")
+  /// Owner switches such as "crewCanSeePay"; see src/modules/settings.
+  settings    Json     @default("{}")
+  updatedAt   DateTime @updatedAt
+
+  @@map("company_profile")
+}
+
+/// Everyone who logs in. Phone-only people get a placeholder email (hasRealEmail = false).
+model User {
+  id                  String      @id @default(uuid())
+  name                String
+  email               String      @unique
+  emailVerified       Boolean     @default(false)
+  image               String?
+  phoneNumber         String?     @unique
+  phoneNumberVerified Boolean?    @default(false)
+  hasRealEmail        Boolean     @default(true)
+  accountType         AccountType @default(INTERNAL)
+  status              UserStatus  @default(ACTIVE)
+  mustChangePassword  Boolean     @default(false)
+  lastLoginAt         DateTime?
+  createdById         String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  sessions           Session[]
+  accounts           Account[]
+  roles              UserRole[]
+  eventMemberships   EventMember[]
+  vendorLinks        VendorUser[]
+  worker             Worker?
+  tasksAssigned      Task[]                   @relation("TaskAssignee")
+  tasksToReview      Task[]                   @relation("TaskReviewer")
+  taskComments       TaskComment[]
+  filesUploaded      File[]
+  proofsUploaded     WorkProof[]              @relation("ProofUploader")
+  proofsReviewed     WorkProof[]              @relation("ProofReviewer")
+  approvalsRequested ApprovalRequest[]        @relation("ApprovalRequester")
+  approvalsDecided   ApprovalRequest[]        @relation("ApprovalDecider")
+  channelMemberships ChannelMember[]
+  messages           Message[]
+  announcementAcks   AnnouncementAck[]
+  notifications      Notification[]
+  notificationPrefs  NotificationPreference[]
+  pushSubscriptions  PushSubscription[]
+  attendanceMarked   CrewShift[]              @relation("AttendanceMarker")
+  auditEntries       AuditLog[]
+  cashAdvances       CashAdvance[]
+  documentShares     DocumentShare[]
+
+  @@index([accountType, status])
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id @default(uuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verifications")
+}
+
+/// Login rate limiting (Better Auth, database storage).
+model RateLimit {
+  id          String @id @default(uuid())
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("rate_limits")
+}
+
+/// System roles: OWNER, EVENT_MANAGER, ACCOUNTANT, SUPERVISOR, VENDOR, LABOUR. Owners can edit permissions of the internal ones.
+model Role {
+  id          String           @id @default(uuid())
+  key         String           @unique
+  name        String
+  description String?
+  accountType AccountType
+  isSystem    Boolean          @default(true)
+  /// The Owner role always has every permission and cannot be edited.
+  isOwner     Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  permissions RolePermission[]
+  users       UserRole[]
+
+  @@map("roles")
+}
+
+model RolePermission {
+  roleId     String
+  role       Role            @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  /// A key from src/modules/identity/permissions.ts, e.g. "bookings.view".
+  permission String
+  scope      PermissionScope
+
+  @@id([roleId, permission])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId    String
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now())
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+/// Append-only (UPDATE and DELETE are refused by a trigger).
+model AuditLog {
+  id         BigInt   @id @default(autoincrement())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action     String
+  entityType String
+  entityId   String?
+  /// Money-related entries are hidden from people without finance access.
+  financial  Boolean  @default(false)
+  summary    String
+  before     Json?
+  after      Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_log")
+}
+
+// ───────────────────────────── Clients ─────────────────────────────
+
+model Client {
+  id          String          @id @default(uuid())
+  type        ClientType      @default(INDIVIDUAL)
+  name        String
+  phone       String?
+  email       String?
+  address     String?
+  city        String?
+  state       String?
+  gstin       String?
+  notes       String?
+  deletedAt   DateTime?
+  createdById String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  contacts    ClientContact[]
+  events      Event[]
+  charges     ClientCharge[]
+  invoices    ClientInvoice[]
+  payments    Payment[]
+
+  @@index([name])
+  @@map("clients")
+}
+
+model ClientContact {
+  id        String   @id @default(uuid())
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  name      String
+  relation  String?
+  phone     String?
+  email     String?
+  createdAt DateTime @default(now())
+
+  @@index([clientId])
+  @@map("client_contacts")
+}
+
+// ───────────────────────────── Bookings ─────────────────────────────
+
+model EventCategory {
+  id                String        @id @default(uuid())
+  name              String        @unique
+  /// Hex colour, one of the lotus petals.
+  color             String        @default("#861A41")
+  active            Boolean       @default(true)
+  sortOrder         Int           @default(0)
+  defaultTemplateId String?
+  defaultTemplate   TaskTemplate? @relation(fields: [defaultTemplateId], references: [id], onDelete: SetNull)
+  events            Event[]
+
+  @@map("event_categories")
+}
+
+model Venue {
+  id        String          @id @default(uuid())
+  name      String
+  address   String?
+  city      String?
+  mapUrl    String?
+  latitude  Decimal?        @db.Decimal(9, 6)
+  longitude Decimal?        @db.Decimal(9, 6)
+  contact   String?
+  capacity  Int?
+  notes     String?
+  createdAt DateTime        @default(now())
+  functions EventFunction[]
+
+  @@map("venues")
+}
+
+/// A booking. Its dates are kept in step with its functions.
+model Event {
+  id                          String        @id @default(uuid())
+  code                        String        @unique
+  name                        String
+  categoryId                  String
+  category                    EventCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  clientId                    String
+  client                      Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  status                      EventStatus   @default(TENTATIVE)
+  startDate                   DateTime?     @db.Date
+  endDate                     DateTime?     @db.Date
+  expectedGuests              Int?
+  description                 String?
+  /// Share the host's contact with vendors for this booking (off by default).
+  shareHostContactWithVendors Boolean       @default(false)
+  cancelledReason             String?
+  createdById                 String?
+  createdAt                   DateTime      @default(now())
+  updatedAt                   DateTime      @updatedAt
+
+  functions         EventFunction[]
+  members           EventMember[]
+  requirements      Requirement[]
+  scheduleItems     ScheduleItem[]
+  vendorAssignments VendorAssignment[]
+  crewAssignments   CrewAssignment[]
+  tasks             Task[]
+  budgets           Budget[]
+  clientCharges     ClientCharge[]
+  clientInvoices    ClientInvoice[]
+  payments          Payment[]
+  expenses          Expense[]
+  cashAdvances      CashAdvance[]
+  documents         Document[]
+  proofs            WorkProof[]
+  channels          Channel[]
+  announcements     Announcement[]
+  inventory         InventoryAllocation[]
+  reviews           VendorReview[]
+
+  @@index([status, startDate])
+  @@index([clientId])
+  @@map("events")
+}
+
+model EventFunction {
+  id             String    @id @default(uuid())
+  eventId        String
+  event          Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name           String
+  date           DateTime  @db.Date
+  startsAt       DateTime
+  endsAt         DateTime?
+  venueId        String?
+  venue          Venue?    @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  venueText      String?
+  expectedGuests Int?
+  notes          String?
+  sortOrder      Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  requirements  Requirement[]
+  scheduleItems ScheduleItem[]
+  vendorLinks   VendorAssignmentFunction[]
+  crewShifts    CrewShift[]
+  tasks         Task[]
+  proofs        WorkProof[]
+
+  @@index([eventId, date])
+  @@map("event_functions")
+}
+
+/// Drives "Assigned" access for managers and supervisors.
+model EventMember {
+  eventId   String
+  event     Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      EventMemberRole
+  createdAt DateTime        @default(now())
+
+  @@id([eventId, userId, role])
+  @@index([userId])
+  @@map("event_members")
+}
+
+model Requirement {
+  id                 String            @id @default(uuid())
+  eventId            String
+  event              Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  functionId         String?
+  function           EventFunction?    @relation(fields: [functionId], references: [id], onDelete: SetNull)
+  vendorCategoryId   String?
+  vendorCategory     VendorCategory?   @relation(fields: [vendorCategoryId], references: [id], onDelete: SetNull)
+  title              String
+  description        String?
+  quantity           Decimal?          @db.Decimal(10, 2)
+  unit               String?
+  source             RequirementSource @default(INTERNAL)
+  status             RequirementStatus @default(OPEN)
+  vendorAssignmentId String?
+  vendorAssignment   VendorAssignment? @relation(fields: [vendorAssignmentId], references: [id], onDelete: SetNull)
+  createdById        String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@index([eventId])
+  @@map("requirements")
+}
+
+model ScheduleItem {
+  id                 String            @id @default(uuid())
+  eventId            String
+  event              Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  functionId         String?
+  function           EventFunction?    @relation(fields: [functionId], references: [id], onDelete: Cascade)
+  type               ScheduleItemType  @default(OTHER)
+  title              String
+  startsAt           DateTime
+  endsAt             DateTime?
+  location           String?
+  responsibleUserId  String?
+  vendorAssignmentId String?
+  vendorAssignment   VendorAssignment? @relation(fields: [vendorAssignmentId], references: [id], onDelete: SetNull)
+  visibleToVendors   Boolean           @default(false)
+  visibleToCrew      Boolean           @default(false)
+  done               Boolean           @default(false)
+  sortOrder          Int               @default(0)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@index([eventId, startsAt])
+  @@map("schedule_items")
+}
+
+// ───────────────────────────── Vendors ─────────────────────────────
+
+model VendorCategory {
+  id           String               @id @default(uuid())
+  name         String               @unique
+  /// Department colour (a lotus petal).
+  color        String               @default("#861A41")
+  sortOrder    Int                  @default(0)
+  vendors      VendorCategoryLink[]
+  requirements Requirement[]
+  assignments  VendorAssignment[]
+
+  @@map("vendor_categories")
+}
+
+model Vendor {
+  id            String       @id @default(uuid())
+  contactName   String
+  companyName   String
+  services      String?
+  phone         String?
+  whatsapp      String?
+  email         String?
+  address       String?
+  city          String?
+  gstin         String?
+  pan           String?
+  status        VendorStatus @default(ACTIVE)
+  ratingAverage Decimal?     @db.Decimal(3, 2)
+  notes         String?
+  deletedAt     DateTime?
+  createdById   String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  categories     VendorCategoryLink[]
+  users          VendorUser[]
+  bankDetail     VendorBankDetail?
+  rateCard       VendorRateCard[]
+  blackouts      VendorBlackout[]
+  assignments    VendorAssignment[]
+  quotations     Quotation[]
+  invoices       VendorInvoice[]
+  payments       Payment[]
+  reviews        VendorReview[]
+  documentShares DocumentShare[]
+  workers        Worker[]
+
+  @@index([companyName])
+  @@map("vendors")
+}
+
+model VendorCategoryLink {
+  vendorId   String
+  vendor     Vendor         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   VendorCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@id([vendorId, categoryId])
+  @@map("vendor_category_links")
+}
+
+/// A vendor company can have several logins.
+model VendorUser {
+  vendorId  String
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([vendorId, userId])
+  @@index([userId])
+  @@map("vendor_users")
+}
+
+/// Encrypted at the application level; visible only to owners, the accountant and the vendor.
+model VendorBankDetail {
+  vendorId           String   @id
+  vendor             Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  accountName        String?
+  accountNumberEnc   String?
+  accountNumberLast4 String?  @db.VarChar(4)
+  ifsc               String?
+  upiId              String?
+  updatedAt          DateTime @updatedAt
+
+  @@map("vendor_bank_details")
+}
+
+model VendorRateCard {
+  id       String  @id @default(uuid())
+  vendorId String
+  vendor   Vendor  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  item     String
+  unit     String?
+  rate     Decimal @db.Decimal(14, 2)
+  notes    String?
+
+  @@index([vendorId])
+  @@map("vendor_rate_cards")
+}
+
+model VendorBlackout {
+  id       String   @id @default(uuid())
+  vendorId String
+  vendor   Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  date     DateTime @db.Date
+  reason   String?
+
+  @@unique([vendorId, date])
+  @@map("vendor_blackouts")
+}
+
+/// A vendor on a booking, from invitation to completion.
+model VendorAssignment {
+  id            String                 @id @default(uuid())
+  eventId       String
+  event         Event                  @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  vendorId      String
+  vendor        Vendor                 @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  categoryId    String?
+  category      VendorCategory?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  scopeOfWork   String
+  reportingAt   DateTime?
+  status        VendorAssignmentStatus @default(INVITED)
+  declineReason String?
+  /// Agreed amount once a quotation is approved (copied from it).
+  agreedAmount  Decimal?               @db.Decimal(14, 2)
+  createdById   String?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  functions     VendorAssignmentFunction[]
+  quotations    Quotation[]
+  workOrders    WorkOrder[]
+  progress      ProgressUpdate[]
+  proofs        WorkProof[]
+  requirements  Requirement[]
+  scheduleItems ScheduleItem[]
+
+  @@index([eventId])
+  @@index([vendorId, status])
+  @@map("vendor_assignments")
+}
+
+model VendorAssignmentFunction {
+  assignmentId String
+  assignment   VendorAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  functionId   String
+  function     EventFunction    @relation(fields: [functionId], references: [id], onDelete: Cascade)
+
+  @@id([assignmentId, functionId])
+  @@map("vendor_assignment_functions")
+}
+
+model Quotation {
+  id            String           @id @default(uuid())
+  assignmentId  String
+  assignment    VendorAssignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  vendorId      String
+  vendor        Vendor           @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  version       Int
+  status        QuotationStatus  @default(SUBMITTED)
+  subtotal      Decimal          @db.Decimal(14, 2)
+  taxAmount     Decimal          @default(0) @db.Decimal(14, 2)
+  total         Decimal          @db.Decimal(14, 2)
+  validUntil    DateTime?        @db.Date
+  notes         String?
+  fileId        String?
+  file          File?            @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  submittedById String?
+  reviewNote    String?
+  decidedById   String?
+  decidedAt     DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  items         QuotationItem[]
+  workOrder     WorkOrder?
+
+  @@unique([assignmentId, version])
+  @@map("quotations")
+}
+
+model QuotationItem {
+  id          String    @id @default(uuid())
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Decimal   @default(1) @db.Decimal(10, 2)
+  unit        String?
+  rate        Decimal   @db.Decimal(14, 2)
+  amount      Decimal   @db.Decimal(14, 2)
+  gstRate     Decimal   @default(0) @db.Decimal(5, 2)
+  sortOrder   Int       @default(0)
+
+  @@map("quotation_items")
+}
+
+model WorkOrder {
+  id             String           @id @default(uuid())
+  number         String           @unique
+  assignmentId   String
+  assignment     VendorAssignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  quotationId    String           @unique
+  quotation      Quotation        @relation(fields: [quotationId], references: [id], onDelete: Restrict)
+  amount         Decimal          @db.Decimal(14, 2)
+  terms          String?
+  status         WorkOrderStatus  @default(ISSUED)
+  pdfFileId      String?
+  issuedById     String?
+  issuedAt       DateTime         @default(now())
+  acknowledgedAt DateTime?
+  invoices       VendorInvoice[]
+
+  @@map("work_orders")
+}
+
+model VendorInvoice {
+  id            String              @id @default(uuid())
+  vendorId      String
+  vendor        Vendor              @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  workOrderId   String?
+  workOrder     WorkOrder?          @relation(fields: [workOrderId], references: [id], onDelete: Restrict)
+  invoiceNumber String
+  invoiceDate   DateTime            @db.Date
+  taxableAmount Decimal             @db.Decimal(14, 2)
+  gstAmount     Decimal             @default(0) @db.Decimal(14, 2)
+  tdsAmount     Decimal             @default(0) @db.Decimal(14, 2)
+  total         Decimal             @db.Decimal(14, 2)
+  fileId        String?
+  file          File?               @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  status        VendorInvoiceStatus @default(SUBMITTED)
+  disputeNote   String?
+  submittedById String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  payments      Payment[]
+
+  @@unique([vendorId, invoiceNumber])
+  @@map("vendor_invoices")
+}
+
+model ProgressUpdate {
+  id           String           @id @default(uuid())
+  assignmentId String
+  assignment   VendorAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  note         String
+  percent      Int?
+  createdById  String?
+  createdAt    DateTime         @default(now())
+
+  @@map("progress_updates")
+}
+
+/// Internal only: vendors never see reviews.
+model VendorReview {
+  id            String   @id @default(uuid())
+  vendorId      String
+  vendor        Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  eventId       String
+  event         Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  quality       Int
+  punctuality   Int
+  communication Int
+  comment       String?
+  reviewerId    String?
+  createdAt     DateTime @default(now())
+
+  @@unique([vendorId, eventId, reviewerId])
+  @@map("vendor_reviews")
+}
+
+// ───────────────────────────── Crew (labour) ─────────────────────────────
+
+model Skill {
+  id        String        @id @default(uuid())
+  name      String        @unique
+  sortOrder Int           @default(0)
+  workers   WorkerSkill[]
+
+  @@map("skills")
+}
+
+model Worker {
+  id               String       @id @default(uuid())
+  userId           String?      @unique
+  user             User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name             String
+  phone            String
+  city             String?
+  experienceYears  Int?
+  /// The usual amount for one event; each assignment stores its own agreed pay.
+  usualEventRate   Decimal?     @db.Decimal(14, 2)
+  idProofFileId    String?
+  bankAccountEnc   String?
+  bankAccountLast4 String?      @db.VarChar(4)
+  ifsc             String?
+  upiId            String?
+  emergencyContact String?
+  /// Optional: a manpower vendor who supplies this person.
+  supplierVendorId String?
+  supplierVendor   Vendor?      @relation(fields: [supplierVendorId], references: [id], onDelete: SetNull)
+  status           WorkerStatus @default(ACTIVE)
+  notes            String?
+  deletedAt        DateTime?
+  createdById      String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  skills         WorkerSkill[]
+  unavailability WorkerUnavailability[]
+  assignments    CrewAssignment[]
+  payments       Payment[]
+  documentShares DocumentShare[]
+
+  @@index([name])
+  @@map("workers")
+}
+
+model WorkerSkill {
+  workerId String
+  worker   Worker @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  skillId  String
+  skill    Skill  @relation(fields: [skillId], references: [id], onDelete: Restrict)
+
+  @@id([workerId, skillId])
+  @@map("worker_skills")
+}
+
+model WorkerUnavailability {
+  id       String   @id @default(uuid())
+  workerId String
+  worker   Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  date     DateTime @db.Date
+  reason   String?
+
+  @@unique([workerId, date])
+  @@map("worker_unavailability")
+}
+
+/// A crew member hired for a booking, paid one agreed amount for the event.
+model CrewAssignment {
+  id          String               @id @default(uuid())
+  eventId     String
+  event       Event                @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  workerId    String
+  worker      Worker               @relation(fields: [workerId], references: [id], onDelete: Restrict)
+  duty        String
+  agreedPay   Decimal              @db.Decimal(14, 2)
+  status      CrewAssignmentStatus @default(ASSIGNED)
+  createdById String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  shifts      CrewShift[]
+  adjustments CrewPayAdjustment[]
+  proofs      WorkProof[]
+  payments    Payment[]
+
+  @@unique([eventId, workerId])
+  @@index([workerId])
+  @@map("crew_assignments")
+}
+
+model CrewPayAdjustment {
+  id            String         @id @default(uuid())
+  assignmentId  String
+  assignment    CrewAssignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  type          AdjustmentType
+  amount        Decimal        @db.Decimal(14, 2)
+  reason        String
+  state         ApprovalState  @default(PENDING)
+  requestedById String?
+  decidedById   String?
+  decidedAt     DateTime?
+  createdAt     DateTime       @default(now())
+
+  @@index([assignmentId])
+  @@map("crew_pay_adjustments")
+}
+
+model CrewShift {
+  id           String            @id @default(uuid())
+  assignmentId String
+  assignment   CrewAssignment    @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  functionId   String?
+  function     EventFunction?    @relation(fields: [functionId], references: [id], onDelete: SetNull)
+  date         DateTime          @db.Date
+  reportAt     DateTime
+  endsAt       DateTime?
+  location     String?
+  attendance   AttendanceStatus  @default(PENDING)
+  method       AttendanceMethod?
+  checkInAt    DateTime?
+  checkOutAt   DateTime?
+  latitude     Decimal?          @db.Decimal(9, 6)
+  longitude    Decimal?          @db.Decimal(9, 6)
+  markedById   String?
+  markedBy     User?             @relation("AttendanceMarker", fields: [markedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([assignmentId])
+  @@index([date])
+  @@map("crew_shifts")
+}
+
+// ───────────────────────────── Tasks ─────────────────────────────
+
+model Task {
+  id            String         @id @default(uuid())
+  eventId       String?
+  event         Event?         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  functionId    String?
+  function      EventFunction? @relation(fields: [functionId], references: [id], onDelete: SetNull)
+  parentId      String?
+  parent        Task?          @relation("Subtasks", fields: [parentId], references: [id], onDelete: Cascade)
+  subtasks      Task[]         @relation("Subtasks")
+  title         String
+  description   String?
+  priority      TaskPriority   @default(MEDIUM)
+  status        TaskStatus     @default(PENDING)
+  dueAt         DateTime?
+  assigneeId    String?
+  assignee      User?          @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  reviewerId    String?
+  reviewer      User?          @relation("TaskReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  needsApproval Boolean        @default(false)
+  needsProof    Boolean        @default(false)
+  completedAt   DateTime?
+  approvedAt    DateTime?
+  createdById   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  comments    TaskComment[]
+  attachments TaskAttachment[]
+  proofs      WorkProof[]
+
+  @@index([eventId, status])
+  @@index([assigneeId, status])
+  @@index([dueAt])
+  @@map("tasks")
+}
+
+model TaskComment {
+  id        String   @id @default(uuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId  String?
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
+  @@map("task_comments")
+}
+
+model TaskAttachment {
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  fileId String
+  file   File   @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, fileId])
+  @@map("task_attachments")
+}
+
+model TaskTemplate {
+  id          String             @id @default(uuid())
+  name        String             @unique
+  description String?
+  items       TaskTemplateItem[]
+  categories  EventCategory[]
+
+  @@map("task_templates")
+}
+
+model TaskTemplateItem {
+  id            String       @id @default(uuid())
+  templateId    String
+  template      TaskTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  priority      TaskPriority @default(MEDIUM)
+  /// Due this many days before (negative) or after the booking's first function.
+  dueOffsetDays Int          @default(-7)
+  needsProof    Boolean      @default(false)
+  sortOrder     Int          @default(0)
+
+  @@map("task_template_items")
+}
+
+// ───────────────────────────── Finance ─────────────────────────────
+
+model ExpenseCategory {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  group       ExpenseGroup
+  sortOrder   Int          @default(0)
+  budgetLines BudgetLine[]
+  expenses    Expense[]
+
+  @@map("expense_categories")
+}
+
+model Budget {
+  id           String       @id @default(uuid())
+  eventId      String
+  event        Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  version      Int          @default(1)
+  status       BudgetStatus @default(DRAFT)
+  approvedById String?
+  approvedAt   DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  lines        BudgetLine[]
+
+  @@unique([eventId, version])
+  @@map("budgets")
+}
+
+model BudgetLine {
+  id              String          @id @default(uuid())
+  budgetId        String
+  budget          Budget          @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  categoryId      String
+  category        ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  description     String?
+  estimatedAmount Decimal         @db.Decimal(14, 2)
+
+  @@index([budgetId])
+  @@map("budget_lines")
+}
+
+/// What the client is billed. Hidden from event managers and supervisors.
+model ClientCharge {
+  id          String   @id @default(uuid())
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  description String
+  sacCode     String?
+  amount      Decimal  @db.Decimal(14, 2)
+  gstRate     Decimal  @default(18) @db.Decimal(5, 2)
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([eventId])
+  @@map("client_charges")
+}
+
+/// Issued invoices are never deleted; they are cancelled.
+model ClientInvoice {
+  id            String              @id @default(uuid())
+  number        String?             @unique
+  financialYear String?
+  eventId       String
+  event         Event               @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  clientId      String
+  client        Client              @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  type          ClientInvoiceType
+  status        ClientInvoiceStatus @default(DRAFT)
+  issueDate     DateTime?           @db.Date
+  dueDate       DateTime?           @db.Date
+  placeOfSupply String?
+  subtotal      Decimal             @db.Decimal(14, 2)
+  cgst          Decimal             @default(0) @db.Decimal(14, 2)
+  sgst          Decimal             @default(0) @db.Decimal(14, 2)
+  igst          Decimal             @default(0) @db.Decimal(14, 2)
+  total         Decimal             @db.Decimal(14, 2)
+  notes         String?
+  pdfFileId     String?
+  cancelReason  String?
+  createdById   String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  items         ClientInvoiceItem[]
+  payments      Payment[]
+
+  @@index([eventId])
+  @@map("client_invoices")
+}
+
+model ClientInvoiceItem {
+  id          String        @id @default(uuid())
+  invoiceId   String
+  invoice     ClientInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description String
+  sacCode     String?
+  quantity    Decimal       @default(1) @db.Decimal(10, 2)
+  rate        Decimal       @db.Decimal(14, 2)
+  amount      Decimal       @db.Decimal(14, 2)
+  gstRate     Decimal       @default(18) @db.Decimal(5, 2)
+  sortOrder   Int           @default(0)
+
+  @@map("client_invoice_items")
+}
+
+/// Money in or out. Never deleted; a paid payment can only be voided with a reason.
+model Payment {
+  id               String           @id @default(uuid())
+  direction        PaymentDirection
+  eventId          String?
+  event            Event?           @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  partyType        PartyType
+  clientId         String?
+  client           Client?          @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  vendorId         String?
+  vendor           Vendor?          @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  workerId         String?
+  worker           Worker?          @relation(fields: [workerId], references: [id], onDelete: Restrict)
+  partyName        String?
+  clientInvoiceId  String?
+  clientInvoice    ClientInvoice?   @relation(fields: [clientInvoiceId], references: [id], onDelete: Restrict)
+  vendorInvoiceId  String?
+  vendorInvoice    VendorInvoice?   @relation(fields: [vendorInvoiceId], references: [id], onDelete: Restrict)
+  crewAssignmentId String?
+  crewAssignment   CrewAssignment?  @relation(fields: [crewAssignmentId], references: [id], onDelete: Restrict)
+  amount           Decimal          @db.Decimal(14, 2)
+  method           PaymentMethod
+  reference        String?
+  paidOn           DateTime?        @db.Date
+  proofFileId      String?
+  status           PaymentStatus    @default(PENDING_APPROVAL)
+  note             String?
+  requestedById    String?
+  approvedById     String?
+  approvedAt       DateTime?
+  paidById         String?
+  voidedById       String?
+  voidedAt         DateTime?
+  voidReason       String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([eventId])
+  @@index([status])
+  @@index([vendorId])
+  @@index([workerId])
+  @@map("payments")
+}
+
+model Expense {
+  id            String          @id @default(uuid())
+  eventId       String?
+  event         Event?          @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  categoryId    String
+  category      ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  description   String
+  amount        Decimal         @db.Decimal(14, 2)
+  spentOn       DateTime        @db.Date
+  paidVia       ExpensePaidVia  @default(COMPANY)
+  cashAdvanceId String?
+  cashAdvance   CashAdvance?    @relation(fields: [cashAdvanceId], references: [id], onDelete: Restrict)
+  receiptFileId String?
+  status        ExpenseStatus   @default(SUBMITTED)
+  submittedById String?
+  decidedById   String?
+  decidedAt     DateTime?
+  decisionNote  String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([eventId])
+  @@map("expenses")
+}
+
+model CashAdvance {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  eventId   String?
+  event     Event?    @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  amount    Decimal   @db.Decimal(14, 2)
+  givenOn   DateTime  @db.Date
+  settledAt DateTime?
+  note      String?
+  createdAt DateTime  @default(now())
+  expenses  Expense[]
+
+  @@map("cash_advances")
+}
+
+/// One inbox for every decision owners take.
+model ApprovalRequest {
+  id            String        @id @default(uuid())
+  type          ApprovalType
+  entityId      String
+  eventId       String?
+  amount        Decimal?      @db.Decimal(14, 2)
+  summary       String
+  state         ApprovalState @default(PENDING)
+  requestedById String?
+  requestedBy   User?         @relation("ApprovalRequester", fields: [requestedById], references: [id], onDelete: SetNull)
+  decidedById   String?
+  decidedBy     User?         @relation("ApprovalDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+  decidedAt     DateTime?
+  comment       String?
+  createdAt     DateTime      @default(now())
+
+  @@index([state, type])
+  @@index([type, entityId])
+  @@map("approval_requests")
+}
+
+/// Gap-free numbering per document type and year (GST needs sequential invoice numbers).
+model DocumentSequence {
+  docType   String
+  period    String
+  nextValue Int    @default(1)
+
+  @@id([docType, period])
+  @@map("document_sequences")
+}
+
+// ───────────────────────────── Inventory ─────────────────────────────
+
+model InventoryItem {
+  id            String                @id @default(uuid())
+  name          String
+  sku           String?               @unique
+  category      String?
+  unit          String                @default("pcs")
+  quantityOwned Int                   @default(0)
+  location      String?
+  condition     InventoryCondition    @default(GOOD)
+  photoFileId   String?
+  notes         String?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  allocations   InventoryAllocation[]
+
+  @@map("inventory_items")
+}
+
+model InventoryAllocation {
+  id               String        @id @default(uuid())
+  itemId           String
+  item             InventoryItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  eventId          String
+  event            Event         @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  quantity         Int
+  outAt            DateTime?
+  returnedAt       DateTime?
+  quantityReturned Int?
+  quantityDamaged  Int?
+  notes            String?
+  createdAt        DateTime      @default(now())
+
+  @@index([eventId])
+  @@map("inventory_allocations")
+}
+
+// ───────────────────────────── Files, documents & proof ─────────────────────────────
+
+model File {
+  id              String     @id @default(uuid())
+  storageKey      String     @unique
+  filename        String
+  mimeType        String
+  sizeBytes       BigInt
+  sha256          String?
+  uploadedById    String?
+  uploadedBy      User?      @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  status          FileStatus @default(UPLOADING)
+  width           Int?
+  height          Int?
+  durationSeconds Int?
+  thumbnailKey    String?
+  playableKey     String?
+  createdAt       DateTime   @default(now())
+
+  documents          Document[]
+  proofs             WorkProof[]
+  taskAttachments    TaskAttachment[]
+  quotations         Quotation[]
+  vendorInvoices     VendorInvoice[]
+  messageAttachments MessageAttachment[]
+
+  @@map("files")
+}
+
+model Document {
+  id           String             @id @default(uuid())
+  eventId      String?
+  event        Event?             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  vendorId     String?
+  workerId     String?
+  kind         DocumentKind
+  title        String
+  fileId       String
+  file         File               @relation(fields: [fileId], references: [id], onDelete: Restrict)
+  version      Int                @default(1)
+  visibility   DocumentVisibility @default(INTERNAL)
+  uploadedById String?
+  createdAt    DateTime           @default(now())
+  shares       DocumentShare[]
+
+  @@index([eventId])
+  @@map("documents")
+}
+
+model DocumentShare {
+  id         String      @id @default(uuid())
+  documentId String
+  document   Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  target     ShareTarget
+  userId     String?
+  user       User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vendorId   String?
+  vendor     Vendor?     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  workerId   String?
+  worker     Worker?     @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  createdAt  DateTime    @default(now())
+
+  @@index([documentId])
+  @@map("document_shares")
+}
+
+/// Photo or video of completed work. Belongs to exactly one of: task, vendor assignment, crew assignment (CHECK constraint).
+model WorkProof {
+  id                 String            @id @default(uuid())
+  eventId            String
+  event              Event             @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  functionId         String?
+  function           EventFunction?    @relation(fields: [functionId], references: [id], onDelete: SetNull)
+  taskId             String?
+  task               Task?             @relation(fields: [taskId], references: [id], onDelete: Restrict)
+  vendorAssignmentId String?
+  vendorAssignment   VendorAssignment? @relation(fields: [vendorAssignmentId], references: [id], onDelete: Restrict)
+  crewAssignmentId   String?
+  crewAssignment     CrewAssignment?   @relation(fields: [crewAssignmentId], references: [id], onDelete: Restrict)
+  kind               ProofKind
+  fileId             String
+  file               File              @relation(fields: [fileId], references: [id], onDelete: Restrict)
+  caption            String?
+  latitude           Decimal?          @db.Decimal(9, 6)
+  longitude          Decimal?          @db.Decimal(9, 6)
+  status             ProofStatus       @default(PENDING_REVIEW)
+  uploadedById       String
+  uploadedBy         User              @relation("ProofUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+  reviewedById       String?
+  reviewedBy         User?             @relation("ProofReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt         DateTime?
+  reviewNote         String?
+  createdAt          DateTime          @default(now())
+
+  @@index([eventId, status])
+  @@index([uploadedById])
+  @@map("work_proofs")
+}
+
+// ───────────────────────────── Communication ─────────────────────────────
+
+model Channel {
+  id        String          @id @default(uuid())
+  type      ChannelType
+  eventId   String?
+  event     Event?          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  /// For vendor threads: the vendor the thread is with.
+  vendorId  String?
+  name      String
+  createdAt DateTime        @default(now())
+  members   ChannelMember[]
+  messages  Message[]
+
+  @@index([eventId])
+  @@map("channels")
+}
+
+model ChannelMember {
+  channelId  String
+  channel    Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastReadAt DateTime?
+  joinedAt   DateTime  @default(now())
+
+  @@id([channelId, userId])
+  @@index([userId])
+  @@map("channel_members")
+}
+
+model Message {
+  id          String              @id @default(uuid())
+  channelId   String
+  channel     Channel             @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  senderId    String?
+  sender      User?               @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  body        String
+  replyToId   String?
+  editedAt    DateTime?
+  deletedAt   DateTime?
+  createdAt   DateTime            @default(now())
+  attachments MessageAttachment[]
+
+  @@index([channelId, createdAt])
+  @@map("messages")
+}
+
+model MessageAttachment {
+  messageId String
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  fileId    String
+  file      File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, fileId])
+  @@map("message_attachments")
+}
+
+model Announcement {
+  id          String               @id @default(uuid())
+  audience    AnnouncementAudience
+  eventId     String?
+  event       Event?               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  title       String
+  body        String
+  needsAck    Boolean              @default(false)
+  createdById String?
+  createdAt   DateTime             @default(now())
+  acks        AnnouncementAck[]
+
+  @@map("announcements")
+}
+
+model AnnouncementAck {
+  announcementId String
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ackedAt        DateTime     @default(now())
+
+  @@id([announcementId, userId])
+  @@map("announcement_acks")
+}
+
+model Notification {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       String
+  title      String
+  body       String?
+  link       String?
+  entityType String?
+  entityId   String?
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  userId String
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type   String
+  inApp  Boolean @default(true)
+  push   Boolean @default(true)
+  email  Boolean @default(false)
+
+  @@id([userId, type])
+  @@map("notification_preferences")
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@map("push_subscriptions")
+}
