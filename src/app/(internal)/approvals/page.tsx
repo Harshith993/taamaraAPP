@@ -8,7 +8,7 @@ import { DecisionButtons } from "./decision-buttons";
 
 export const metadata: Metadata = { title: "Approvals" };
 
-const KIND_LABEL = { quote: "Vendor quote", payment: "Payment", crew: "Crew pay extra", missing: "Needs attention" } as const;
+const KIND_LABEL = { quote: "Vendor quote", payment: "Payment", crew: "Crew pay extra", expense: "Expense", missing: "Needs attention" } as const;
 
 export default async function ApprovalsPage() {
   const actor = await requirePermission("approvals.decide");
@@ -18,7 +18,7 @@ export default async function ApprovalsPage() {
     <div className="flex flex-col gap-5">
       <div>
         <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">APPROVALS · {items.length}</h1>
-        <p className="mt-1 text-[15px] text-ink-quiet">Quotes, payments and crew extras waiting for an owner. Everything you decide is kept in the audit log.</p>
+        <p className="mt-1 text-[15px] text-ink-quiet">Quotes, payments, expenses and crew extras waiting for an owner. Everything you decide is kept in the audit log.</p>
       </div>
       {items.length === 0 ? (
         <Panel>
@@ -39,6 +39,10 @@ function ApprovalCard({ item }: { item: PendingApproval }) {
   const warning =
     item.kind === "payment" && item.selfPrepared
       ? "You prepared this payment, so the other owner needs to approve it."
+      : item.kind === "expense" && item.selfPrepared
+        ? "You recorded this expense, so the other owner needs to approve it."
+        : item.kind === "expense" && !item.receipt
+          ? "No receipt attached (small amount)."
       : item.kind === "payment" && item.isFinal && item.approvedProof === 0
         ? "Final payment: no approved proof of this vendor's work yet."
         : null;
@@ -139,6 +143,29 @@ function ApprovalCard({ item }: { item: PendingApproval }) {
             <span className="font-mono">{formatINR(item.agreedPay)}</span>
             <span className="text-ink-quiet">{item.adjustmentType === "EXTRA" ? "Extra" : "Deduction"}</span>
             <span>{item.reason}</span>
+          </div>
+        )}
+
+        {item.kind === "expense" && (
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[13.5px]">
+            <span className="text-ink-quiet">What</span>
+            <span className="font-semibold">{item.description}</span>
+            <span className="text-ink-quiet">Kind</span>
+            <span>{item.category}</span>
+            <span className="text-ink-quiet">Spent on</span>
+            <span>{formatDate(item.spentOn, { timeZone: "UTC", day: "numeric", month: "short" })}</span>
+            <span className="text-ink-quiet">Paid by</span>
+            <span>{item.paidVia === "OWN_POCKET" ? `${item.requestedBy ?? "them"}, to be repaid` : "The company"}</span>
+            <span className="text-ink-quiet">Receipt</span>
+            <span>
+              {item.receipt?.originalUrl ? (
+                <a href={item.receipt.originalUrl} target="_blank" rel="noopener" className="font-semibold">
+                  Open the receipt
+                </a>
+              ) : (
+                "None"
+              )}
+            </span>
           </div>
         )}
 

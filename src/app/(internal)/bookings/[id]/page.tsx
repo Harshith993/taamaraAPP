@@ -1018,6 +1018,7 @@ async function Money({ actor, eventId }: { actor: Actor; eventId: string }) {
         {ledger.billing && <Stat label="Client still owes" value={formatINR(ledger.clientBalance!)} tone={ledger.clientBalance! > 0 ? "now" : undefined} />}
         <Stat label="Vendor costs" value={formatINR(ledger.vendorCost)} />
         {ledger.seesPay && <Stat label="Crew pay" value={formatINR(ledger.crewCost)} />}
+        {ledger.expenseCost > 0 && <Stat label="Expenses" value={formatINR(ledger.expenseCost)} />}
         <Stat label="Paid out" value={formatINR(ledger.paidOut)} />
         {ledger.margin !== null && <Stat label="Margin before tax" value={formatINR(ledger.margin)} tone={ledger.margin < 0 ? "now" : "ok"} />}
       </dl>

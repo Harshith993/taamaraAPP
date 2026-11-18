@@ -125,7 +125,7 @@ const { BASE, PHONE, launch, checker, query } = require("./lib.cjs");
       const body = await page.textContent("main");
       check("manager sees vendor costs and crew pay", /Vendor costs/.test(body) && /Crew pay/.test(body));
       check("manager never sees client billing, receipts or margin", !/Billed|Received from the client|Client still owes|Margin/.test(body));
-      const res = await page.goto(`${BASE}/money`);
+      await page.goto(`${BASE}/money`);
       check("manager can't open the Money page", !page.url().endsWith("/money"), page.url());
       await ctx.close();
     }

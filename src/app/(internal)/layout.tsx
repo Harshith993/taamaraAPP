@@ -21,6 +21,7 @@ export default async function InternalLayout({ children }: { children: React.Rea
   if (can(actor, "proof.view")) items.push({ href: "/proof", label: "Proof", badge: await proofToCheckCount(db, actor) });
   if (can(actor, "finance.company")) items.push({ href: "/money", label: "Money", badge: await db.payment.count({ where: { direction: "OUT", status: "APPROVED" } }) });
   if (can(actor, "payments.prepare")) items.push({ href: "/invoices", label: "Invoices", badge: await invoicesToCheckCount(db, actor) });
+  if (can(actor, "expenses.record")) items.push({ href: "/expenses", label: "Expenses" });
   if (can(actor, "approvals.decide")) {
     items.push({ href: "/approvals", label: "Approvals", badge: await db.approvalRequest.count({ where: { state: "PENDING" } }) });
   }

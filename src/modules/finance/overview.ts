@@ -112,6 +112,7 @@ export async function bookingLedger(db: Db, actor: Actor, eventId: string) {
 
   const vendorCost = round2(vendorRows.reduce((s, v) => s + v.agreed, 0));
   const crewCost = round2(crewRows.reduce((s, c) => s + c.total, 0));
+  const expenseCost = costs ? round2(toNumber((await db.expense.aggregate({ where: { eventId, status: { in: ["APPROVED", "REIMBURSED"] } }, _sum: { amount: true } }))._sum.amount)) : 0;
   const paidOut = sum(payments.filter((p) => p.direction === "OUT") as never, ["PAID"]);
 
   return {
@@ -126,9 +127,10 @@ export async function bookingLedger(db: Db, actor: Actor, eventId: string) {
     crew: crewRows,
     vendorCost,
     crewCost,
+    expenseCost,
     paidOut,
-    // Before taxes and overheads: what the client pays (before GST) minus vendor and crew costs.
-    margin: billing ? round2(billed - vendorCost - crewCost) : null,
+    // Before taxes and overheads: what the client pays (before GST) minus vendor, crew and approved expenses.
+    margin: billing ? round2(billed - vendorCost - crewCost - expenseCost) : null,
     payments: payments.map((p) => ({
       id: p.id,
       direction: p.direction,
@@ -161,6 +163,8 @@ export async function moneyOverview(db: Db, actor: Actor) {
     db.event.findMany({ where: { status: { not: "CANCELLED" } }, orderBy: { startDate: "desc" }, take: 60, select: { id: true, name: true, code: true, status: true, startDate: true, client: { select: { name: true } }, vendorAssignments: { where: { status: { notIn: ["DECLINED", "CANCELLED", "INVITED", "QUOTED"] } }, select: { agreedAmount: true } }, crewAssignments: { where: { status: { in: ["CONFIRMED", "COMPLETED", "NO_SHOW"] } }, select: { agreedPay: true } } } }),
     db.crewPayAdjustment.findMany({ where: { state: "APPROVED" }, select: { type: true, amount: true, assignment: { select: { eventId: true } } } }),
   ]);
+  const expenseSums = await db.expense.groupBy({ by: ["eventId"], where: { status: { in: ["APPROVED", "REIMBURSED"] }, eventId: { not: null } }, _sum: { amount: true } });
+  const expensesBy = new Map(expenseSums.map((e) => [e.eventId!, toNumber(e._sum.amount)]));
   const byEvent = <T extends { eventId: string | null; _sum: { amount: unknown } }>(rows: T[]) => new Map(rows.filter((r) => r.eventId).map((r) => [r.eventId!, toNumber(r._sum.amount as number)]));
   const received = byEvent(inSum);
   const paidOut = byEvent(outSum);
@@ -177,7 +181,7 @@ export async function moneyOverview(db: Db, actor: Actor) {
   const bookings = events.map((e) => {
     const b = billedBy.get(e.id) ?? { net: 0, gst: 0 };
     const vendorCost = e.vendorAssignments.reduce((s, v) => s + toNumber(v.agreedAmount), 0);
-    const crewCost = e.crewAssignments.reduce((s, c) => s + toNumber(c.agreedPay), 0) + (adjBy.get(e.id) ?? 0);
+    const crewCost = e.crewAssignments.reduce((s, c) => s + toNumber(c.agreedPay), 0) + (adjBy.get(e.id) ?? 0) + (expensesBy.get(e.id) ?? 0);
     const rec = received.get(e.id) ?? 0;
     return {
       id: e.id,

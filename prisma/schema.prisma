@@ -1394,6 +1394,7 @@ model Expense {
   cashAdvanceId String?
   cashAdvance   CashAdvance?    @relation(fields: [cashAdvanceId], references: [id], onDelete: Restrict)
   receiptFileId String?
+  receiptFile   File?           @relation(fields: [receiptFileId], references: [id], onDelete: Restrict)
   status        ExpenseStatus   @default(SUBMITTED)
   submittedById String?
   decidedById   String?
@@ -1522,6 +1523,7 @@ model File {
   quotations         Quotation[]
   vendorInvoices     VendorInvoice[]
   messageAttachments MessageAttachment[]
+  expenseReceipts    Expense[]
 
   @@index([status, createdAt])
   @@map("files")

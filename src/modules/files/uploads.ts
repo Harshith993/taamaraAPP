@@ -258,7 +258,7 @@ async function isUnused(db: DbTx, fileId: string): Promise<boolean> {
   const f = await db.file.findUnique({
     where: { id: fileId },
     select: {
-      _count: { select: { documents: true, proofs: true, taskAttachments: true, quotations: true, vendorInvoices: true, messageAttachments: true } },
+      _count: { select: { documents: true, proofs: true, taskAttachments: true, quotations: true, vendorInvoices: true, messageAttachments: true, expenseReceipts: true } },
     },
   });
   return !!f && Object.values(f._count).every((n) => n === 0);
@@ -296,6 +296,7 @@ export async function cleanupAbandonedUploads(db: DbTx, now = new Date()) {
       quotations: { none: {} },
       vendorInvoices: { none: {} },
       messageAttachments: { none: {} },
+      expenseReceipts: { none: {} },
     },
     select: { id: true, storageKey: true, thumbnailKey: true, playableKey: true },
     take: 200,
