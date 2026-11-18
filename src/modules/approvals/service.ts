@@ -190,6 +190,7 @@ export async function decideApproval(db: Db, actor: Actor, approvalId: string, d
           type: `approval.${decision.toLowerCase()}`,
           title: `${decision === "APPROVE" ? "Approved" : decision === "REVISE" ? "Sent back" : "Not approved"}: ${req.summary}`,
           body: note,
+          link: req.type === "PAYMENT" ? "/money" : req.eventId ? `/bookings/${req.eventId}?tab=${req.type === "QUOTATION" ? "vendors" : "crew"}` : null,
           entityType: req.type.toLowerCase(),
           entityId: req.entityId,
         },

@@ -36,6 +36,9 @@ import { attendanceWindow, crewForBooking } from "@/modules/crew/service";
 import { assignableForBooking, taskActions } from "@/modules/tasks/service";
 import { getRequirements, teamCandidates } from "@/modules/events/planning";
 import { listDocuments } from "@/modules/documents/service";
+import { bookingLedger } from "@/modules/finance/overview";
+import { AdjustmentForm, ChargeForm, MarkPaid, PreparePayment, ReceiptForm, RemoveCharge, VoidPayment } from "@/components/finance-controls";
+import { todayInIndia } from "@/lib/format";
 import { DocumentList } from "@/components/document-list";
 import { AddDocumentForm } from "@/components/document-controls";
 import { CancelBooking, DetailsEditor, DoneToggle, FunctionEditor, RequirementEditor, ScheduleEditor, TeamEditor } from "./planning-controls";
@@ -52,6 +55,7 @@ const TABS = [
   { key: "tasks", label: "Tasks" },
   { key: "proof", label: "Proof" },
   { key: "docs", label: "Docs" },
+  { key: "money", label: "Money" },
 ] as const;
 type TabKey = (typeof TABS)[number]["key"];
 
@@ -157,7 +161,7 @@ export default async function BookingPage({
         aria-label="Booking sections"
         className="flex flex-wrap border-b-2 border-ink font-mono text-[12.5px] font-semibold tracking-[0.06em] uppercase"
       >
-        {TABS.map((t) => (
+        {TABS.filter((t) => (t.key === "money" ? can(actor, "finance.budget") || can(actor, "finance.billing") : t.key === "docs" ? can(actor, "documents.view") : true)).map((t) => (
           <Link
             key={t.key}
             href={`/bookings/${id}?tab=${t.key}`}
@@ -178,6 +182,7 @@ export default async function BookingPage({
       {tab === "tasks" && <Tasks actor={actor} eventId={id} />}
       {tab === "proof" && <Proof actor={actor} eventId={id} />}
       {tab === "docs" && <Docs actor={actor} eventId={id} />}
+      {tab === "money" && <Money actor={actor} eventId={id} />}
     </div>
   );
 }
@@ -813,6 +818,7 @@ async function Crew({ actor, eventId }: { actor: Actor; eventId: string }) {
                   </span>
                 )}
                 {canAssign && r.shifts.every((s) => s.attendance === "PENDING") && <RemoveCrew assignmentId={r.id} name={r.name} />}
+                {(canAssign || canMark) && r.status === "CONFIRMED" && <AdjustmentForm assignmentId={r.id} name={r.name} />}
               </span>
             </li>
           ))}
@@ -972,6 +978,225 @@ async function Docs({ actor, eventId }: { actor: Actor; eventId: string }) {
           <EmptyState title="No documents yet">
             Contracts, layouts, designs and menus. Choose who sees each one; share plans with the vendors or crew who need them.
           </EmptyState>
+        )}
+      </Panel>
+    </div>
+  );
+}
+
+const PAY_TONE: Record<string, "look" | "ok" | "now" | "quiet" | "plum" | "outline"> = { PENDING_APPROVAL: "look", APPROVED: "plum", PAID: "ok", REJECTED: "quiet", VOIDED: "quiet" };
+const PAY_WORDS: Record<string, string> = { PENDING_APPROVAL: "Waiting for owner", APPROVED: "Approved · to pay", PAID: "Paid", REJECTED: "Not approved", VOIDED: "Void" };
+
+function Stat({ label, value, tone }: { label: string; value: string; tone?: "ok" | "now" }) {
+  return (
+    <div className="rounded-[3px] border-2 border-ink bg-paper px-3 py-2">
+      <dt className="label-mono text-[11px] text-ink-quiet">{label}</dt>
+      <dd className={`font-condensed text-[28px] leading-tight ${tone === "ok" ? "text-ok-text" : tone === "now" ? "text-now" : ""}`}>{value}</dd>
+    </div>
+  );
+}
+
+async function Money({ actor, eventId }: { actor: Actor; eventId: string }) {
+  const ledger = await bookingLedger(db, actor, eventId);
+  if (!ledger)
+    return (
+      <Panel>
+        <EmptyState title="Money is not part of your access" />
+      </Panel>
+    );
+  const today = todayInIndia();
+  const prepares = can(actor, "payments.prepare");
+  const pays = can(actor, "payments.markPaid");
+  const voids = pays || actor.isOwner;
+  const receipts = ledger.payments.filter((p) => p.direction === "IN");
+  const outs = ledger.payments.filter((p) => p.direction === "OUT");
+  return (
+    <div className="flex flex-col gap-4">
+      <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+        {ledger.billing && <Stat label="Billed (before GST)" value={formatINR(ledger.billed)} />}
+        {ledger.billing && <Stat label="Received" value={formatINR(ledger.received)} tone="ok" />}
+        {ledger.billing && <Stat label="Client still owes" value={formatINR(ledger.clientBalance!)} tone={ledger.clientBalance! > 0 ? "now" : undefined} />}
+        <Stat label="Vendor costs" value={formatINR(ledger.vendorCost)} />
+        {ledger.seesPay && <Stat label="Crew pay" value={formatINR(ledger.crewCost)} />}
+        <Stat label="Paid out" value={formatINR(ledger.paidOut)} />
+        {ledger.margin !== null && <Stat label="Margin before tax" value={formatINR(ledger.margin)} tone={ledger.margin < 0 ? "now" : "ok"} />}
+      </dl>
+
+      {ledger.billing && (
+        <div className="flex flex-wrap items-start gap-4">
+          <Panel title="Client charges" className="min-w-0 flex-[1_1_420px]">
+            <ul>
+              {ledger.charges.map((c) => (
+                <li key={c.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 border-b border-rule-soft px-3.5 py-2 text-[14px]">
+                  <span>{c.description}</span>
+                  <span className="text-right font-mono">
+                    {formatINR(c.amount)}
+                    <span className="block text-[11.5px] text-ink-quiet">+ GST {c.gstRate}% {formatINR(c.gst)}</span>
+                  </span>
+                  {can(actor, "finance.billing") ? <RemoveCharge id={c.id} /> : <span />}
+                </li>
+              ))}
+              {ledger.charges.length === 0 && <li className="px-3.5 py-3 text-[14px] text-ink-quiet">Nothing charged yet.</li>}
+            </ul>
+            <div className="border-t-2 border-ink px-3.5 py-2.5">
+              <ChargeForm eventId={eventId} />
+            </div>
+          </Panel>
+          <Panel title="Received from the client" className="min-w-0 flex-[1_1_420px]">
+            <ul>
+              {receipts.map((p) => (
+                <li key={p.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-rule-soft px-3.5 py-2 text-[14px]">
+                  <span className="flex flex-col leading-tight">
+                    <span className={p.status === "VOIDED" ? "line-through" : ""}>
+                      {p.paidOn ? formatCalendarDate(p.paidOn, { day: "numeric", month: "short", year: "numeric" }) : ""} · {p.method.toLowerCase()}
+                      {p.reference ? ` · ${p.reference}` : ""}
+                    </span>
+                    {p.voidReason && <span className="text-[12.5px] text-now">Void: {p.voidReason}</span>}
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <span className="font-mono">{formatINR(p.amount)}</span>
+                    {voids && p.status === "PAID" && <VoidPayment paymentId={p.id} />}
+                  </span>
+                </li>
+              ))}
+              {receipts.length === 0 && <li className="px-3.5 py-3 text-[14px] text-ink-quiet">No payments received yet.</li>}
+            </ul>
+            {can(actor, "payments.recordIn") && (
+              <div className="border-t-2 border-ink px-3.5 py-2.5">
+                <ReceiptForm eventId={eventId} today={today} />
+              </div>
+            )}
+          </Panel>
+        </div>
+      )}
+
+      <Panel title={`Vendors · ${ledger.vendors.length}`}>
+        {ledger.vendors.length === 0 ? (
+          <EmptyState title="No booked vendors yet" />
+        ) : (
+          <ul>
+            {ledger.vendors.map((v) => (
+              <li key={v.id} className="flex flex-col gap-2 border-b border-rule-soft px-3.5 py-3 last:border-b-0">
+                <span className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
+                  <span className="flex flex-col leading-tight">
+                    <span className="font-bold">{v.vendor}</span>
+                    <span className="text-[12.5px] text-ink-quiet">
+                      {v.scope} · {v.approvedProof ? `${v.approvedProof} approved proof` : "no approved proof yet"}
+                    </span>
+                  </span>
+                  <span className="text-right font-mono text-[13px]">
+                    Agreed {formatINR(v.agreed)}
+                    <span className="block text-ink-quiet">invoiced {formatINR(v.invoiced)} · paid {formatINR(v.paid)}</span>
+                  </span>
+                </span>
+                {v.invoices.length > 0 && (
+                  <ul className="flex flex-col gap-1.5 border-l-2 border-rule-soft pl-3">
+                    {v.invoices.map((i) => (
+                      <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
+                        <span>
+                          {i.file?.originalUrl ? (
+                            <a href={i.file.originalUrl} target="_blank" rel="noopener" className="font-mono font-semibold">
+                              {i.number}
+                            </a>
+                          ) : (
+                            <span className="font-mono font-semibold">{i.number}</span>
+                          )}{" "}
+                          · {formatINR(i.total)} · <span className="font-mono text-[11.5px] uppercase">{i.status.replace("_", " ")}</span>
+                          {i.waiting ? ` · ${formatINR(i.waiting)} waiting` : ""}
+                        </span>
+                        {prepares && ["VERIFIED", "APPROVED", "PART_PAID"].includes(i.status) && i.left > 0.005 && <PreparePayment kind="VENDOR_INVOICE" id={i.id} left={i.left} />}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
+
+      {ledger.seesPay && (
+        <Panel title={`Crew pay · ${ledger.crew.length}`}>
+          {ledger.crew.length === 0 ? (
+            <EmptyState title="No confirmed crew yet" />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px] border-collapse text-[13.5px]">
+                <thead>
+                  <tr className="label-mono border-b-2 border-ink text-left text-[11px] text-ink-quiet">
+                    <th scope="col" className="px-3.5 py-2 font-semibold">Crew</th>
+                    <th scope="col" className="px-3 py-2 font-semibold">Worked</th>
+                    <th scope="col" className="px-3 py-2 text-right font-semibold">Agreed</th>
+                    <th scope="col" className="px-3 py-2 text-right font-semibold">Extras</th>
+                    <th scope="col" className="px-3 py-2 text-right font-semibold">Total</th>
+                    <th scope="col" className="px-3 py-2 text-right font-semibold">Paid</th>
+                    <th scope="col" className="px-3.5 py-2 text-right font-semibold"><span className="sr-only">Pay</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ledger.crew.map((c) => (
+                    <tr key={c.id} className="border-b border-rule-soft align-top last:border-b-0">
+                      <td className="px-3.5 py-2.5">
+                        <span className="font-bold">{c.name}</span>
+                        <span className="block text-[12px] text-ink-quiet">{c.duty}</span>
+                        {c.adjustments.map((a) => (
+                          <span key={a.id} className="block text-[12px]">
+                            {a.type === "EXTRA" ? "+" : "−"}
+                            {formatINR(a.amount)} {a.reason} · <span className={a.state === "APPROVED" ? "text-ok-text" : a.state === "PENDING" ? "text-plum" : "text-ink-quiet"}>{a.state.toLowerCase()}</span>
+                          </span>
+                        ))}
+                      </td>
+                      <td className="px-3 py-2.5 font-mono">
+                        {c.worked}/{c.shifts}
+                      </td>
+                      <td className="px-3 py-2.5 text-right font-mono">{formatINR(c.agreed)}</td>
+                      <td className="px-3 py-2.5 text-right font-mono">{c.extras ? formatINR(c.extras) : "—"}</td>
+                      <td className="px-3 py-2.5 text-right font-mono font-semibold">{formatINR(c.total)}</td>
+                      <td className="px-3 py-2.5 text-right font-mono">
+                        {formatINR(c.paid)}
+                        {c.waiting ? <span className="block text-[11.5px] text-plum">{formatINR(c.waiting)} waiting</span> : null}
+                      </td>
+                      <td className="px-3.5 py-2.5 text-right">{prepares && c.left > 0.005 ? <PreparePayment kind="CREW" id={c.id} left={c.left} label="Pay" /> : c.left <= 0.005 ? <Tag tone="ok">SETTLED</Tag> : null}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Panel>
+      )}
+
+      <Panel title={`Payments out · ${outs.length}`}>
+        {outs.length === 0 ? (
+          <EmptyState title="No payments yet" />
+        ) : (
+          <ul>
+            {outs.map((p) => (
+              <li key={p.id} className="grid grid-cols-1 items-center gap-2 border-b border-rule-soft px-3.5 py-2.5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+                <span className="flex flex-col leading-tight">
+                  <span className="font-semibold">
+                    {p.party}
+                    {p.invoice ? <span className="font-mono text-[12px] text-ink-quiet"> · {p.invoice}</span> : null}
+                  </span>
+                  <span className="text-[12.5px] text-ink-quiet">
+                    {p.paidOn ? `Paid ${formatCalendarDate(p.paidOn, { day: "numeric", month: "short" })} · ` : `Prepared ${formatDate(p.createdAt, { day: "numeric", month: "short" })} · `}
+                    {p.method.toLowerCase()}
+                    {p.reference ? ` · ${p.reference}` : ""}
+                    {p.note ? ` · ${p.note}` : ""}
+                  </span>
+                  {p.voidReason && <span className="text-[12.5px] text-now">Void: {p.voidReason}</span>}
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className={`font-mono font-semibold ${p.status === "VOIDED" ? "line-through" : ""}`}>{formatINR(p.amount)}</span>
+                  <Tag tone={PAY_TONE[p.status] ?? "outline"}>{PAY_WORDS[p.status] ?? p.status}</Tag>
+                </span>
+                <span className="flex flex-wrap justify-end gap-1.5">
+                  {pays && p.status === "APPROVED" && <MarkPaid paymentId={p.id} method={p.method} today={today} />}
+                  {voids && ["PENDING_APPROVAL", "APPROVED", "PAID"].includes(p.status) && <VoidPayment paymentId={p.id} />}
+                </span>
+              </li>
+            ))}
+          </ul>
         )}
       </Panel>
     </div>
