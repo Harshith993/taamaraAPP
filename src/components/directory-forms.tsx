@@ -3,7 +3,7 @@
 /** Forms for the vendor directory and the crew roster. */
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { addUnavailableAction, removeUnavailableAction, saveVendorAction, saveVendorBankAction, saveWorkerAction } from "@/app/actions/directory";
+import { addUnavailableAction, confirmVendorBankAction, removeUnavailableAction, saveVendorAction, saveVendorBankAction, saveWorkerAction, updateOwnProfileAction } from "@/app/actions/directory";
 import { Button, Field, Notice, SelectField } from "@/components/ui";
 import type { ActionResult } from "@/lib/errors";
 
@@ -175,7 +175,7 @@ export function EditVendor(props: { initial: VendorValues; departments: { id: st
   return <VendorForm {...props} onDone={() => setOpen(false)} />;
 }
 
-export function BankForm({ vendorId, initial }: { vendorId: string; initial: { accountName: string; last4: string | null; ifsc: string; upiId: string } | null }) {
+export function BankForm({ vendorId, initial, byVendor = false }: { vendorId: string; initial: { accountName: string; last4: string | null; ifsc: string; upiId: string } | null; byVendor?: boolean }) {
   const [open, setOpen] = useState(false);
   const { result, pending, run, fe } = useRun();
   if (!open)
@@ -205,7 +205,10 @@ export function BankForm({ vendorId, initial }: { vendorId: string; initial: { a
         <Field label="IFSC" name="ifsc" defaultValue={initial?.ifsc} error={fe.ifsc} />
         <Field label="UPI ID" name="upiId" defaultValue={initial?.upiId} placeholder="name@sbi" error={fe.upiId} />
       </div>
-      <p className="text-[12.5px] text-ink-quiet">The account number is stored encrypted; screens show only its last four digits.</p>
+      <p className="text-[12.5px] text-ink-quiet">
+        The account number is stored encrypted; screens show only its last four digits.
+        {byVendor ? " For your safety, Taamara Taamara will call you to confirm a change before the next payment." : ""}
+      </p>
       <div className="flex gap-2">
         <Button type="submit" disabled={pending}>
           {pending ? "Saving…" : "Save bank details"}
@@ -355,5 +358,53 @@ export function RemoveUnavailable({ workerId, id }: { workerId: string; id: stri
     <Button type="button" variant="ghost" className="min-h-9 px-2 text-[11.5px]" disabled={pending} onClick={() => run(() => removeUnavailableAction(workerId, id))}>
       Remove
     </Button>
+  );
+}
+
+export function ConfirmBank({ vendorId }: { vendorId: string }) {
+  const { result, pending, run } = useRun();
+  if (result?.ok) return <Notice tone="ok">{result.message}</Notice>;
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Button type="button" variant="look" className="self-start" disabled={pending} onClick={() => run(() => confirmVendorBankAction(vendorId))}>
+        {pending ? "Saving…" : "I called them; the new details are right"}
+      </Button>
+      {result && !result.ok && <span className="text-[13px] font-semibold text-now">{result.error}</span>}
+    </div>
+  );
+}
+
+export function OwnProfileForm({ initial, seesTax }: { initial: { contactName: string; email: string; address: string; services: string; gstin: string; pan: string }; seesTax: boolean }) {
+  const { result, pending, run, fe } = useRun();
+  return (
+    <form
+      noValidate
+      className="flex flex-col gap-3 px-3.5 py-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const f = new FormData(e.currentTarget);
+        const get = (k: string) => String(f.get(k) ?? "");
+        run(() => updateOwnProfileAction({ contactName: get("contactName"), email: get("email"), address: get("address"), services: get("services"), gstin: get("gstin"), pan: get("pan") }));
+      }}
+    >
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Field label="Contact person" name="contactName" defaultValue={initial.contactName} error={fe.contactName} />
+        <Field label="Email" name="email" type="email" defaultValue={initial.email} error={fe.email} />
+        <Field className="sm:col-span-2" label="What you do" name="services" defaultValue={initial.services} />
+        <Field className="sm:col-span-2" label="Address" name="address" defaultValue={initial.address} />
+        {seesTax && (
+          <>
+            <Field label="GSTIN" name="gstin" defaultValue={initial.gstin} placeholder="08ABCPR5678L1Z9" error={fe.gstin} />
+            <Field label="PAN" name="pan" defaultValue={initial.pan} placeholder="ABCPR5678L" error={fe.pan} />
+          </>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" disabled={pending}>
+          {pending ? "Saving…" : "Save"}
+        </Button>
+        {result && <span className={`text-[13px] font-semibold ${result.ok ? "text-ok-text" : "text-now"}`}>{result.ok ? result.message : result.error}</span>}
+      </div>
+    </form>
   );
 }

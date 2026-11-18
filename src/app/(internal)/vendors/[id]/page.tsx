@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BankForm, EditVendor } from "@/components/directory-forms";
+import { BankForm, ConfirmBank, EditVendor } from "@/components/directory-forms";
 import { EmptyState, Panel, Tag } from "@/components/ui";
 import { db } from "@/lib/db";
 import { NotFoundError } from "@/lib/errors";
@@ -130,6 +130,14 @@ export default async function VendorProfile({ params }: { params: Promise<{ id: 
               )}
             </dl>
           </Panel>
+          {seesTax && v.bank?.needsCheck && (
+            <div className="flex flex-col gap-2 rounded-[4px] border-2 border-now bg-[#B5391C12] p-3.5">
+              <p className="text-[14px] font-semibold text-now">
+                {v.company} changed their bank details{v.bank.changedByVendorAt ? ` on ${formatDate(v.bank.changedByVendorAt, { day: "numeric", month: "short" })}` : ""}. Payments wait until someone calls them on their usual number and confirms.
+              </p>
+              {actor.grants.get("vendors.bank") === "ALL" && <ConfirmBank vendorId={v.id} />}
+            </div>
+          )}
           {seesTax && (
             <Panel title="Bank">
               {v.bank ? (

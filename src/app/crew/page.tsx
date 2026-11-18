@@ -84,6 +84,9 @@ export default async function CrewHome() {
   return (
     <PortalShell title={`Hi ${firstName(actor.name)}`} subtitle={`${formatDate(now, { weekday: "short", day: "numeric", month: "short" })} · ${shifts.length} shift${shifts.length === 1 ? "" : "s"} coming up`}>
       <div className="flex flex-col gap-3.5">
+        <Link href="/crew/me" className="label-mono self-end text-[12px] no-underline">
+          Me: days off, pay, password →
+        </Link>
         {offers.map((o) => (
           <section key={o.id} aria-label={`New booking: ${o.event.name}`} className="flex flex-col gap-2.5 rounded-[4px] border-2 border-ink bg-paper p-3.5">
             <span className="flex items-center justify-between gap-2">

@@ -809,14 +809,17 @@ model VendorUser {
 
 /// Encrypted at the application level; visible only to owners, the accountant and the vendor.
 model VendorBankDetail {
-  vendorId           String   @id
-  vendor             Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  vendorId           String    @id
+  vendor             Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   accountName        String?
   accountNumberEnc   String?
-  accountNumberLast4 String?  @db.VarChar(4)
+  accountNumberLast4 String?   @db.VarChar(4)
   ifsc               String?
   upiId              String?
-  updatedAt          DateTime @updatedAt
+  /// Set when the vendor changes their own details: payments wait until someone confirms by phone.
+  needsCheck         Boolean   @default(false)
+  changedByVendorAt  DateTime?
+  updatedAt          DateTime  @updatedAt
 
   @@map("vendor_bank_details")
 }

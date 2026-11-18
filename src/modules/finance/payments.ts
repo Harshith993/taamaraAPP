@@ -80,6 +80,8 @@ export async function preparePayment(db: Db, actor: Actor, input: PreparePayment
       const inv = await tx.vendorInvoice.findUnique({ where: { id: v.invoiceId }, include: { vendor: { select: { id: true, companyName: true } }, workOrder: { select: { number: true, assignment: { select: { eventId: true, event: { select: { name: true } } } } } } } });
       if (!inv) throw new NotFoundError("That invoice");
       if (!["VERIFIED", "APPROVED", "PART_PAID"].includes(inv.status)) throw new ConflictError(inv.status === "SUBMITTED" ? "Check the invoice first (mark it verified)." : "This invoice can't be paid.");
+      const bank = await tx.vendorBankDetail.findUnique({ where: { vendorId: inv.vendor.id }, select: { needsCheck: true } });
+      if (bank?.needsCheck) throw new ConflictError(`${inv.vendor.companyName} changed their bank details. Call them to confirm, then mark the details as checked on their profile before paying.`);
       left = (await invoiceBalance(tx, inv.id)).left;
       party = inv.vendor.companyName;
       data = { eventId: inv.workOrder?.assignment.eventId ?? null, partyType: "VENDOR", vendorId: inv.vendor.id, vendorInvoiceId: inv.id };

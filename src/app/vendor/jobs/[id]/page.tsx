@@ -11,7 +11,7 @@ import {
   formatTime,
 } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
-import { can } from "@/modules/identity/policy";
+import { can, paymentWhere } from "@/modules/identity/policy";
 import { homePathFor, requireActor } from "@/modules/identity/session";
 import { getJob } from "@/modules/vendors/jobs";
 import { ProofGrid } from "@/components/proof-grid";
@@ -128,6 +128,11 @@ export default async function VendorJobPage({
   const balance = acceptedWO ? await workOrderBalance(db, acceptedWO.id) : null;
   const approvedQuote = job.quotes.find((q) => q.status === "APPROVED");
   const documents = await listDocuments(db, actor, job.event.id);
+  const payments = await db.payment.findMany({
+    where: { AND: [paymentWhere(actor), { eventId: job.event.id, status: { in: ["APPROVED", "PAID"] } }] },
+    orderBy: [{ paidOn: "desc" }, { createdAt: "desc" }],
+    select: { id: true, amount: true, status: true, paidOn: true, method: true, reference: true, vendorInvoice: { select: { invoiceNumber: true } } },
+  });
   const step = nextStep(job);
   const latest = job.quotes[0];
   const openWO = job.workOrders.find((w) => w.status === "ISSUED");
@@ -456,6 +461,25 @@ export default async function VendorJobPage({
             ) : (
               <p className="px-3.5 py-3 text-[13.5px] text-ink-quiet">The whole work order ({formatINR(balance.amount)}) has been invoiced.</p>
             )}
+          </Panel>
+        )}
+
+        {payments.length > 0 && (
+          <Panel title={`Payments · ${formatINR(payments.filter((p) => p.status === "PAID").reduce((sum, p) => sum + Number(p.amount), 0))} received`}>
+            <ul>
+              {payments.map((p) => (
+                <li key={p.id} className="flex items-center justify-between gap-3 border-b border-rule-soft px-3.5 py-2.5 text-[14px] last:border-b-0">
+                  <span className="flex flex-col leading-tight">
+                    <span>
+                      {p.status === "PAID" && p.paidOn ? `Paid ${formatCalendarDate(p.paidOn, { day: "numeric", month: "short" })}` : "Approved · being paid"}
+                      {p.vendorInvoice ? ` · ${p.vendorInvoice.invoiceNumber}` : ""}
+                    </span>
+                    {p.reference && <span className="font-mono text-[12px] text-ink-quiet">{p.method.toLowerCase()} · {p.reference}</span>}
+                  </span>
+                  <span className="font-mono font-semibold">{formatINR(p.amount)}</span>
+                </li>
+              ))}
+            </ul>
           </Panel>
         )}
 

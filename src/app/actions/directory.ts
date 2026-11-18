@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { toActionError, type ActionResult } from "@/lib/errors";
 import { addUnavailable, removeUnavailable, saveWorker, type unavailableSchema, type WorkerInput } from "@/modules/crew/roster";
 import { requestMeta, requireActor } from "@/modules/identity/session";
-import { saveVendor, saveVendorBank, type bankSchema, type VendorInput } from "@/modules/vendors/directory";
+import { confirmVendorBank, saveVendor, saveVendorBank, updateOwnVendorProfile, type bankSchema, type ownProfileSchema, type VendorInput } from "@/modules/vendors/directory";
 
 async function run<T>(fn: () => Promise<T>, message: string): Promise<ActionResult<T>> {
   try {
@@ -41,4 +41,14 @@ export async function addUnavailableAction(workerId: string, input: z.input<type
 export async function removeUnavailableAction(workerId: string, id: string) {
   const actor = await requireActor();
   return run(async () => removeUnavailable(db, actor, workerId, id), "Removed.");
+}
+
+export async function confirmVendorBankAction(vendorId: string) {
+  const actor = await requireActor();
+  return run(async () => confirmVendorBank(db, actor, vendorId, await requestMeta()), "Confirmed. Payments can go ahead.");
+}
+
+export async function updateOwnProfileAction(input: z.input<typeof ownProfileSchema>) {
+  const actor = await requireActor();
+  return run(async () => updateOwnVendorProfile(db, actor, input, await requestMeta()), "Saved.");
 }

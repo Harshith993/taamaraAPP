@@ -88,6 +88,9 @@ export default async function VendorHome() {
       subtitle="Taamara Taamara · vendor"
     >
       <div className="flex flex-col gap-3.5">
+        <Link href="/vendor/profile" className="label-mono self-end text-[12px] no-underline">
+          Your details, GST and bank →
+        </Link>
         <Panel title={`Upcoming jobs · ${upcoming.length}`}>
           {upcoming.length === 0 ? (
             <EmptyState title="No jobs right now">

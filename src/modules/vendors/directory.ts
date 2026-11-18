@@ -15,6 +15,7 @@ import { toNumber } from "@/lib/format";
 import { normalizePhone } from "@/lib/phone";
 import { parseInput } from "@/lib/validate";
 import { recordAudit, type RequestMeta } from "@/modules/audit/audit";
+import { notify } from "@/modules/notifications/notify";
 import type { Actor } from "@/modules/identity/actor";
 import { assertCan, can, eventWhere } from "@/modules/identity/policy";
 
@@ -106,7 +107,7 @@ export async function getVendor(db: Db, actor: Actor, vendorId: string) {
     departments: v.categories.map((c) => c.category),
     gstin: seesTax ? v.gstin : null,
     pan: seesTax ? v.pan : null,
-    bank: seesTax && v.bankDetail ? { accountName: v.bankDetail.accountName, last4: v.bankDetail.accountNumberLast4, ifsc: v.bankDetail.ifsc, upiId: v.bankDetail.upiId } : null,
+    bank: seesTax && v.bankDetail ? { accountName: v.bankDetail.accountName, last4: v.bankDetail.accountNumberLast4, ifsc: v.bankDetail.ifsc, upiId: v.bankDetail.upiId, needsCheck: v.bankDetail.needsCheck, changedByVendorAt: v.bankDetail.changedByVendorAt } : null,
     logins: v.users.map((u) => u.user),
     jobs: jobs.map((j) => ({ id: j.id, status: j.status, scope: j.scopeOfWork, agreed: seesAmounts && j.agreedAmount ? toNumber(j.agreedAmount) : null, event: j.event })),
   };
@@ -189,11 +190,27 @@ export const bankSchema = z.object({
   upiId: z.union([z.literal(""), z.string().trim().regex(/^[\w.-]{2,}@[a-zA-Z]{2,}$/, "That UPI ID doesn't look right (e.g. name@sbi).")]).optional(),
 });
 
-/** Saves bank details; a blank account number keeps the one on file. */
+/** Owners and the accountant (by the bank permission) plus every vendor login of the company. */
+async function bankWatchers(tx: Parameters<Parameters<Db["$transaction"]>[0]>[0]) {
+  const rows = await tx.user.findMany({ where: { status: "ACTIVE", accountType: "INTERNAL", roles: { some: { role: { OR: [{ isOwner: true }, { key: "ACCOUNTANT" }] } } } }, select: { id: true } });
+  return rows.map((r) => r.id);
+}
+
+/**
+ * Saves bank details; a blank account number keeps the one on file.
+ * Owners and the accountant change any vendor's details. A vendor changes their own, which marks them
+ * "to check": the office is told, and no payment can be prepared until someone confirms by phone.
+ */
 export async function saveVendorBank(db: Db, actor: Actor, vendorId: string, input: z.input<typeof bankSchema>, meta: RequestMeta = {}) {
-  staffOnly(actor);
-  assertCan(actor, "vendors.bank", "Only owners and the accountant change bank details.");
-  if (actor.grants.get("vendors.bank") !== "ALL") throw new ForbiddenError("Only owners and the accountant change bank details.");
+  const byVendor = actor.accountType === "VENDOR";
+  if (byVendor) {
+    assertCan(actor, "vendors.bank", "You can't change bank details.");
+    if (!actor.vendorIds.includes(vendorId)) throw new NotFoundError("That vendor");
+  } else {
+    staffOnly(actor);
+    assertCan(actor, "vendors.bank", "Only owners and the accountant change bank details.");
+    if (actor.grants.get("vendors.bank") !== "ALL") throw new ForbiddenError("Only owners and the accountant change bank details.");
+  }
   const v = parseInput(bankSchema, input);
   return db.$transaction(async (tx) => {
     const vendor = await tx.vendor.findFirst({ where: { id: vendorId, deletedAt: null }, select: { companyName: true, bankDetail: { select: { accountNumberEnc: true } } } });
@@ -201,8 +218,56 @@ export async function saveVendorBank(db: Db, actor: Actor, vendorId: string, inp
     if (!v.accountNumber && !vendor.bankDetail?.accountNumberEnc && !v.upiId) throw new ValidationError("Enter an account number or a UPI ID.", { accountNumber: "Enter an account number or a UPI ID." });
     if (v.accountNumber && !v.ifsc) throw new ValidationError("Enter the IFSC for this account.", { ifsc: "Enter the IFSC." });
     const account = v.accountNumber ? { accountNumberEnc: encryptField(v.accountNumber), accountNumberLast4: lastFour(v.accountNumber) } : {};
-    const data = { accountName: v.accountName, ifsc: v.ifsc || null, upiId: v.upiId || null, ...account };
+    const check = byVendor ? { needsCheck: true, changedByVendorAt: new Date() } : { needsCheck: false };
+    const data = { accountName: v.accountName, ifsc: v.ifsc || null, upiId: v.upiId || null, ...account, ...check };
     await tx.vendorBankDetail.upsert({ where: { vendorId }, create: { vendorId, ...data }, update: data });
-    await recordAudit(tx, actor, { action: "update", entityType: "vendor_bank", entityId: vendorId, summary: `Changed bank details of ${vendor.companyName}${v.accountNumber ? ` (account ending ${lastFour(v.accountNumber)})` : ""}`, financial: true }, meta);
+    if (byVendor) {
+      await notify(tx, await bankWatchers(tx), {
+        type: "vendor.bankChanged",
+        title: `${vendor.companyName} changed their bank details`,
+        body: "Call them on their usual number to confirm before paying. Payments wait until someone confirms.",
+        link: `/vendors/${vendorId}`,
+        entityType: "vendor",
+        entityId: vendorId,
+      });
+    }
+    await recordAudit(tx, actor, { action: "update", entityType: "vendor_bank", entityId: vendorId, summary: `${byVendor ? `${vendor.companyName} changed their own` : "Changed"} bank details${byVendor ? "" : ` of ${vendor.companyName}`}${v.accountNumber ? ` (account ending ${lastFour(v.accountNumber)})` : ""}`, financial: true }, meta);
+  });
+}
+
+/** The office confirms (by phone) bank details a vendor changed, so payments can go ahead. */
+export async function confirmVendorBank(db: Db, actor: Actor, vendorId: string, meta: RequestMeta = {}) {
+  staffOnly(actor);
+  if (actor.grants.get("vendors.bank") !== "ALL") throw new ForbiddenError("Only owners and the accountant confirm bank details.");
+  return db.$transaction(async (tx) => {
+    const b = await tx.vendorBankDetail.findUnique({ where: { vendorId }, include: { vendor: { select: { companyName: true } } } });
+    if (!b?.needsCheck) throw new ConflictError("There is nothing to confirm.");
+    await tx.vendorBankDetail.update({ where: { vendorId }, data: { needsCheck: false } });
+    await recordAudit(tx, actor, { action: "confirm", entityType: "vendor_bank", entityId: vendorId, summary: `Confirmed ${b.vendor.companyName}'s new bank details (account ending ${b.accountNumberLast4 ?? "—"})`, financial: true }, meta);
+  });
+}
+
+export const ownProfileSchema = z.object({
+  contactName: z.string().trim().min(2, "Enter the contact person.").max(80),
+  email: z.union([z.literal(""), z.string().trim().email("That email doesn't look right.")]).optional(),
+  address: z.string().trim().max(300).optional(),
+  services: z.string().trim().max(300).optional(),
+  gstin: z.string().trim().max(15).optional(),
+  pan: z.string().trim().max(10).optional(),
+});
+
+/** A vendor keeps their own contact, GST and PAN up to date. Name, phone and departments stay with the office. */
+export async function updateOwnVendorProfile(db: Db, actor: Actor, input: z.input<typeof ownProfileSchema>, meta: RequestMeta = {}) {
+  if (actor.accountType !== "VENDOR" || !actor.vendorIds[0]) throw new ForbiddenError();
+  assertCan(actor, "vendors.edit", "You can't change these details.");
+  const v = parseInput(ownProfileSchema, input);
+  const gstin = v.gstin?.toUpperCase().replace(/\s/g, "") || null;
+  const pan = v.pan?.toUpperCase().replace(/\s/g, "") || null;
+  if (gstin && !GSTIN_RE.test(gstin)) throw new ValidationError("That GSTIN doesn't look right (15 characters, e.g. 08ABCPR5678L1Z9).", { gstin: "Check the GSTIN." });
+  if (pan && !PAN_RE.test(pan)) throw new ValidationError("That PAN doesn't look right (e.g. ABCPR5678L).", { pan: "Check the PAN." });
+  const vendorId = actor.vendorIds[0];
+  return db.$transaction(async (tx) => {
+    await tx.vendor.update({ where: { id: vendorId }, data: { contactName: v.contactName, email: v.email || null, address: v.address || null, services: v.services || null, ...(can(actor, "vendors.bank") ? { gstin, pan } : {}) } });
+    await recordAudit(tx, actor, { action: "update", entityType: "vendor", entityId: vendorId, summary: `Vendor updated their own profile` }, meta);
   });
 }
