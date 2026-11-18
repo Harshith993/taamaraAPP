@@ -21,6 +21,8 @@ import { todayInIndia } from "@/lib/format";
 import { invoicesForJob, workOrderBalance } from "@/modules/vendors/invoices";
 import { AcceptWorkOrder, DeclineJob, ProgressButton } from "./job-actions";
 import { InvoiceForm } from "./invoice-form";
+import { DocumentList } from "@/components/document-list";
+import { listDocuments } from "@/modules/documents/service";
 import { QuoteForm } from "./quote-form";
 
 export const metadata: Metadata = { title: "Job" };
@@ -125,6 +127,7 @@ export default async function VendorJobPage({
   const invoices = acceptedWO ? await invoicesForJob(db, actor, job.id) : [];
   const balance = acceptedWO ? await workOrderBalance(db, acceptedWO.id) : null;
   const approvedQuote = job.quotes.find((q) => q.status === "APPROVED");
+  const documents = await listDocuments(db, actor, job.event.id);
   const step = nextStep(job);
   const latest = job.quotes[0];
   const openWO = job.workOrders.find((w) => w.status === "ISSUED");
@@ -453,6 +456,12 @@ export default async function VendorJobPage({
             ) : (
               <p className="px-3.5 py-3 text-[13.5px] text-ink-quiet">The whole work order ({formatINR(balance.amount)}) has been invoiced.</p>
             )}
+          </Panel>
+        )}
+
+        {documents.length > 0 && (
+          <Panel title={`Documents from Taamara Taamara · ${documents.length}`}>
+            <DocumentList docs={documents} staff={false} />
           </Panel>
         )}
 

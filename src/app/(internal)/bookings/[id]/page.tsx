@@ -35,6 +35,9 @@ import { AddTaskForm, TaskButtons } from "@/components/task-controls";
 import { attendanceWindow, crewForBooking } from "@/modules/crew/service";
 import { assignableForBooking, taskActions } from "@/modules/tasks/service";
 import { getRequirements, teamCandidates } from "@/modules/events/planning";
+import { listDocuments } from "@/modules/documents/service";
+import { DocumentList } from "@/components/document-list";
+import { AddDocumentForm } from "@/components/document-controls";
 import { CancelBooking, DetailsEditor, DoneToggle, FunctionEditor, RequirementEditor, ScheduleEditor, TeamEditor } from "./planning-controls";
 import { InviteVendorForm, VendorRowActions } from "./vendor-controls";
 
@@ -48,6 +51,7 @@ const TABS = [
   { key: "crew", label: "Crew" },
   { key: "tasks", label: "Tasks" },
   { key: "proof", label: "Proof" },
+  { key: "docs", label: "Docs" },
 ] as const;
 type TabKey = (typeof TABS)[number]["key"];
 
@@ -173,6 +177,7 @@ export default async function BookingPage({
       {tab === "crew" && <Crew actor={actor} eventId={id} />}
       {tab === "tasks" && <Tasks actor={actor} eventId={id} />}
       {tab === "proof" && <Proof actor={actor} eventId={id} />}
+      {tab === "docs" && <Docs actor={actor} eventId={id} />}
     </div>
   );
 }
@@ -941,5 +946,34 @@ async function Proof({ actor, eventId }: { actor: Actor; eventId: string }) {
         <ProofGrid items={items} />
       </div>
     </Panel>
+  );
+}
+
+async function Docs({ actor, eventId }: { actor: Actor; eventId: string }) {
+  if (!can(actor, "documents.view"))
+    return (
+      <Panel>
+        <EmptyState title="Documents are not part of your access" />
+      </Panel>
+    );
+  const [docs, vendors] = await Promise.all([
+    listDocuments(db, actor, eventId),
+    db.vendorAssignment.findMany({ where: { eventId, status: { notIn: ["DECLINED", "CANCELLED"] } }, select: { vendor: { select: { id: true, companyName: true } } } }),
+  ]);
+  const uploads = actor.accountType === "INTERNAL" && can(actor, "documents.upload");
+  const vendorOptions = [...new Map(vendors.map((v) => [v.vendor.id, { id: v.vendor.id, name: v.vendor.companyName }])).values()];
+  return (
+    <div className="flex flex-col gap-3">
+      {uploads && <AddDocumentForm eventId={eventId} vendors={vendorOptions} ownerOnly={can(actor, "documents.confidential")} />}
+      <Panel title={`Documents · ${docs.length}`}>
+        {docs.length ? (
+          <DocumentList docs={docs} staff />
+        ) : (
+          <EmptyState title="No documents yet">
+            Contracts, layouts, designs and menus. Choose who sees each one; share plans with the vendors or crew who need them.
+          </EmptyState>
+        )}
+      </Panel>
+    </div>
   );
 }

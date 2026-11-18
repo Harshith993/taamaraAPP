@@ -19,17 +19,14 @@ export function AppHeader({ name, roleLabel, items }: { name: string; roleLabel:
   return (
     <>
       <header className="lattice-plum text-[#F6EFE0]">
-        <div className="mx-auto flex min-h-[58px] max-w-[1400px] flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2 sm:px-8">
+        <div className="mx-auto flex min-h-[58px] max-w-[1400px] flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 pt-2 sm:px-8">
           <Link href="/home" className="flex items-center gap-2.5 text-[#F6EFE0] no-underline">
             <LotusBadge />
-            {/* On iPad landscape the menu needs the room; the badge alone carries the brand there. */}
-            <span className="lg:hidden xl:inline">
-              <Wordmark />
-            </span>
+            <Wordmark />
           </Link>
           <MainNav items={items} />
           <div className="flex items-center gap-2">
-            <span className="hidden text-right leading-tight sm:flex sm:flex-col lg:hidden xl:flex">
+            <span className="hidden text-right leading-tight sm:flex sm:flex-col">
               <span className="text-[13px] font-semibold">{name}</span>
               <span className="font-mono text-[10.5px] tracking-[0.08em] text-[#E9CFDA] uppercase">{roleLabel}</span>
             </span>

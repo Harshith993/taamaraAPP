@@ -12,6 +12,8 @@ import { attendanceWindow } from "@/modules/crew/service";
 import { can, crewAssignmentWhere, taskWhere } from "@/modules/identity/policy";
 import { homePathFor, requireActor } from "@/modules/identity/session";
 import { taskActions } from "@/modules/tasks/service";
+import { DocumentList } from "@/components/document-list";
+import { crewDocuments } from "@/modules/documents/service";
 
 export const metadata: Metadata = { title: "Today" };
 
@@ -67,6 +69,7 @@ export default async function CrewHome() {
       : Promise.resolve([]),
   ]);
 
+  const documents = await crewDocuments(db, actor);
   const [next, ...later] = shifts;
   const contacts = next
     ? await db.eventMember.findMany({
@@ -232,6 +235,12 @@ export default async function CrewHome() {
             </ul>
           )}
         </Panel>
+
+        {documents.length > 0 && (
+          <Panel title={`Plans and documents · ${documents.length}`}>
+            <DocumentList docs={documents} staff={false} />
+          </Panel>
+        )}
 
         {seesPay && assignments.length > 0 && (
           <Panel title="My pay">
