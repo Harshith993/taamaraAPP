@@ -286,6 +286,14 @@ enum FileStatus {
   FAILED
 }
 
+/// What an upload is for: decides which file types and sizes are accepted and how it is processed.
+enum FilePurpose {
+  /// Photo or video of completed work: thumbnails and a playable copy are made.
+  PROOF
+  /// Quote, invoice, receipt or other paperwork: PDF or photo, kept as uploaded.
+  DOCUMENT
+}
+
 enum ProofKind {
   PHOTO
   VIDEO
@@ -1483,21 +1491,26 @@ model InventoryAllocation {
 // ───────────────────────────── Files, documents & proof ─────────────────────────────
 
 model File {
-  id              String     @id @default(uuid())
-  storageKey      String     @unique
+  id              String      @id @default(uuid())
+  storageKey      String      @unique
   filename        String
   mimeType        String
   sizeBytes       BigInt
   sha256          String?
   uploadedById    String?
-  uploadedBy      User?      @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
-  status          FileStatus @default(UPLOADING)
+  uploadedBy      User?       @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  status          FileStatus  @default(UPLOADING)
+  purpose         FilePurpose @default(DOCUMENT)
   width           Int?
   height          Int?
   durationSeconds Int?
   thumbnailKey    String?
+  /// Viewing copy: a resized photo or an MP4 that plays everywhere. Location metadata is removed.
   playableKey     String?
-  createdAt       DateTime   @default(now())
+  /// Why processing failed, in words the uploader can act on.
+  processingError String?
+  processedAt     DateTime?
+  createdAt       DateTime    @default(now())
 
   documents          Document[]
   proofs             WorkProof[]
@@ -1506,6 +1519,7 @@ model File {
   vendorInvoices     VendorInvoice[]
   messageAttachments MessageAttachment[]
 
+  @@index([status, createdAt])
   @@map("files")
 }
 

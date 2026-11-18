@@ -10,6 +10,12 @@ export class AppError extends Error {
   }
 }
 
+export class UnauthorizedError extends AppError {
+  constructor(message = "Please sign in again.") {
+    super(message, 401, "UNAUTHORIZED");
+  }
+}
+
 export class ForbiddenError extends AppError {
   constructor(message = "You don't have access to this.") {
     super(message, 403, "FORBIDDEN");

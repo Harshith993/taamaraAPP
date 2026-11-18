@@ -12,6 +12,8 @@ export function proxy(request: NextRequest) {
   if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return NextResponse.next();
   const hasSession = getSessionCookie(request, { cookiePrefix: "taamara" });
   if (!hasSession) {
+    // The JSON API answers 401 instead of redirecting to a page.
+    if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
     const url = new URL("/login", request.url);
     if (pathname !== "/") url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
