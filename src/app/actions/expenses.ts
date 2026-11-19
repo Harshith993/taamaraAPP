@@ -11,7 +11,7 @@ export async function submitExpenseAction(input: ExpenseInput): Promise<ActionRe
   try {
     await submitExpense(db, actor, input, await requestMeta());
     revalidatePath("/", "layout");
-    return { ok: true, message: "Sent to the owners for approval." };
+    return { ok: true, message: "Sent to the hosts for approval." };
   } catch (err) {
     return toActionError(err);
   }

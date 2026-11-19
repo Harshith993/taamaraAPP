@@ -34,7 +34,7 @@ describe("budgets", () => {
     await expect(addBudgetLine(testDb, otherManager, eventId, { categoryId: foodCat, estimatedAmount: 1 })).rejects.toThrow(/access/);
     await expect(addBudgetLine(testDb, supervisor, eventId, { categoryId: foodCat, estimatedAmount: 1 })).rejects.toThrow(/can't work on budgets/);
     await submitBudget(testDb, manager, eventId);
-    await expect(addBudgetLine(testDb, manager, eventId, { categoryId: foodCat, estimatedAmount: 1 })).rejects.toThrow(/waiting for an owner/);
+    await expect(addBudgetLine(testDb, manager, eventId, { categoryId: foodCat, estimatedAmount: 1 })).rejects.toThrow(/waiting for a host/);
     const card = (await listPendingApprovals(testDb, owner)).find((i) => i.kind === "budget" && i.event?.id === eventId);
     expect(card && card.kind === "budget" && card.lines.length).toBe(2);
     await decideApproval(testDb, owner, (await pending(eventId)).id, "APPROVE", undefined);

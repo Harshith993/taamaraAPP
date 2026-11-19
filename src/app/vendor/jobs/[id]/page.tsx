@@ -63,7 +63,7 @@ function nextStep(job: Awaited<ReturnType<typeof getJob>>) {
     case "QUOTED":
       return {
         tone: "info",
-        text: "Quote sent. The owners will approve it or ask for changes.",
+        text: "Quote sent. The hosts will approve it or ask for changes.",
       };
     case "APPROVED":
       return openWO

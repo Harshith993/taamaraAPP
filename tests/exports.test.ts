@@ -35,7 +35,7 @@ describe("exports", () => {
 
   it("every kind builds; managers can't export; bad ranges are refused", async () => {
     for (const k of ["payments", "expenses", "crew-pay"]) expect((await buildExport(testDb, owner, k, "2026-01-01", today)).buffer.length).toBeGreaterThan(1000);
-    await expect(buildExport(testDb, manager, "payments", today, today)).rejects.toThrow(/Only owners and the accountant/);
+    await expect(buildExport(testDb, manager, "payments", today, today)).rejects.toThrow(/Only hosts and the accountant/);
     await expect(buildExport(testDb, owner, "payments", today, "2020-01-01")).rejects.toThrow(/date range/);
     await expect(buildExport(testDb, owner, "salaries", today, today)).rejects.toThrow(/Unknown/);
   });

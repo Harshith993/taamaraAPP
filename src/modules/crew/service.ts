@@ -174,7 +174,7 @@ export async function markAttendance(db: Db, actor: Actor, shiftId: string, stat
     if (!["ASSIGNED", "CONFIRMED", "COMPLETED", "NO_SHOW"].includes(shift.assignment.status)) throw new ConflictError(`${shift.assignment.worker.name} is not on this booking any more.`);
     const window = attendanceWindow(shift.reportAt, now);
     if (window === "early") throw new ConflictError(`Attendance opens on the day (from ${formatTime(new Date(shift.reportAt.getTime() - 6 * HOUR))}).`);
-    if (window === "closed" && !actor.isOwner) throw new ConflictError("This shift is over. Ask an owner to correct its attendance.");
+    if (window === "closed" && !actor.isOwner) throw new ConflictError("This shift is over. Ask a host to correct its attendance.");
     const arrived = v.status === "PRESENT" || v.status === "LATE";
     await tx.crewShift.update({
       where: { id: shift.id },

@@ -61,7 +61,7 @@ export async function readCompany(tx: DbTx): Promise<CompanyDetails> {
 }
 
 export async function getCompany(db: Db, actor: Actor): Promise<CompanyDetails> {
-  assertCan(actor, "admin.taxSettings", "Only owners and the accountant see the company's tax details.");
+  assertCan(actor, "admin.taxSettings", "Only hosts and the accountant see the company's tax details.");
   return readCompany(db);
 }
 
@@ -87,7 +87,7 @@ export const companySchema = z.object({
 });
 
 export async function updateCompany(db: Db, actor: Actor, input: z.input<typeof companySchema>, meta: RequestMeta = {}) {
-  assertCan(actor, "admin.taxSettings", "Only owners and the accountant change the company's tax details.");
+  assertCan(actor, "admin.taxSettings", "Only hosts and the accountant change the company's tax details.");
   const v = parseInput(companySchema, input);
   const gstin = normalizeGstin(v.gstin) || null;
   if (gstin && !isValidGstin(gstin)) throw new ValidationError("That GSTIN doesn't look right. Check it against the GST certificate.", { gstin: "Check the GSTIN (15 characters)." });

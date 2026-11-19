@@ -6,7 +6,7 @@
 import type { DbTx } from "@/lib/db";
 import { ConflictError } from "@/lib/errors";
 
-export const SETTLED_MESSAGE = "This booking is settled. An owner has to reopen it before its money can change.";
+export const SETTLED_MESSAGE = "This booking is settled. A host has to reopen it before its money can change.";
 
 export async function assertBookingOpen(tx: DbTx, eventId: string | null | undefined) {
   if (!eventId) return;

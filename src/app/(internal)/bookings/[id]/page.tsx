@@ -1007,7 +1007,7 @@ async function Docs({ actor, eventId }: { actor: Actor; eventId: string }) {
 }
 
 const PAY_TONE: Record<string, "look" | "ok" | "now" | "quiet" | "plum" | "outline"> = { PENDING_APPROVAL: "look", APPROVED: "plum", PAID: "ok", REJECTED: "quiet", VOIDED: "quiet" };
-const PAY_WORDS: Record<string, string> = { PENDING_APPROVAL: "Waiting for owner", APPROVED: "Approved · to pay", PAID: "Paid", REJECTED: "Not approved", VOIDED: "Void" };
+const PAY_WORDS: Record<string, string> = { PENDING_APPROVAL: "Waiting for host", APPROVED: "Approved · to pay", PAID: "Paid", REJECTED: "Not approved", VOIDED: "Void" };
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: "ok" | "now" }) {
   return (
@@ -1349,7 +1349,7 @@ function SettlementPanel({ eventId, s }: { eventId: string; s: SettlementView })
           </li>
         ))}
       </ul>
-      {!s.canSettle && s.ready && <p className="border-t border-rule-soft px-3.5 py-2 text-[13px] text-ink-quiet">Everything is clear. An owner can settle it.</p>}
+      {!s.canSettle && s.ready && <p className="border-t border-rule-soft px-3.5 py-2 text-[13px] text-ink-quiet">Everything is clear. A host can settle it.</p>}
     </Panel>
   );
 }
@@ -1359,7 +1359,7 @@ function BudgetPanel({ eventId, budget }: { eventId: string; budget: NonNullable
   return (
     <Panel
       title={`Budget${budget.approved ? ` · v${budget.approved.version} approved` : budget.draft ? " · draft" : ""}`}
-      action={budget.pending ? <Tag tone="look">WAITING FOR OWNER</Tag> : undefined}
+      action={budget.pending ? <Tag tone="look">WAITING FOR A HOST</Tag> : undefined}
     >
       {budget.rows.length > 0 && (
         <div className="overflow-x-auto">
@@ -1417,7 +1417,7 @@ function BudgetPanel({ eventId, budget }: { eventId: string; budget: NonNullable
       )}
       {!budget.draft && (
         <div className="flex flex-col gap-2 px-3.5 py-3">
-          {!budget.approved && <p className="text-[14px] text-ink-quiet">No budget yet. Add what each kind of cost should come to; the owners approve it.</p>}
+          {!budget.approved && <p className="text-[14px] text-ink-quiet">No budget yet. Add what each kind of cost should come to; the hosts approve it.</p>}
           {budget.approved ? <BudgetButtons eventId={eventId} mode="revise" /> : <BudgetLineForm eventId={eventId} categories={budget.categories} />}
         </div>
       )}

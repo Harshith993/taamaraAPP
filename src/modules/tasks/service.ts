@@ -32,7 +32,7 @@ export async function assignableForBooking(db: DbTx, eventId: string) {
   const people = new Map<string, { id: string; name: string; group: string }>();
   for (const m of members) if (m.user.status === "ACTIVE") people.set(m.user.id, { id: m.user.id, name: m.user.name, group: m.role === "MANAGER" ? "Manager" : "Supervisor" });
   for (const c of crew) if (c.worker.user?.status === "ACTIVE") people.set(c.worker.user.id, { id: c.worker.user.id, name: c.worker.name, group: `Crew · ${c.duty}` });
-  for (const o of owners) if (!people.has(o.id)) people.set(o.id, { id: o.id, name: o.name, group: "Owner" });
+  for (const o of owners) if (!people.has(o.id)) people.set(o.id, { id: o.id, name: o.name, group: "Hosts" });
   return [...people.values()];
 }
 

@@ -7,7 +7,8 @@ import { resetPasswordAction, setRoleAction, setStatusAction } from "./actions";
 import { suggestTemporaryPassword } from "./temp-password";
 
 const INTERNAL_ROLES = [
-  { value: "OWNER", label: "Owner" },
+  { value: "OWNER", label: "Host" },
+  { value: "CO_HOST", label: "Co-host" },
   { value: "EVENT_MANAGER", label: "Event Manager" },
   { value: "ACCOUNTANT", label: "Accountant" },
   { value: "SUPERVISOR", label: "Supervisor" },

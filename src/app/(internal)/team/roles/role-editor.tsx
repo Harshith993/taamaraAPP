@@ -114,7 +114,7 @@ function GroupRows({ group, perms, draft, setScope }: { group: string; perms: ty
             </th>
             <td className="w-56 px-3 py-1.5">
               {locked ? (
-                <span className="label-mono text-[11px] text-ink-quiet">Owners only</span>
+                <span className="label-mono text-[11px] text-ink-quiet">Hosts only</span>
               ) : (
                 <select id={id} value={draft[p.key] ?? ""} onChange={(e) => setScope(p.key, e.target.value)} className="min-h-11 w-full rounded-[3px] border-2 border-ink bg-paper px-2 text-[14px]">
                   <option value="">No access</option>

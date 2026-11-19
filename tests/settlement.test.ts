@@ -68,7 +68,7 @@ describe("the settlement checklist", () => {
   });
 
   it("can't be settled until it is clear, and only by an owner", async () => {
-    await expect(settleBooking(testDb, accountant, eventId)).rejects.toThrow(/Only an owner/);
+    await expect(settleBooking(testDb, accountant, eventId)).rejects.toThrow(/Only a host/);
     await expect(settleBooking(testDb, owner, eventId)).rejects.toThrow(/Not ready to settle/);
   });
 
@@ -142,7 +142,7 @@ describe("settling", () => {
   });
 
   it("an owner can reopen it with a reason; then money can change again", async () => {
-    await expect(reopenBooking(testDb, accountant, eventId, { reason: "Corrected invoice" })).rejects.toThrow(/Only an owner/);
+    await expect(reopenBooking(testDb, accountant, eventId, { reason: "Corrected invoice" })).rejects.toThrow(/Only a host/);
     await expect(reopenBooking(testDb, owner2, eventId, { reason: "no" })).rejects.toThrow(/Say why/);
     await reopenBooking(testDb, owner2, eventId, { reason: "Client asked for an extra hour" });
     const ev = await testDb.event.findUniqueOrThrow({ where: { id: eventId } });
@@ -178,7 +178,7 @@ describe("monthly P&L", () => {
     expect(feb.paidOut).toBe(24800);
     expect(p.total.margin).toBe(24960);
     expect(p.bookings.find((b) => b.id === eventId)?.status).toBe("SETTLED");
-    await expect(monthlyPnl(testDb, manager, { from: "2025-01", to: "2025-03" })).rejects.toThrow(/Only owners and the accountant/);
+    await expect(monthlyPnl(testDb, manager, { from: "2025-01", to: "2025-03" })).rejects.toThrow(/Only hosts and the accountant/);
   });
 
   it("exports to Excel with a sheet per month and per booking", async () => {

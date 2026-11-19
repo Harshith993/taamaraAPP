@@ -10,7 +10,8 @@ const ROLE_OPTIONS = [
   { value: "EVENT_MANAGER", label: "Event Manager" },
   { value: "SUPERVISOR", label: "Supervisor" },
   { value: "ACCOUNTANT", label: "Accountant" },
-  { value: "OWNER", label: "Owner (full access)" },
+  { value: "OWNER", label: "Host (full access)" },
+  { value: "CO_HOST", label: "Co-host (full access)" },
   { value: "VENDOR", label: "Vendor login" },
   { value: "LABOUR", label: "Crew login" },
 ];

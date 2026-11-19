@@ -108,14 +108,14 @@ async function computeChecks(tx: DbTx, eventId: string) {
     const left = round2(toNumber(a.agreedPay) + approved - a.payments.reduce((s, p) => s + toNumber(p.amount), 0));
     if (left > TOLERANCE) crewIssues.push(`${a.worker.name}: ${formatINR(left, { decimals: true })} still to pay.`);
     const pending = a.adjustments.filter((x) => x.state === "PENDING").length;
-    if (pending) crewIssues.push(`${a.worker.name}: ${pending === 1 ? "an extra or deduction is" : `${pending} extras or deductions are`} waiting for an owner.`);
+    if (pending) crewIssues.push(`${a.worker.name}: ${pending === 1 ? "an extra or deduction is" : `${pending} extras or deductions are`} waiting for a host.`);
   }
   checks.push({ key: "crew", ok: crewIssues.length === 0, level: "block", label: crew.length ? `Crew are paid (${crew.length})` : "Crew are paid (none on it)", details: crewIssues });
 
   const waiting: string[] = [];
   const pendingPay = waitingPayments.filter((p) => p.status === "PENDING_APPROVAL");
   const approvedPay = waitingPayments.filter((p) => p.status === "APPROVED");
-  if (pendingPay.length) waiting.push(`${pendingPay.length} payment${pendingPay.length === 1 ? "" : "s"} waiting for an owner's approval.`);
+  if (pendingPay.length) waiting.push(`${pendingPay.length} payment${pendingPay.length === 1 ? "" : "s"} waiting for a host's approval.`);
   if (approvedPay.length) waiting.push(`${approvedPay.length} approved payment${approvedPay.length === 1 ? "" : "s"} not yet marked paid.`);
   for (const a of approvals) waiting.push(`${a.type === "QUOTATION" ? "Quote" : a.type === "BUDGET" ? "Budget" : "Approval"} waiting: ${a.summary}`);
   checks.push({ key: "waiting", ok: waiting.length === 0, level: "block", label: "Nothing is waiting for approval or payment", details: waiting });
@@ -125,7 +125,7 @@ async function computeChecks(tx: DbTx, eventId: string) {
     ok: expenses.length === 0,
     level: "block",
     label: "Expenses are approved and repaid",
-    details: expenses.map((e) => `${e.description} (${formatINR(e.amount)}): ${e.status === "SUBMITTED" ? "waiting for an owner" : "not yet repaid"}.`),
+    details: expenses.map((e) => `${e.description} (${formatINR(e.amount)}): ${e.status === "SUBMITTED" ? "waiting for a host" : "not yet repaid"}.`),
   });
 
   const ready = event.status === "COMPLETED" && checks.every((c) => c.ok || c.level === "warn");
@@ -158,7 +158,7 @@ export const settleSchema = z.object({ note: z.string().trim().max(300).optional
 
 export async function settleBooking(db: Db, actor: Actor, eventId: string, input: z.input<typeof settleSchema> = {}, meta: RequestMeta = {}) {
   const v = parseInput(settleSchema, input);
-  if (actor.accountType !== "INTERNAL" || !actor.isOwner) throw new ForbiddenError("Only an owner settles a booking.");
+  if (actor.accountType !== "INTERNAL" || !actor.isOwner) throw new ForbiddenError("Only a host settles a booking.");
   return db.$transaction(async (tx) => {
     const r = await computeChecks(tx, eventId);
     if (r.event.status === "SETTLED") throw new ConflictError("This booking is already settled.");
@@ -191,7 +191,7 @@ export const reopenSchema = z.object({ reason: z.string().trim().min(5, "Say why
 
 export async function reopenBooking(db: Db, actor: Actor, eventId: string, input: z.input<typeof reopenSchema>, meta: RequestMeta = {}) {
   const v = parseInput(reopenSchema, input);
-  if (actor.accountType !== "INTERNAL" || !actor.isOwner) throw new ForbiddenError("Only an owner reopens a settled booking.");
+  if (actor.accountType !== "INTERNAL" || !actor.isOwner) throw new ForbiddenError("Only a host reopens a settled booking.");
   return db.$transaction(async (tx) => {
     const ev = await tx.event.findUnique({ where: { id: eventId }, select: { name: true, status: true, settlementSnapshot: true } });
     if (!ev) throw new NotFoundError("That booking");

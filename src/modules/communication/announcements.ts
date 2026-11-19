@@ -91,7 +91,7 @@ export async function sendAnnouncement(db: Db, actor: Actor, input: Announcement
   if (actor.accountType !== "INTERNAL") throw new ForbiddenError("Only the team sends announcements.");
   const scope = assertCan(actor, "announcements.send", "You can't send announcements.");
   const companyWide = COMPANY_WIDE.includes(v.audience);
-  if (companyWide && scope !== "ALL") throw new ForbiddenError("Only owners send announcements to everyone.");
+  if (companyWide && scope !== "ALL") throw new ForbiddenError("Only hosts send announcements to everyone.");
   if (!companyWide && !v.eventId) throw new ValidationError("Pick the booking.", { eventId: "Pick the booking." });
   return db.$transaction(async (tx) => {
     const eventId = companyWide ? null : v.eventId!;

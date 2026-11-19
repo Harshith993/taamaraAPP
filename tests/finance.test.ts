@@ -101,7 +101,7 @@ describe("crew pay", () => {
 
 describe("client money and what each person sees", () => {
   it("owners set charges, the accountant records receipts; managers do neither", async () => {
-    await expect(addCharge(testDb, manager, { eventId, description: "Package", amount: 100000, gstRate: 18 })).rejects.toThrow(/Only owners and the accountant/);
+    await expect(addCharge(testDb, manager, { eventId, description: "Package", amount: 100000, gstRate: 18 })).rejects.toThrow(/Only hosts and the accountant/);
     await addCharge(testDb, owner, { eventId, description: "Wedding package", amount: 200000, gstRate: 18 });
     await expect(recordReceipt(testDb, manager, { eventId, amount: 50000, method: "UPI", paidOn: today })).rejects.toThrow(/can't record client payments/);
     await recordReceipt(testDb, accountant, { eventId, amount: 100000, method: "BANK", reference: "NEFT-1", paidOn: today });
@@ -125,7 +125,7 @@ describe("client money and what each person sees", () => {
     expect(forManager.payments.every((p) => p.direction === "OUT")).toBe(true);
     expect(forManager.vendorCost).toBe(59000);
     expect(await bookingLedger(testDb, supervisor, eventId)).toBeNull();
-    await expect(moneyOverview(testDb, manager)).rejects.toThrow(/Only owners and the accountant/);
+    await expect(moneyOverview(testDb, manager)).rejects.toThrow(/Only hosts and the accountant/);
     const overview = await moneyOverview(testDb, accountant);
     const row = overview.bookings.find((b) => b.id === eventId)!;
     expect(row.margin).toBe(139800);

@@ -86,7 +86,7 @@ export function monthsBetween(from: string, to: string): string[] {
 const monthOf = (d: Date) => d.toISOString().slice(0, 7);
 
 export async function monthlyPnl(db: Db, actor: Actor, range: { from: string; to: string }) {
-  assertCan(actor, "finance.company", "Only owners and the accountant see company money.");
+  assertCan(actor, "finance.company", "Only hosts and the accountant see company money.");
   const months = monthsBetween(range.from, range.to);
   const start = new Date(`${months[0]}-01T00:00:00Z`);
   const [ly, lm] = months[months.length - 1].split("-").map(Number);

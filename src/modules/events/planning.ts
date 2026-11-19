@@ -69,7 +69,7 @@ export async function cancelBooking(db: Db, actor: Actor, eventId: string, reaso
   const why = reason.trim();
   if (!why) throw new ValidationError("Write why the booking is cancelled.", { reason: "A reason is needed." });
   return db.$transaction(async (tx) => {
-    const event = await assertOn(tx, actor, eventId, "bookings.cancel", "Only owners cancel bookings.");
+    const event = await assertOn(tx, actor, eventId, "bookings.cancel", "Only hosts cancel bookings.");
     if (CLOSED.includes(event.status)) throw new ConflictError("This booking is already closed.");
     await tx.event.update({ where: { id: eventId }, data: { status: "CANCELLED", cancelledReason: why } });
     const [members, jobs, crew] = await inSequence([
@@ -169,7 +169,7 @@ export async function teamCandidates(db: DbTx) {
 export async function setTeam(db: Db, actor: Actor, eventId: string, input: z.input<typeof teamSchema>, meta: RequestMeta = {}) {
   const v = parseInput(teamSchema, input);
   return db.$transaction(async (tx) => {
-    const event = await assertOn(tx, actor, eventId, "bookings.assignTeam", "Only owners choose a booking's team.");
+    const event = await assertOn(tx, actor, eventId, "bookings.assignTeam", "Only hosts choose a booking's team.");
     const candidates = await teamCandidates(tx);
     for (const id of v.managerIds) if (!candidates.find((c) => c.id === id)?.manager) throw new ValidationError("Pick managers from the list.", { managerIds: "Pick managers from the list." });
     for (const id of v.supervisorIds) if (!candidates.find((c) => c.id === id)?.supervisor) throw new ValidationError("Pick supervisors from the list.", { supervisorIds: "Pick supervisors from the list." });

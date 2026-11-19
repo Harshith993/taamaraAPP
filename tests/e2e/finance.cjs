@@ -31,7 +31,7 @@ const { BASE, PHONE, launch, checker, query } = require("./lib.cjs");
       const row = page.locator("li li", { hasText: invNo }).first();
       await row.getByRole("button", { name: "Prepare payment" }).click();
       await row.getByRole("button", { name: "Send for approval" }).click();
-      await page.getByText("Sent to the owners for approval.").waitFor({ timeout: 10000 });
+      await page.getByText("Sent to the hosts for approval.").waitFor({ timeout: 10000 });
       check("accountant prepares the vendor payment", true);
       await ctx.close();
     }
@@ -45,8 +45,8 @@ const { BASE, PHONE, launch, checker, query } = require("./lib.cjs");
       await row.getByRole("button", { name: "Extra / deduction" }).click();
       await row.locator('input[name="amount"]').fill("200");
       await row.locator('input[name="reason"]').fill(reason);
-      await row.getByRole("button", { name: "Ask the owners" }).click();
-      await page.getByText("Sent to the owners for approval.").waitFor({ timeout: 10000 });
+      await row.getByRole("button", { name: "Ask the hosts" }).click();
+      await page.getByText("Sent to the hosts for approval.").waitFor({ timeout: 10000 });
       check("supervisor asks for a crew extra", true);
       await ctx.close();
     }

@@ -98,7 +98,7 @@ export const PERMISSIONS = [
   // Documents & communication
   { key: "documents.view", group: "Documents & communication", label: "See booking documents", scopes: ALL_SCOPES, accountTypes: ANYONE },
   { key: "documents.upload", group: "Documents & communication", label: "Upload documents", scopes: ALL_SCOPES, accountTypes: ANYONE },
-  { key: "documents.confidential", group: "Documents & communication", label: "See owner-only documents", scopes: ONLY_ALL, accountTypes: INTERNAL },
+  { key: "documents.confidential", group: "Documents & communication", label: "See host-only documents", scopes: ONLY_ALL, accountTypes: INTERNAL },
   { key: "chat.booking", group: "Documents & communication", label: "Booking team chat", scopes: ALL_OR_ASSIGNED, accountTypes: INTERNAL },
   { key: "chat.direct", group: "Documents & communication", label: "Direct threads", scopes: ALL_SCOPES, accountTypes: ANYONE },
   { key: "announcements.send", group: "Documents & communication", label: "Send announcements", scopes: ALL_OR_ASSIGNED, accountTypes: INTERNAL },
@@ -143,7 +143,7 @@ export interface RoleDef {
 }
 
 export const ROLES: Record<RoleKey, RoleDef> = {
-  OWNER: { key: "OWNER", name: "Owner", description: "Founder and co-founder. Full access to everything; cannot be restricted.", accountType: "INTERNAL", isOwner: true, editable: false },
+  OWNER: { key: "OWNER", name: "Host", description: "The host and co-host (founder and co-founder). Full access to everything; cannot be restricted.", accountType: "INTERNAL", isOwner: true, editable: false },
   EVENT_MANAGER: { key: "EVENT_MANAGER", name: "Event Manager", description: "Runs the bookings assigned to them. Never sees client billing or margin.", accountType: "INTERNAL", isOwner: false, editable: true },
   ACCOUNTANT: { key: "ACCOUNTANT", name: "Accountant", description: "Client billing, vendor invoices, payments and exports.", accountType: "INTERNAL", isOwner: false, editable: true },
   SUPERVISOR: { key: "SUPERVISOR", name: "Supervisor", description: "On site on event days: run sheet, attendance, proof review.", accountType: "INTERNAL", isOwner: false, editable: true },
@@ -153,7 +153,7 @@ export const ROLES: Record<RoleKey, RoleDef> = {
 
 type Grants = Partial<Record<PermissionKey, Scope>>;
 
-/** Default matrix for every role except Owner (who has everything). Mirrors ARCHITECTURE.md §6 v1.1. */
+/** Default matrix for every role except Host (who has everything). Mirrors ARCHITECTURE.md §6 v1.1. */
 export const DEFAULT_ROLE_GRANTS: Record<Exclude<RoleKey, "OWNER">, Grants> = {
   EVENT_MANAGER: {
     "bookings.view": "ASSIGNED",

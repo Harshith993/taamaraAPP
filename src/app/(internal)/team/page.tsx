@@ -25,7 +25,7 @@ export default async function TeamPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">TEAM</h1>
-          <p className="mt-1 text-[15px] text-ink-quiet">Everyone who can sign in. Only owners see this page.</p>
+          <p className="mt-1 text-[15px] text-ink-quiet">Everyone who can sign in. Only hosts see this page.</p>
         </div>
         <ButtonLink href="/team/roles" variant="secondary">
           What each role can do →
@@ -46,7 +46,7 @@ export default async function TeamPage() {
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="text-[15px] font-bold">{u.name}</span>
                     {u.id === actor.userId && <Tag tone="look">YOU</Tag>}
-                    <Tag tone="outline">{(role?.name ?? "No role").toUpperCase()}</Tag>
+                    <Tag tone="outline">{(role?.key === "OWNER" ? (u.title ?? "Host") : (role?.name ?? "No role")).toUpperCase()}</Tag>
                     <span className="label-mono text-[10.5px] text-ink-quiet">{KIND[u.accountType]}</span>
                     {u.status === "DISABLED" && <Tag tone="now">SWITCHED OFF</Tag>}
                     {u.mustChangePassword && u.status === "ACTIVE" && <Tag tone="quiet">FIRST SIGN-IN PENDING</Tag>}
@@ -58,7 +58,7 @@ export default async function TeamPage() {
                   </span>
                   <span className="text-[12.5px] text-ink-quiet">{u.lastLoginAt ? `Last signed in ${formatDate(u.lastLoginAt)} ${formatTime(u.lastLoginAt)}` : "Never signed in"}</span>
                 </div>
-                <MemberActions userId={u.id} name={u.name} status={u.status} roleKey={role?.key ?? ""} accountType={u.accountType} isSelf={u.id === actor.userId} />
+                <MemberActions userId={u.id} name={u.name} status={u.status} roleKey={role?.key === "OWNER" && u.title === "Co-host" ? "CO_HOST" : (role?.key ?? "")} accountType={u.accountType} isSelf={u.id === actor.userId} />
               </li>
             );
           })}

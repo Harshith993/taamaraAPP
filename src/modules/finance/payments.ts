@@ -130,7 +130,7 @@ export async function markPaid(db: Db, actor: Actor, paymentId: string, input: z
   return db.$transaction(async (tx) => {
     const p = await tx.payment.findUnique({ where: { id: paymentId }, include: { vendor: { select: { companyName: true } }, worker: { select: { name: true, userId: true } }, event: { select: { name: true } } } });
     if (!p || p.direction !== "OUT") throw new NotFoundError("That payment");
-    if (p.status !== "APPROVED") throw new ConflictError(p.status === "PENDING_APPROVAL" ? "An owner has to approve this payment first." : "This payment is not waiting to be paid.");
+    if (p.status !== "APPROVED") throw new ConflictError(p.status === "PENDING_APPROVAL" ? "A host has to approve this payment first." : "This payment is not waiting to be paid.");
     await assertBookingOpen(tx, p.eventId);
     await tx.payment.update({ where: { id: p.id }, data: { status: "PAID", method: v.method, reference: v.reference || null, paidOn: new Date(`${v.paidOn}T00:00:00Z`), paidById: actor.userId } });
     await syncInvoiceStatus(tx, p.vendorInvoiceId);
@@ -204,7 +204,7 @@ export const chargeSchema = z.object({
 export async function addCharge(db: Db, actor: Actor, input: z.input<typeof chargeSchema>, meta: RequestMeta = {}) {
   const v = parseInput(chargeSchema, input);
   staff(actor);
-  assertCan(actor, "finance.billing", "Only owners and the accountant set what the client is charged.");
+  assertCan(actor, "finance.billing", "Only hosts and the accountant set what the client is charged.");
   return db.$transaction(async (tx) => {
     const ev = await tx.event.findUnique({ where: { id: v.eventId }, select: { name: true, clientId: true, status: true } });
     if (!ev) throw new NotFoundError("That booking");
@@ -217,7 +217,7 @@ export async function addCharge(db: Db, actor: Actor, input: z.input<typeof char
 
 export async function removeCharge(db: Db, actor: Actor, chargeId: string, meta: RequestMeta = {}) {
   staff(actor);
-  assertCan(actor, "finance.billing", "Only owners and the accountant change client charges.");
+  assertCan(actor, "finance.billing", "Only hosts and the accountant change client charges.");
   return db.$transaction(async (tx) => {
     const c = await tx.clientCharge.findUnique({ where: { id: chargeId }, include: { event: { select: { name: true, status: true } } } });
     if (!c) throw new NotFoundError("That charge");

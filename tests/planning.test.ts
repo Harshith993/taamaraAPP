@@ -28,7 +28,7 @@ describe("team", () => {
   it("owners choose the manager and supervisor; the new people are told", async () => {
     const candidates = await teamCandidates(testDb);
     expect(candidates.find((c) => c.id === supervisor.userId)?.supervisor).toBe(true);
-    await expect(setTeam(testDb, manager, eventId, { managerIds: [manager.userId], supervisorIds: [supervisor.userId] })).rejects.toThrow(/Only owners/);
+    await expect(setTeam(testDb, manager, eventId, { managerIds: [manager.userId], supervisorIds: [supervisor.userId] })).rejects.toThrow(/Only hosts/);
     await expect(setTeam(testDb, owner, eventId, { managerIds: [supervisor.userId], supervisorIds: [] })).rejects.toThrow(/Pick managers/);
     const r = await setTeam(testDb, owner, eventId, { managerIds: [manager.userId], supervisorIds: [supervisor.userId] });
     expect(r).toEqual({ added: 1, removed: 0 });
@@ -114,7 +114,7 @@ describe("cancelling", () => {
     const cu = await makeUser({ name: "PL Crew 2 login", roleKey: "LABOUR", accountType: "LABOUR" });
     await testDb.worker.update({ where: { id: w.id }, data: { userId: cu.id } });
     await testDb.crewAssignment.create({ data: { eventId, workerId: w.id, duty: "Helper", agreedPay: 700, status: "CONFIRMED" } });
-    await expect(cancelBooking(testDb, manager, eventId, "Client postponed")).rejects.toThrow(/Only owners/);
+    await expect(cancelBooking(testDb, manager, eventId, "Client postponed")).rejects.toThrow(/Only hosts/);
     await expect(cancelBooking(testDb, owner, eventId, " ")).rejects.toThrow(/Write why/);
     await cancelBooking(testDb, owner, eventId, "Family emergency; moved to next year");
     const e = await testDb.event.findUniqueOrThrow({ where: { id: eventId } });

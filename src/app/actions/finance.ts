@@ -33,7 +33,7 @@ async function run(fn: () => Promise<unknown>, message: string): Promise<ActionR
 
 export async function preparePaymentAction(input: PreparePaymentInput) {
   const actor = await requireActor();
-  return run(async () => preparePayment(db, actor, input, await requestMeta()), "Sent to the owners for approval.");
+  return run(async () => preparePayment(db, actor, input, await requestMeta()), "Sent to the hosts for approval.");
 }
 
 export async function markPaidAction(paymentId: string, input: z.input<typeof markPaidSchema>) {
@@ -63,7 +63,7 @@ export async function removeChargeAction(chargeId: string) {
 
 export async function requestAdjustmentAction(input: z.input<typeof adjustmentSchema>) {
   const actor = await requireActor();
-  return run(async () => requestAdjustment(db, actor, input, await requestMeta()), "Sent to the owners for approval.");
+  return run(async () => requestAdjustment(db, actor, input, await requestMeta()), "Sent to the hosts for approval.");
 }
 
 import { addBudgetLine, removeBudgetLine, reviseBudget, submitBudget, type budgetLineSchema } from "@/modules/finance/budgets";
@@ -85,7 +85,7 @@ export async function reviseBudgetAction(eventId: string) {
 
 export async function submitBudgetAction(eventId: string) {
   const actor = await requireActor();
-  return run(async () => submitBudget(db, actor, eventId, await requestMeta()), "Sent to the owners for approval.");
+  return run(async () => submitBudget(db, actor, eventId, await requestMeta()), "Sent to the hosts for approval.");
 }
 
 export async function settleBookingAction(eventId: string, note: string) {

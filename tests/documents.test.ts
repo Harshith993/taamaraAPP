@@ -67,7 +67,7 @@ describe("booking documents", () => {
   });
 
   it("refuses owner-only from non-owners, sharing with vendors not on the booking, and strangers", async () => {
-    await expect(addDocument(testDb, manager, { eventId, title: "Margins", kind: "OTHER", visibility: "OWNER_ONLY", fileId: await doc(manager) })).rejects.toThrow(/Only owners/);
+    await expect(addDocument(testDb, manager, { eventId, title: "Margins", kind: "OTHER", visibility: "OWNER_ONLY", fileId: await doc(manager) })).rejects.toThrow(/Only hosts/);
     const stranger = await testDb.vendor.create({ data: { contactName: "x", companyName: "DC Stranger" } });
     await expect(addDocument(testDb, manager, { eventId, title: "Layout", kind: "PLAN", visibility: "SHARED", shareVendorIds: [stranger.id], fileId: await doc(manager) })).rejects.toThrow(/only with vendors on this booking/);
     await expect(addDocument(testDb, manager, { eventId, title: "Layout", kind: "PLAN", visibility: "SHARED", fileId: await doc(manager) })).rejects.toThrow(/Pick who to share/);

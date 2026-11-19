@@ -61,7 +61,7 @@ describe("quotes", () => {
 
   it("cannot be decided twice or by a non-owner", async () => {
     const { req } = await quoteRequest();
-    await expect(decideApproval(testDb, manager, req.id, "APPROVE", undefined)).rejects.toThrow(/Only owners/);
+    await expect(decideApproval(testDb, manager, req.id, "APPROVE", undefined)).rejects.toThrow(/Only hosts/);
     await decideApproval(testDb, ownerB, req.id, "APPROVE", undefined);
     await expect(decideApproval(testDb, ownerA, req.id, "APPROVE", undefined)).rejects.toThrow(/already decided/);
   });
@@ -78,7 +78,7 @@ describe("payments", () => {
 
   it("an owner cannot approve a payment they prepared while the other owner is active", async () => {
     const { req } = await paymentRequest({ requestedById: ownerA.userId });
-    await expect(decideApproval(testDb, ownerA, req.id, "APPROVE", undefined)).rejects.toThrow(/other owner/);
+    await expect(decideApproval(testDb, ownerA, req.id, "APPROVE", undefined)).rejects.toThrow(/other host/);
     await decideApproval(testDb, ownerB, req.id, "APPROVE", undefined);
   });
 
@@ -127,6 +127,6 @@ describe("crew extras and the inbox", () => {
       expect(payment.isFinal).toBe(false);
       expect(payment.agreed).toBe(100000);
     }
-    await expect(listPendingApprovals(testDb, manager)).rejects.toThrow(/Only owners/);
+    await expect(listPendingApprovals(testDb, manager)).rejects.toThrow(/Only hosts/);
   });
 });

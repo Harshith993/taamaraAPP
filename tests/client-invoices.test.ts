@@ -53,7 +53,7 @@ describe("GST helpers", () => {
 
 describe("company tax details", () => {
   it("owners and the accountant set them; the GSTIN is checked and gives the state", async () => {
-    await expect(getCompany(testDb, manager)).rejects.toThrow(/Only owners and the accountant/);
+    await expect(getCompany(testDb, manager)).rejects.toThrow(/Only hosts and the accountant/);
     await expect(updateCompany(testDb, accountant, { legalName: "Taamara Taamara LLP", tradeName: "Taamara Taamara", gstin: "08AAACT1234A1Z2" })).rejects.toThrow(/GSTIN doesn't look right/);
     await expect(updateCompany(testDb, accountant, { legalName: "Taamara Taamara LLP", tradeName: "Taamara Taamara", gstin: COMPANY_GSTIN, pan: "ABCDE1234F" })).rejects.toThrow(/PAN doesn't match/);
     await updateCompany(testDb, accountant, { legalName: "Taamara Taamara LLP", tradeName: "Taamara Taamara", gstin: COMPANY_GSTIN, address: "12 MI Road", city: "Jaipur", stateCode: "27", bankDetails: "HDFC Bank · A/c 50200012345678 · IFSC HDFC0000123", invoicePrefix: "tt" });
@@ -78,7 +78,7 @@ describe("client invoices", () => {
   });
 
   it("only owners and the accountant draft them; managers never see them", async () => {
-    await expect(draftInvoice(testDb, manager, { eventId, lines: [{ chargeId: packageId, amount: 1000 }] })).rejects.toThrow(/Only owners and the accountant/);
+    await expect(draftInvoice(testDb, manager, { eventId, lines: [{ chargeId: packageId, amount: 1000 }] })).rejects.toThrow(/Only hosts and the accountant/);
     expect(await bookingInvoices(testDb, manager, eventId)).toBeNull();
   });
 
@@ -136,7 +136,7 @@ describe("client invoices", () => {
     expect(p.recipient.gstin).toBe(DELHI_GSTIN);
     expect(p.inWords).toBe("Rupees Two Lakh Thirty-Six Thousand only");
     expect(p.taxByRate).toEqual([{ rate: 18, taxable: 200000, cgst: 0, sgst: 0, igst: 36000 }]);
-    await expect(invoiceForPrint(testDb, manager, id)).rejects.toThrow(/Only owners and the accountant/);
+    await expect(invoiceForPrint(testDb, manager, id)).rejects.toThrow(/Only hosts and the accountant/);
   });
 
   it("cancelling needs a reason; the charge can then be billed again", async () => {

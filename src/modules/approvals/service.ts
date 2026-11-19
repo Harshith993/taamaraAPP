@@ -25,7 +25,7 @@ async function otherActiveOwners(db: DbTx, userId: string) {
 
 /** Everything an owner needs to decide, per pending request. */
 export async function listPendingApprovals(db: Db, actor: Actor) {
-  assertCan(actor, "approvals.decide", "Only owners can see approvals.");
+  assertCan(actor, "approvals.decide", "Only hosts can see approvals.");
   const requests = await db.approvalRequest.findMany({
     where: { state: "PENDING" },
     orderBy: { createdAt: "asc" },
@@ -149,7 +149,7 @@ export async function listPendingApprovals(db: Db, actor: Actor) {
 export type PendingApproval = Awaited<ReturnType<typeof listPendingApprovals>>[number];
 
 export async function decideApproval(db: Db, actor: Actor, approvalId: string, decision: Decision, comment: string | undefined, meta: RequestMeta = {}) {
-  assertCan(actor, "approvals.decide", "Only owners can approve.");
+  assertCan(actor, "approvals.decide", "Only hosts can approve.");
   const note = comment?.trim() || undefined;
   if ((decision === "REJECT" || decision === "REVISE") && !note) throw new ValidationError("Write a short reason so the person knows what to change.", { comment: "A reason is needed." });
 
@@ -179,7 +179,7 @@ export async function decideApproval(db: Db, actor: Actor, approvalId: string, d
       if (p.status !== "PENDING_APPROVAL") throw new ConflictError("This payment is no longer waiting.");
       if (decision === "APPROVE") {
         if (p.requestedById === actor.userId && (await otherActiveOwners(tx, actor.userId)) > 0) {
-          throw new ConflictError("You prepared this payment, so the other owner needs to approve it.");
+          throw new ConflictError("You prepared this payment, so the other host needs to approve it.");
         }
         if (p.vendorId && p.eventId) {
           const company = await tx.companyProfile.findUnique({ where: { id: 1 }, select: { settings: true } });
@@ -217,7 +217,7 @@ export async function decideApproval(db: Db, actor: Actor, approvalId: string, d
       if (!e) throw new NotFoundError("That expense");
       if (e.status !== "SUBMITTED") throw new ConflictError("This expense was already decided.");
       if (decision === "APPROVE" && e.submittedById === actor.userId && (await otherActiveOwners(tx, actor.userId)) > 0) {
-        throw new ConflictError("You recorded this expense, so the other owner needs to approve it.");
+        throw new ConflictError("You recorded this expense, so the other host needs to approve it.");
       }
       await tx.expense.update({ where: { id: e.id }, data: { status: decision === "APPROVE" ? "APPROVED" : "REJECTED", decidedById: actor.userId, decidedAt: now, decisionNote: note ?? null } });
       auditSummary = `${decision === "APPROVE" ? "Approved" : "Rejected"} expense ${formatINR(e.amount)}: ${e.description}`;

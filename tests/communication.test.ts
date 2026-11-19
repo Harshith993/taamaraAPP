@@ -54,7 +54,7 @@ describe("announcements", () => {
   let id: string;
 
   it("a manager sends one to the booking's crew, asking them to confirm", async () => {
-    await expect(sendAnnouncement(testDb, manager, { audience: "ALL_STAFF", title: "Holiday", body: "Office closed" })).rejects.toThrow(/Only owners/);
+    await expect(sendAnnouncement(testDb, manager, { audience: "ALL_STAFF", title: "Holiday", body: "Office closed" })).rejects.toThrow(/Only hosts/);
     await expect(sendAnnouncement(testDb, outsider, { audience: "BOOKING_CREW", eventId, title: "Gate 2", body: "Report at gate 2" })).rejects.toThrow(/access/);
     await expect(sendAnnouncement(testDb, vendor, { audience: "BOOKING_CREW", eventId, title: "Gate 2", body: "Report at gate 2" })).rejects.toThrow(/Only the team/);
     await expect(sendAnnouncement(testDb, manager, { audience: "BOOKING_CREW", title: "Gate 2", body: "Report at gate 2" })).rejects.toThrow(/Pick the booking/);

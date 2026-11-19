@@ -38,7 +38,7 @@ function sheet(wb: ExcelJS.Workbook, name: string, columns: { header: string; ke
 
 export async function buildExport(db: Db, actor: Actor, kind: string, from: string, to: string, meta: RequestMeta = {}): Promise<{ filename: string; buffer: Buffer }> {
   if (actor.accountType !== "INTERNAL") throw new ForbiddenError();
-  assertCan(actor, "reports.finance", "Only owners and the accountant export the books.");
+  assertCan(actor, "reports.finance", "Only hosts and the accountant export the books.");
   if (!(EXPORT_KINDS as readonly string[]).includes(kind)) throw new ValidationError("Unknown export.");
   if (!ymd.test(from) || !ymd.test(to) || from > to) throw new ValidationError("Pick a date range.");
   const start = new Date(`${from}T00:00:00Z`);

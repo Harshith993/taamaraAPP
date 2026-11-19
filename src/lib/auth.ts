@@ -55,7 +55,7 @@ export const auth = betterAuth({
         before: async (session) => {
           const user = await db.user.findUnique({ where: { id: session.userId }, select: { status: true } });
           if (!user || user.status !== "ACTIVE") {
-            throw new APIError("FORBIDDEN", { message: "This account has been switched off. Please ask an owner." });
+            throw new APIError("FORBIDDEN", { message: "This account has been switched off. Please ask a host." });
           }
         },
         after: async (session) => {
@@ -69,7 +69,7 @@ export const auth = betterAuth({
       // SMS (OTP) is not set up yet: crew and vendors sign in with phone + password, and owners reset
       // forgotten passwords. When an SMS provider is chosen, send the code from here.
       sendOTP: async () => {
-        throw new APIError("NOT_IMPLEMENTED", { message: "Text-message codes are not set up yet. Ask an owner to reset your password." });
+        throw new APIError("NOT_IMPLEMENTED", { message: "Text-message codes are not set up yet. Ask a host to reset your password." });
       },
     }),
     nextCookies(),

@@ -26,7 +26,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <div className="w-full max-w-[400px]">
           <LoginForm next={safeNext} />
           <p className="mt-6 text-center text-[13.5px] text-ink-quiet">
-            Forgot your password? Ask an owner to reset it. New to the team? An owner sets up your login.
+            Forgot your password? Ask a host to reset it. New to the team? A host sets up your login.
           </p>
         </div>
       </div>

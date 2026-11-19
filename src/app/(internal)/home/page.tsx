@@ -58,11 +58,11 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   }
 
   const bookingScope = scopeOf(actor, "bookings.view");
-  const roleNames = actor.isOwner ? "Owner" : actor.roles.map((r) => ROLES[r].name).join(", ");
+  const roleNames = actor.isOwner ? actor.hostTitle! : actor.roles.map((r) => ROLES[r].name).join(", ");
 
   return (
     <div className="flex flex-col gap-5">
-      {denied && <Notice tone="error">That page is not part of your access. Ask an owner if you need it.</Notice>}
+      {denied && <Notice tone="error">That page is not part of your access. Ask a host if you need it.</Notice>}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95] uppercase">
@@ -80,7 +80,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       <div className="flex flex-wrap items-start gap-4">
         <Panel title={`Upcoming bookings · ${events.length}`} className="min-w-0 flex-[999_1_560px]">
           {events.length === 0 ? (
-            <EmptyState title="No upcoming bookings">{bookingScope === "ASSIGNED" ? "When an owner assigns you to a booking it appears here." : "New bookings appear here."}</EmptyState>
+            <EmptyState title="No upcoming bookings">{bookingScope === "ASSIGNED" ? "When a host assigns you to a booking it appears here." : "New bookings appear here."}</EmptyState>
           ) : (
             <ul>
               {events.map((e) => {

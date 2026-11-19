@@ -65,7 +65,7 @@ describe("vendor directory", () => {
     expect(forManager.gstin).toBeNull();
     expect(forManager.bank).toBeNull();
     expect(forManager.departments.map((d) => d.name).sort()).toEqual(["Decoration", "Lighting"]);
-    await expect(saveVendorBank(testDb, manager, vendorId, { accountName: "x x" })).rejects.toThrow(/Only owners and the accountant/);
+    await expect(saveVendorBank(testDb, manager, vendorId, { accountName: "x x" })).rejects.toThrow(/Only hosts and the accountant/);
     const log = await testDb.auditLog.findFirstOrThrow({ where: { entityType: "vendor_bank", entityId: vendorId } });
     expect(log.summary).not.toContain("001122334455");
   });

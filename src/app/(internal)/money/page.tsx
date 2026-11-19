@@ -72,7 +72,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
         <Tile label="Received" value={m.totals.received} tone="ok" />
         <Tile label="Clients still owe" value={m.totals.due} note="with GST" tone={m.totals.due > 0 ? "now" : undefined} />
         <Tile label="Paid out" value={m.totals.paidOut} />
-        <Tile label="Approved, to pay" value={m.totals.toPay} note={m.waitingApproval ? `${m.waitingApproval} more waiting for an owner` : undefined} />
+        <Tile label="Approved, to pay" value={m.totals.toPay} note={m.waitingApproval ? `${m.waitingApproval} more waiting for a host` : undefined} />
         <Tile label="Margin before tax" value={m.totals.margin} tone={m.totals.margin < 0 ? "now" : "ok"} />
       </div>
 
@@ -124,7 +124,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
       <div className="flex flex-wrap items-start gap-4">
         <Panel title={`Payments to make · ${m.toPay.length}`} className="min-w-0 flex-[1_1_460px]">
           {m.toPay.length === 0 ? (
-            <EmptyState title="Nothing approved and waiting">Payments appear here once an owner approves them.</EmptyState>
+            <EmptyState title="Nothing approved and waiting">Payments appear here once a host approves them.</EmptyState>
           ) : (
             <ul>
               {m.toPay.map((p) => (

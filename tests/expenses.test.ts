@@ -71,7 +71,7 @@ describe("expenses", () => {
 
   it("an owner can't approve their own; rejecting needs a reason", async () => {
     const own = (await submitExpense(testDb, owner, { eventId, categoryId: tea, description: "Flowers for the stage", amount: 300, spentOn: today })).id;
-    await expect(decideApproval(testDb, owner, (await pending(own)).id, "APPROVE", undefined)).rejects.toThrow(/other owner/);
+    await expect(decideApproval(testDb, owner, (await pending(own)).id, "APPROVE", undefined)).rejects.toThrow(/other host/);
     await expect(decideApproval(testDb, coOwner, (await pending(own)).id, "REJECT", undefined)).rejects.toThrow(/reason/);
     await decideApproval(testDb, coOwner, (await pending(own)).id, "REJECT", "Use the florist's stock");
     expect((await testDb.expense.findUniqueOrThrow({ where: { id: own } })).decisionNote).toBe("Use the florist's stock");

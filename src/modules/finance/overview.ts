@@ -158,7 +158,7 @@ export type BookingLedger = NonNullable<Awaited<ReturnType<typeof bookingLedger>
 
 /** The owners' and accountant's view across every booking. */
 export async function moneyOverview(db: Db, actor: Actor) {
-  assertCan(actor, "finance.company", "Only owners and the accountant see company money.");
+  assertCan(actor, "finance.company", "Only hosts and the accountant see company money.");
   const [toPay, waiting, readyInvoices, events, inSum, outSum] = await Promise.all([
     db.payment.findMany({ where: { direction: "OUT", status: "APPROVED" }, orderBy: { approvedAt: "asc" }, include: { vendor: { select: { companyName: true } }, worker: { select: { name: true } }, event: { select: { id: true, name: true } }, vendorInvoice: { select: { invoiceNumber: true } } } }),
     db.payment.count({ where: { direction: "OUT", status: "PENDING_APPROVAL" } }),

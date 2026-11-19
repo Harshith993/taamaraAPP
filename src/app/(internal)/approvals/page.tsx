@@ -18,7 +18,7 @@ export default async function ApprovalsPage() {
     <div className="flex flex-col gap-5">
       <div>
         <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">APPROVALS · {items.length}</h1>
-        <p className="mt-1 text-[15px] text-ink-quiet">Quotes, payments, expenses and crew extras waiting for an owner. Everything you decide is kept in the audit log.</p>
+        <p className="mt-1 text-[15px] text-ink-quiet">Quotes, payments, expenses and crew extras waiting for a host. Everything you decide is kept in the audit log.</p>
       </div>
       {items.length === 0 ? (
         <Panel>
@@ -38,9 +38,9 @@ export default async function ApprovalsPage() {
 function ApprovalCard({ item }: { item: PendingApproval }) {
   const warning =
     item.kind === "payment" && item.selfPrepared
-      ? "You prepared this payment, so the other owner needs to approve it."
+      ? "You prepared this payment, so the other host needs to approve it."
       : item.kind === "expense" && item.selfPrepared
-        ? "You recorded this expense, so the other owner needs to approve it."
+        ? "You recorded this expense, so the other host needs to approve it."
         : item.kind === "expense" && !item.receipt
           ? "No receipt attached (small amount)."
       : item.kind === "payment" && item.isFinal && item.approvedProof === 0

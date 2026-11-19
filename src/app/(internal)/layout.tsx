@@ -28,7 +28,7 @@ export default async function InternalLayout({ children }: { children: React.Rea
   if (can(actor, "admin.users")) items.push({ href: "/team", label: "Team" });
   if (can(actor, "admin.settings") || can(actor, "admin.taxSettings")) items.push({ href: "/settings", label: "Settings" });
 
-  const roleLabel = actor.isOwner ? "Owner" : actor.roles.map((r) => ROLES[r].name).join(" · ");
+  const roleLabel = actor.isOwner ? actor.hostTitle! : actor.roles.map((r) => ROLES[r].name).join(" · ");
   return (
     <div className="flex min-h-dvh flex-col">
       <div className="print:hidden">

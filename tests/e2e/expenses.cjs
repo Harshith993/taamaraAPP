@@ -28,7 +28,7 @@ const { BASE, PHONE, launch, checker, query } = require("./lib.cjs");
       await page.locator('input[type="file"]').setInputFiles(bill);
       await page.getByText("bill.jpg · attached").waitFor({ timeout: 20000 });
       await page.getByRole("button", { name: "Send for approval" }).click();
-      await page.getByText("Sent to the owners for approval.").waitFor({ timeout: 10000 });
+      await page.getByText("Sent to the hosts for approval.").waitFor({ timeout: 10000 });
       check("supervisor records an expense with the bill from a phone", true);
       await page.screenshot({ path: `${out}/b0-expenses-phone.png`, fullPage: true });
       await ctx.close();

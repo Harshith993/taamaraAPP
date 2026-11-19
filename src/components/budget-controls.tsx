@@ -73,7 +73,7 @@ export function BudgetButtons({ eventId, mode }: { eventId: string; mode: "submi
     <span className="flex flex-wrap items-center gap-2">
       {mode === "submit" ? (
         <Button type="button" disabled={pending} onClick={() => run(() => submitBudgetAction(eventId))}>
-          {pending ? "Sending…" : "Send to the owners"}
+          {pending ? "Sending…" : "Send to the hosts"}
         </Button>
       ) : (
         <Button type="button" variant="secondary" disabled={pending} onClick={() => run(() => reviseBudgetAction(eventId))}>

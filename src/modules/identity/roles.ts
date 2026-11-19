@@ -10,7 +10,7 @@ import { PERMISSION_LIST, ROLES, getPermission, validateGrant, type RoleKey, typ
 import { assertCan } from "./policy";
 
 export async function listRoles(db: Db, actor: Actor) {
-  assertCan(actor, "admin.users", "Only owners can see roles.");
+  assertCan(actor, "admin.users", "Only hosts can see roles.");
   const roles = await db.role.findMany({ include: { permissions: true, _count: { select: { users: true } } }, orderBy: { createdAt: "asc" } });
   return roles.map((r) => ({
     key: r.key as RoleKey,
@@ -28,8 +28,8 @@ export async function listRoles(db: Db, actor: Actor) {
 
 /** Replaces a role's grants. `grants` maps permission keys to a scope; keys left out are removed. */
 export async function updateRoleGrants(db: Db, actor: Actor, roleKey: RoleKey, grants: Record<string, Scope>, meta: RequestMeta = {}) {
-  assertCan(actor, "admin.users", "Only owners can change permissions.");
-  if (!actor.isOwner) throw new ConflictError("Only owners can change permissions.");
+  assertCan(actor, "admin.users", "Only hosts can change permissions.");
+  if (!actor.isOwner) throw new ConflictError("Only hosts can change permissions.");
   const def = ROLES[roleKey];
   if (!def) throw new NotFoundError("That role");
   if (!def.editable) throw new ConflictError(`The ${def.name} role is fixed and cannot be changed here.`);
@@ -38,7 +38,7 @@ export async function updateRoleGrants(db: Db, actor: Actor, roleKey: RoleKey, g
   for (const [key, scope] of Object.entries(grants)) {
     const problem = validateGrant(key, scope, def.accountType);
     if (problem) errors[key] = problem;
-    if (key === "admin.users" || key === "approvals.decide" || key === "quotes.approve") errors[key] = "Only owners can hold this permission.";
+    if (key === "admin.users" || key === "approvals.decide" || key === "quotes.approve") errors[key] = "Only hosts can hold this permission.";
   }
   if (Object.keys(errors).length) throw new ValidationError(Object.values(errors)[0], errors);
 

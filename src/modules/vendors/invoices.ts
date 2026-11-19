@@ -39,7 +39,7 @@ export type SubmitInvoiceInput = z.input<typeof submitInvoiceSchema>;
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
-/** Who in the office hears about a new invoice: the accountant(s) and the owners. */
+/** Who in the office hears about a new invoice: the accountant(s) and the hosts. */
 async function financeUserIds(tx: DbTx): Promise<string[]> {
   const rows = await tx.user.findMany({
     where: { status: "ACTIVE", accountType: "INTERNAL", roles: { some: { role: { OR: [{ isOwner: true }, { key: "ACCOUNTANT" }] } } } },

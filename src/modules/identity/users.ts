@@ -14,6 +14,8 @@ import { assertCan } from "./policy";
 
 const password = z.string().min(8, "Use at least 8 characters.").max(128, "Use at most 128 characters.");
 
+export type HostTitle = "Host" | "Co-host";
+
 export const createUserSchema = z
   .object({
     name: z.string().trim().min(2, "Enter the person's name.").max(80),
@@ -23,6 +25,7 @@ export const createUserSchema = z
     temporaryPassword: password,
     vendorId: z.string().uuid().optional(),
     workerId: z.string().uuid().optional(),
+    hostTitle: z.enum(["Host", "Co-host"]).optional(),
   })
   .superRefine((v, ctx) => {
     if (v.roleKey === "VENDOR" && !v.vendorId) ctx.addIssue({ code: "custom", path: ["vendorId"], message: "Pick the vendor this login is for." });
@@ -44,7 +47,7 @@ async function activeOwnerCount(db: Pick<Db, "user">) {
 }
 
 export async function createUser(db: Db, actor: Actor, input: CreateUserInput, meta: RequestMeta = {}) {
-  assertCan(actor, "admin.users", "Only owners can add people.");
+  assertCan(actor, "admin.users", "Only hosts can add people.");
   const v = parse(createUserSchema, input);
   const phone = normalizePhone(v.phone);
   if (!phone) throw new ValidationError("That phone number doesn't look right.", { phone: "Use a 10-digit mobile number or +country code." });
@@ -73,6 +76,7 @@ export async function createUser(db: Db, actor: Actor, input: CreateUserInput, m
         mustChangePassword: true,
         createdById: actor.userId,
         roles: { create: { role: { connect: { key: role.key } } } },
+        title: role.key === "OWNER" && v.hostTitle === "Co-host" ? "Co-host" : null,
       },
     });
     await tx.account.create({ data: { userId: user.id, accountId: user.id, providerId: "credential", password: passwordHash } });
@@ -86,8 +90,9 @@ export async function createUser(db: Db, actor: Actor, input: CreateUserInput, m
   });
 }
 
-export async function setUserRoles(db: Db, actor: Actor, userId: string, roleKeys: RoleKey[], meta: RequestMeta = {}) {
-  assertCan(actor, "admin.users", "Only owners can change roles.");
+/** hostTitle: for the host role, whether this person is the Host or the Co-host (both have full access). */
+export async function setUserRoles(db: Db, actor: Actor, userId: string, roleKeys: RoleKey[], meta: RequestMeta = {}, hostTitle?: HostTitle) {
+  assertCan(actor, "admin.users", "Only hosts can change roles.");
   if (!roleKeys.length) throw new ValidationError("Pick at least one role.");
   const user = await db.user.findUnique({ where: { id: userId }, include: { roles: { include: { role: true } } } });
   if (!user) throw new NotFoundError("That person");
@@ -101,14 +106,16 @@ export async function setUserRoles(db: Db, actor: Actor, userId: string, roleKey
     const roles = await tx.role.findMany({ where: { key: { in: roleKeys } } });
     await tx.userRole.deleteMany({ where: { userId } });
     await tx.userRole.createMany({ data: roles.map((r) => ({ userId, roleId: r.id })) });
+    const title = willBeOwner ? (hostTitle ?? (wasOwner && user.title === "Co-host" ? "Co-host" : "Host")) : null;
+    await tx.user.update({ where: { id: userId }, data: { title: title === "Co-host" ? "Co-host" : null } });
     if (wasOwner && !willBeOwner && (await activeOwnerCount(tx)) === 0) {
-      throw new ConflictError("There must always be at least one active owner.");
+      throw new ConflictError("There must always be at least one active host.");
     }
     await recordAudit(tx, actor, {
       action: "permission_change",
       entityType: "user",
       entityId: userId,
-      summary: `Changed ${user.name}'s roles to ${roleKeys.map((k) => ROLES[k].name).join(", ")}`,
+      summary: `Changed ${user.name}'s role to ${title ?? roleKeys.map((k) => ROLES[k].name).join(", ")}`,
       before: { roles: user.roles.map((r) => r.role.key) },
       after: { roles: roleKeys },
     }, meta);
@@ -116,7 +123,7 @@ export async function setUserRoles(db: Db, actor: Actor, userId: string, roleKey
 }
 
 export async function setUserStatus(db: Db, actor: Actor, userId: string, status: "ACTIVE" | "DISABLED", meta: RequestMeta = {}) {
-  assertCan(actor, "admin.users", "Only owners can switch accounts on or off.");
+  assertCan(actor, "admin.users", "Only hosts can switch accounts on or off.");
   if (userId === actor.userId && status === "DISABLED") throw new ConflictError("You can't switch off your own account.");
   const user = await db.user.findUnique({ where: { id: userId }, select: { name: true, status: true } });
   if (!user) throw new NotFoundError("That person");
@@ -124,7 +131,7 @@ export async function setUserStatus(db: Db, actor: Actor, userId: string, status
   return db.$transaction(async (tx) => {
     await tx.user.update({ where: { id: userId }, data: { status } });
     if (status === "DISABLED") {
-      if ((await activeOwnerCount(tx)) === 0) throw new ConflictError("There must always be at least one active owner.");
+      if ((await activeOwnerCount(tx)) === 0) throw new ConflictError("There must always be at least one active host.");
       await tx.session.deleteMany({ where: { userId } }); // signed out everywhere, immediately
     }
     await recordAudit(tx, actor, {
@@ -137,7 +144,7 @@ export async function setUserStatus(db: Db, actor: Actor, userId: string, status
 }
 
 export async function resetPassword(db: Db, actor: Actor, userId: string, temporaryPassword: string, meta: RequestMeta = {}) {
-  assertCan(actor, "admin.users", "Only owners can reset passwords.");
+  assertCan(actor, "admin.users", "Only hosts can reset passwords.");
   const pw = parse(password, temporaryPassword);
   const user = await db.user.findUnique({ where: { id: userId }, select: { name: true } });
   if (!user) throw new NotFoundError("That person");
@@ -153,12 +160,12 @@ export async function resetPassword(db: Db, actor: Actor, userId: string, tempor
 }
 
 export async function listTeam(db: Db, actor: Actor) {
-  assertCan(actor, "admin.users", "Only owners can see the team list.");
+  assertCan(actor, "admin.users", "Only hosts can see the team list.");
   return db.user.findMany({
     orderBy: [{ status: "asc" }, { accountType: "asc" }, { name: "asc" }],
     select: {
       id: true, name: true, email: true, hasRealEmail: true, phoneNumber: true, accountType: true, status: true,
-      mustChangePassword: true, lastLoginAt: true, createdAt: true,
+      mustChangePassword: true, lastLoginAt: true, createdAt: true, title: true,
       roles: { select: { role: { select: { key: true, name: true } } } },
       vendorLinks: { select: { vendor: { select: { id: true, companyName: true } } } },
       worker: { select: { id: true } },

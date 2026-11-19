@@ -16,7 +16,7 @@ export function SetPasswordForm({ firstTime }: { firstTime: boolean }) {
   return (
     <form action={action} className="flex flex-col gap-4 rounded-[4px] border-2 border-ink bg-paper p-5">
       <p className="text-[14.5px]">
-        {firstTime ? "An owner set up your login with a temporary password. Choose your own now; only you will know it." : "Choose a new password. You will stay signed in on this device only."}
+        {firstTime ? "A host set up your login with a temporary password. Choose your own now; only you will know it." : "Choose a new password. You will stay signed in on this device only."}
       </p>
       {err && <Notice tone="error">{err.error}</Notice>}
       <Field label={firstTime ? "Temporary password" : "Current password"} name="current" type="password" autoComplete="current-password" error={err?.fieldErrors?.current} required />

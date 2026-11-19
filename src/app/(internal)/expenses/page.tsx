@@ -11,7 +11,7 @@ import { ExpenseForm, RepayButton } from "./expense-forms";
 export const metadata: Metadata = { title: "Expenses" };
 
 const TONE = { SUBMITTED: "look", APPROVED: "plum", REJECTED: "quiet", REIMBURSED: "ok" } as const;
-const WORDS = { SUBMITTED: "Waiting for owner", APPROVED: "Approved", REJECTED: "Not approved", REIMBURSED: "Repaid" } as const;
+const WORDS = { SUBMITTED: "Waiting for host", APPROVED: "Approved", REJECTED: "Not approved", REIMBURSED: "Repaid" } as const;
 const STATES = [
   { key: "all", label: "All" },
   { key: "SUBMITTED", label: "Waiting" },

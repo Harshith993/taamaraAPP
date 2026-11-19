@@ -57,7 +57,7 @@ export async function addBudgetLine(db: Db, actor: Actor, eventId: string, input
     if (["CANCELLED", "SETTLED"].includes(ev.status)) throw new ConflictError("This booking is closed.");
     if (!(await tx.expenseCategory.count({ where: { id: v.categoryId } }))) throw new ValidationError("Pick a kind of cost.", { categoryId: "Pick a kind of cost." });
     const draft = await draftFor(tx, eventId);
-    if (await tx.approvalRequest.count({ where: { type: "BUDGET", entityId: draft.id, state: "PENDING" } })) throw new ConflictError("This budget is waiting for an owner. Wait for the decision before changing it.");
+    if (await tx.approvalRequest.count({ where: { type: "BUDGET", entityId: draft.id, state: "PENDING" } })) throw new ConflictError("This budget is waiting for a host. Wait for the decision before changing it.");
     await tx.budgetLine.create({ data: { budgetId: draft.id, categoryId: v.categoryId, description: v.description || null, estimatedAmount: v.estimatedAmount } });
     await recordAudit(tx, actor, { action: "update", entityType: "budget", entityId: draft.id, summary: `Budget v${draft.version} (${ev.name}): +${formatINR(v.estimatedAmount)}${v.description ? ` ${v.description}` : ""}`, financial: true }, meta);
     return { budgetId: draft.id };
@@ -70,7 +70,7 @@ export async function removeBudgetLine(db: Db, actor: Actor, eventId: string, li
     const line = await tx.budgetLine.findFirst({ where: { id: lineId, budget: { eventId } }, include: { budget: true } });
     if (!line) throw new NotFoundError("That line");
     if (line.budget.status !== "DRAFT") throw new ConflictError("An approved budget can't be changed; edit it to start a new version.");
-    if (await tx.approvalRequest.count({ where: { type: "BUDGET", entityId: line.budgetId, state: "PENDING" } })) throw new ConflictError("This budget is waiting for an owner.");
+    if (await tx.approvalRequest.count({ where: { type: "BUDGET", entityId: line.budgetId, state: "PENDING" } })) throw new ConflictError("This budget is waiting for a host.");
     await tx.budgetLine.delete({ where: { id: line.id } });
     await recordAudit(tx, actor, { action: "update", entityType: "budget", entityId: line.budgetId, summary: `Budget v${line.budget.version} (${ev.name}): removed ${formatINR(line.estimatedAmount)}${line.description ? ` ${line.description}` : ""}`, financial: true }, meta);
   });
@@ -90,11 +90,11 @@ export async function submitBudget(db: Db, actor: Actor, eventId: string, meta: 
     const ev = await guard(tx, actor, eventId);
     const draft = await tx.budget.findFirst({ where: { eventId, status: "DRAFT" }, orderBy: { version: "desc" }, include: { lines: true } });
     if (!draft || draft.lines.length === 0) throw new ConflictError("Add at least one line first.");
-    if (await tx.approvalRequest.count({ where: { type: "BUDGET", entityId: draft.id, state: "PENDING" } })) throw new ConflictError("Already sent to the owners.");
+    if (await tx.approvalRequest.count({ where: { type: "BUDGET", entityId: draft.id, state: "PENDING" } })) throw new ConflictError("Already sent to the hosts.");
     const total = round2(draft.lines.reduce((s, l) => s + toNumber(l.estimatedAmount), 0));
     await tx.approvalRequest.create({ data: { type: "BUDGET", entityId: draft.id, eventId, amount: total, summary: `${ev.name} · budget v${draft.version}`, requestedById: actor.userId } });
     await notify(tx, await ownerUserIds(tx), { type: "approval.requested", title: `Budget to approve: ${formatINR(total)}`, body: `${ev.name} · v${draft.version}`, link: "/approvals", entityType: "budget", entityId: draft.id }, { exceptUserId: actor.userId });
-    await recordAudit(tx, actor, { action: "submit", entityType: "budget", entityId: draft.id, summary: `Sent budget v${draft.version} for ${ev.name} (${formatINR(total)}) to the owners`, financial: true }, meta);
+    await recordAudit(tx, actor, { action: "submit", entityType: "budget", entityId: draft.id, summary: `Sent budget v${draft.version} for ${ev.name} (${formatINR(total)}) to the hosts`, financial: true }, meta);
   });
 }
 

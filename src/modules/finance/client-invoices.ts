@@ -37,11 +37,11 @@ import { round2 } from "./figures";
 const ADDRESS_NEEDED_ABOVE = 50_000;
 const DEFAULT_SAC = "998596"; // Event, exhibition and conference organisation services
 
-export const OFF_MESSAGE = "Client invoices are switched off. An owner can turn them on in Settings.";
+export const OFF_MESSAGE = "Client invoices are switched off. A host can turn them on in Settings.";
 
 function assertInvoicing(actor: Actor) {
   if (actor.accountType !== "INTERNAL") throw new ForbiddenError();
-  assertCan(actor, "invoices.client", "Only owners and the accountant make client invoices.");
+  assertCan(actor, "invoices.client", "Only hosts and the accountant make client invoices.");
   if (!actor.switches.clientInvoices) throw new ConflictError(OFF_MESSAGE);
 }
 
@@ -114,7 +114,7 @@ export const clientBillingSchema = z.object({
 export async function updateClientBilling(db: Db, actor: Actor, eventId: string, input: z.input<typeof clientBillingSchema>, meta: RequestMeta = {}) {
   const v = parseInput(clientBillingSchema, input);
   if (actor.accountType !== "INTERNAL") throw new ForbiddenError();
-  assertCan(actor, "invoices.client", "Only owners and the accountant change billing details.");
+  assertCan(actor, "invoices.client", "Only hosts and the accountant change billing details.");
   const gstin = normalizeGstin(v.gstin) || null;
   if (gstin && !isValidGstin(gstin)) throw new ValidationError("That GSTIN doesn't look right. Check it with the client.", { gstin: "Check the GSTIN (15 characters)." });
   const code = gstin ? gstin.slice(0, 2) : v.stateCode || null;
@@ -271,7 +271,7 @@ export type BookingInvoices = NonNullable<Awaited<ReturnType<typeof bookingInvoi
 
 /** One invoice, laid out for printing (or saving as PDF from the browser). */
 export async function invoiceForPrint(db: Db, actor: Actor, invoiceId: string) {
-  if (actor.accountType !== "INTERNAL" || !can(actor, "finance.billing")) throw new ForbiddenError("Only owners and the accountant see client invoices.");
+  if (actor.accountType !== "INTERNAL" || !can(actor, "finance.billing")) throw new ForbiddenError("Only hosts and the accountant see client invoices.");
   const inv = await db.clientInvoice.findUnique({ where: { id: invoiceId }, include: { items: { orderBy: { sortOrder: "asc" } }, event: { select: { id: true, code: true, name: true, startDate: true } }, client: { select: { name: true, gstin: true, address: true, city: true, state: true } } } });
   if (!inv) throw new NotFoundError("That invoice");
   await assertEventAccess(db, actor, inv.eventId, "finance.billing");

@@ -208,8 +208,8 @@ export async function saveVendorBank(db: Db, actor: Actor, vendorId: string, inp
     if (!actor.vendorIds.includes(vendorId)) throw new NotFoundError("That vendor");
   } else {
     staffOnly(actor);
-    assertCan(actor, "vendors.bank", "Only owners and the accountant change bank details.");
-    if (actor.grants.get("vendors.bank") !== "ALL") throw new ForbiddenError("Only owners and the accountant change bank details.");
+    assertCan(actor, "vendors.bank", "Only hosts and the accountant change bank details.");
+    if (actor.grants.get("vendors.bank") !== "ALL") throw new ForbiddenError("Only hosts and the accountant change bank details.");
   }
   const v = parseInput(bankSchema, input);
   return db.$transaction(async (tx) => {
@@ -238,7 +238,7 @@ export async function saveVendorBank(db: Db, actor: Actor, vendorId: string, inp
 /** The office confirms (by phone) bank details a vendor changed, so payments can go ahead. */
 export async function confirmVendorBank(db: Db, actor: Actor, vendorId: string, meta: RequestMeta = {}) {
   staffOnly(actor);
-  if (actor.grants.get("vendors.bank") !== "ALL") throw new ForbiddenError("Only owners and the accountant confirm bank details.");
+  if (actor.grants.get("vendors.bank") !== "ALL") throw new ForbiddenError("Only hosts and the accountant confirm bank details.");
   return db.$transaction(async (tx) => {
     const b = await tx.vendorBankDetail.findUnique({ where: { vendorId }, include: { vendor: { select: { companyName: true } } } });
     if (!b?.needsCheck) throw new ConflictError("There is nothing to confirm.");

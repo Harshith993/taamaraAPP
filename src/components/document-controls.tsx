@@ -68,10 +68,10 @@ export function AddDocumentForm({ eventId, vendors, ownerOnly }: { eventId: stri
           value={visibility}
           onChange={(e) => setVisibility(e.target.value)}
           options={[
-            { value: "BOOKING_TEAM", label: "This booking's team (managers, supervisors) and owners" },
+            { value: "BOOKING_TEAM", label: "This booking's team (managers, supervisors) and hosts" },
             { value: "INTERNAL", label: "All staff who can open this booking, including the accountant" },
             { value: "SHARED", label: "Staff, plus vendors or crew I pick" },
-            ...(ownerOnly ? [{ value: "OWNER_ONLY", label: "Owners only" }] : []),
+            ...(ownerOnly ? [{ value: "OWNER_ONLY", label: "Hosts only" }] : []),
           ]}
         />
       </div>

@@ -225,7 +225,7 @@ export async function cancelJob(
     );
     if (!["INVITED", "QUOTED", "APPROVED"].includes(job.status))
       throw new ConflictError(
-        "This job is already booked or closed. Talk to the owners to cancel it.",
+        "This job is already booked or closed. Talk to the hosts to cancel it.",
       );
     await withdrawWaitingQuotes(tx, job.id);
     await tx.vendorAssignment.update({
@@ -424,7 +424,7 @@ export async function submitQuote(
       {
         type: "quote.received",
         title: `Quote received from ${job.vendor.companyName}`,
-        body: `${job.scopeOfWork} · waiting for the owners`,
+        body: `${job.scopeOfWork} · waiting for the hosts`,
         link: `/bookings/${job.eventId}?tab=vendors`,
         entityType: "quotation",
         entityId: quote.id,

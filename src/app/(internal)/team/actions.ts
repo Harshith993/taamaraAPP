@@ -16,7 +16,8 @@ export async function addPersonAction(_prev: ActionResult<{ name: string; login:
     name: str(form.get("name")),
     phone: str(form.get("phone")),
     email: str(form.get("email")),
-    roleKey: str(form.get("roleKey")) as RoleKey,
+    roleKey: (str(form.get("roleKey")) === "CO_HOST" ? "OWNER" : str(form.get("roleKey"))) as RoleKey,
+    hostTitle: str(form.get("roleKey")) === "CO_HOST" ? ("Co-host" as const) : undefined,
     temporaryPassword: str(form.get("temporaryPassword")),
     vendorId: str(form.get("vendorId")) || undefined,
     workerId: str(form.get("workerId")) || undefined,
@@ -52,13 +53,15 @@ export async function setStatusAction(userId: string, status: "ACTIVE" | "DISABL
   }
 }
 
-export async function setRoleAction(userId: string, roleKey: string): Promise<ActionResult> {
+/** "CO_HOST" is the host role with the Co-host title. */
+export async function setRoleAction(userId: string, choice: string): Promise<ActionResult> {
   const actor = await requirePermission("admin.users");
+  const roleKey = choice === "CO_HOST" ? "OWNER" : choice;
   if (!(ROLE_KEYS as readonly string[]).includes(roleKey)) return { ok: false, error: "Unknown role." };
   try {
-    await setUserRoles(db, actor, userId, [roleKey as RoleKey], await requestMeta());
+    await setUserRoles(db, actor, userId, [roleKey as RoleKey], await requestMeta(), roleKey === "OWNER" ? (choice === "CO_HOST" ? "Co-host" : "Host") : undefined);
     revalidatePath("/team");
-    return { ok: true, message: `Role changed to ${ROLES[roleKey as RoleKey].name}.` };
+    return { ok: true, message: `Role changed to ${choice === "CO_HOST" ? "Co-host" : ROLES[roleKey as RoleKey].name}.` };
   } catch (err) {
     return toActionError(err);
   }

@@ -44,6 +44,8 @@ export interface Actor {
   status: "ACTIVE" | "DISABLED";
   mustChangePassword: boolean;
   isOwner: boolean;
+  /** "Host" or "Co-host" for the two people with full access (role key OWNER); null otherwise. */
+  hostTitle: string | null;
   roles: RoleKey[];
   grants: ReadonlyMap<PermissionKey, Scope>;
   /** Vendor companies this login acts for (vendor accounts). */
@@ -127,6 +129,7 @@ export async function loadActor(db: DbTx, userId: string): Promise<Actor | null>
     status: user.status,
     mustChangePassword: user.mustChangePassword,
     isOwner,
+    hostTitle: isOwner ? (user.title === "Co-host" ? "Co-host" : "Host") : null,
     roles: roles.map((ur) => ur.role.key as RoleKey).filter((k) => k in ROLES),
     grants,
     vendorIds: user.accountType === "VENDOR" ? user.vendorLinks.map((v) => v.vendorId) : [],

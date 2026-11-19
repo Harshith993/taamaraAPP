@@ -155,7 +155,7 @@ describe("attendance", () => {
 
   it("only owners change the switches, and every change is in the audit log", async () => {
     const before = await getSwitches(testDb);
-    await expect(updateSwitches(testDb, manager, before)).rejects.toThrow(/Only owners/);
+    await expect(updateSwitches(testDb, manager, before)).rejects.toThrow(/Only hosts/);
     await expect(updateSwitches(testDb, owner, { ...before, maxVideoSeconds: 5 })).rejects.toThrow(/At least 15/);
     const log = await testDb.auditLog.findFirst({ where: { entityType: "company_settings", summary: { contains: "Crew check themselves in" } }, orderBy: { createdAt: "desc" } });
     expect(log?.summary).toMatch(/to off/);

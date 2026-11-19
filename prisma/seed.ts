@@ -175,6 +175,7 @@ async function seedDemo() {
   // People who log in
   const founder = await demoUser({ name: "Radhika", role: "OWNER", email: "founder@demo.taamara.in", phone: "+919800000001" });
   const cofounder = await demoUser({ name: "Co-founder", role: "OWNER", email: "cofounder@demo.taamara.in", phone: "+919800000002" });
+  await db.user.update({ where: { id: cofounder.id }, data: { title: "Co-host" } });
   const priya = await demoUser({ name: "Priya Sharma", role: "EVENT_MANAGER", email: "priya@demo.taamara.in", phone: "+919800000003" });
   const aman = await demoUser({ name: "Aman Verma", role: "EVENT_MANAGER", email: "aman@demo.taamara.in", phone: "+919800000004" });
   const kavita = await demoUser({ name: "Kavita Jain", role: "ACCOUNTANT", email: "accounts@demo.taamara.in", phone: "+919800000005" });

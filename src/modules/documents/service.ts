@@ -23,7 +23,7 @@ import { notify, vendorUserIds } from "@/modules/notifications/notify";
 
 export const DOCUMENT_KINDS = ["CONTRACT", "PLAN", "DESIGN", "QUOTATION", "INVOICE", "PHOTO", "OTHER"] as const;
 export const KIND_WORDS: Record<string, string> = { CONTRACT: "Contract", PLAN: "Plan / layout", DESIGN: "Design", QUOTATION: "Quotation", INVOICE: "Invoice", PHOTO: "Photo", VIDEO: "Video", OTHER: "Other" };
-export const VISIBILITY_WORDS: Record<string, string> = { OWNER_ONLY: "Owners only", BOOKING_TEAM: "Booking team", INTERNAL: "All staff", SHARED: "Shared" };
+export const VISIBILITY_WORDS: Record<string, string> = { OWNER_ONLY: "Hosts only", BOOKING_TEAM: "Booking team", INTERNAL: "All staff", SHARED: "Shared" };
 
 /** The documents filter for one person on one booking. */
 function visibleWhere(actor: Actor, eventId: string, onTeam: boolean): Prisma.DocumentWhereInput {
@@ -60,7 +60,7 @@ export async function addDocument(db: Db, actor: Actor, input: AddDocumentInput,
   const v = parseInput(addDocumentSchema, input);
   if (actor.accountType !== "INTERNAL") throw new ForbiddenError("Only the team adds booking documents.");
   assertCan(actor, "documents.upload", "You can't add documents.");
-  if (v.visibility === "OWNER_ONLY" && !can(actor, "documents.confidential")) throw new ForbiddenError("Only owners keep owner-only documents.");
+  if (v.visibility === "OWNER_ONLY" && !can(actor, "documents.confidential")) throw new ForbiddenError("Only hosts keep host-only documents.");
   if (v.visibility === "SHARED" && !v.shareVendorIds.length && !v.shareWithCrew) throw new ValidationError("Pick who to share it with.", { share: "Pick vendors or the crew." });
   return db.$transaction(async (tx) => {
     await assertEventAccess(tx, actor, v.eventId, "documents.upload");
@@ -102,8 +102,8 @@ export async function removeDocument(db: Db, actor: Actor, documentId: string, m
   return db.$transaction(async (tx) => {
     const doc = await tx.document.findUnique({ where: { id: documentId }, select: { id: true, title: true, eventId: true, uploadedById: true, kind: true } });
     if (!doc || !doc.eventId) throw new NotFoundError("That document");
-    if (actor.accountType !== "INTERNAL" || (!actor.isOwner && doc.uploadedById !== actor.userId)) throw new ForbiddenError("Only the person who added it, or an owner, can remove it.");
-    if (doc.kind === "INVOICE" && !actor.isOwner) throw new ForbiddenError("Only owners remove invoices.");
+    if (actor.accountType !== "INTERNAL" || (!actor.isOwner && doc.uploadedById !== actor.userId)) throw new ForbiddenError("Only the person who added it, or a host, can remove it.");
+    if (doc.kind === "INVOICE" && !actor.isOwner) throw new ForbiddenError("Only hosts remove invoices.");
     await tx.document.delete({ where: { id: doc.id } });
     await recordAudit(tx, actor, { action: "delete", entityType: "document", entityId: doc.id, summary: `Removed "${doc.title}"` }, meta);
   });

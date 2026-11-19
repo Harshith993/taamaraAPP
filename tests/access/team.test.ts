@@ -51,7 +51,7 @@ describe("adding people", () => {
   });
 
   it("refuses non-owners, duplicates, bad phones and vendor logins without a vendor", async () => {
-    await expect(createUser(testDb, manager, { name: "X", phone: phone(), roleKey: "SUPERVISOR", temporaryPassword: "Temp@12345" })).rejects.toThrow(/Only owners/);
+    await expect(createUser(testDb, manager, { name: "X", phone: phone(), roleKey: "SUPERVISOR", temporaryPassword: "Temp@12345" })).rejects.toThrow(/Only hosts/);
     const p = phone();
     await createUser(testDb, owner, { name: "Once", phone: p, roleKey: "SUPERVISOR", temporaryPassword: "Temp@12345" });
     await expect(createUser(testDb, owner, { name: "Twice", phone: `0${p}`, roleKey: "SUPERVISOR", temporaryPassword: "Temp@12345" })).rejects.toThrow(/already uses this phone/);
@@ -81,7 +81,7 @@ describe("switching accounts off, resetting passwords, roles", () => {
     // Make this owner the only active one, then try to demote them.
     const others = await testDb.user.findMany({ where: { id: { not: owner.userId }, roles: { some: { role: { key: "OWNER" } } }, status: "ACTIVE" }, select: { id: true } });
     await testDb.user.updateMany({ where: { id: { in: others.map((o) => o.id) } }, data: { status: "DISABLED" } });
-    await expect(setUserRoles(testDb, owner, owner.userId, ["EVENT_MANAGER"])).rejects.toThrow(/at least one active owner/);
+    await expect(setUserRoles(testDb, owner, owner.userId, ["EVENT_MANAGER"])).rejects.toThrow(/at least one active host/);
     expect((await loadActor(testDb, owner.userId))!.isOwner).toBe(true);
     await testDb.user.updateMany({ where: { id: { in: others.map((o) => o.id) } }, data: { status: "ACTIVE" } });
   });
@@ -118,10 +118,10 @@ describe("editing role permissions", () => {
   it("refuses fixed roles, owner-only powers and invalid scopes", async () => {
     await expect(updateRoleGrants(testDb, owner, "OWNER", {})).rejects.toThrow(/fixed/);
     await expect(updateRoleGrants(testDb, owner, "VENDOR", {})).rejects.toThrow(/fixed/);
-    await expect(updateRoleGrants(testDb, owner, "ACCOUNTANT", { "approvals.decide": "ALL" })).rejects.toThrow(/Only owners/);
-    await expect(updateRoleGrants(testDb, owner, "EVENT_MANAGER", { "quotes.approve": "ALL" })).rejects.toThrow(/Only owners/);
+    await expect(updateRoleGrants(testDb, owner, "ACCOUNTANT", { "approvals.decide": "ALL" })).rejects.toThrow(/Only hosts/);
+    await expect(updateRoleGrants(testDb, owner, "EVENT_MANAGER", { "quotes.approve": "ALL" })).rejects.toThrow(/Only hosts/);
     await expect(updateRoleGrants(testDb, owner, "EVENT_MANAGER", { "finance.company": "ASSIGNED" })).rejects.toThrow(/scope/);
-    await expect(updateRoleGrants(testDb, manager, "SUPERVISOR", {})).rejects.toThrow(/Only owners/);
+    await expect(updateRoleGrants(testDb, manager, "SUPERVISOR", {})).rejects.toThrow(/Only hosts/);
   });
 
   it("takes effect the next time the person's access is loaded", async () => {
@@ -130,5 +130,21 @@ describe("editing role permissions", () => {
     await updateRoleGrants(testDb, owner, "SUPERVISOR", { ...DEFAULT_ROLE_GRANTS.SUPERVISOR, "crew.pay.view": "ASSIGNED" });
     expect((await loadActor(testDb, sup.id))!.grants.get("crew.pay.view")).toBe("ASSIGNED");
     await updateRoleGrants(testDb, owner, "SUPERVISOR", { ...DEFAULT_ROLE_GRANTS.SUPERVISOR });
+  });
+});
+
+describe("host and co-host", () => {
+  it("the full-access role is shown as Host or Co-host; both have full access", async () => {
+    expect(owner.hostTitle).toBe("Host");
+    expect(manager.hostTitle).toBeNull();
+    const u = await createUser(testDb, owner, { name: "Team Co-host", phone: "98765 01234", roleKey: "OWNER", hostTitle: "Co-host", temporaryPassword: "Temp@12345" });
+    const cohost = (await loadActor(testDb, u.id))!;
+    expect(cohost).toMatchObject({ isOwner: true, hostTitle: "Co-host" });
+    // Changing someone to Host keeps full access and drops the Co-host title.
+    await setUserRoles(testDb, owner, u.id, ["OWNER"], {}, "Host");
+    expect((await loadActor(testDb, u.id))!.hostTitle).toBe("Host");
+    await setUserRoles(testDb, owner, u.id, ["EVENT_MANAGER"]);
+    expect((await testDb.user.findUniqueOrThrow({ where: { id: u.id } })).title).toBeNull();
+    expect((await listRoles(testDb, owner)).find((r) => r.key === "OWNER")!.name).toBe("Host");
   });
 });

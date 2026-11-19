@@ -248,7 +248,7 @@ export function AdjustmentForm({ assignmentId, name }: { assignmentId: string; n
           <Field label="Why" name="reason" placeholder="Late night after the Sangeet" error={fe.reason} />
           <span className="flex gap-1.5">
             <Button type="submit" className="min-h-10 px-3 text-[11.5px]" disabled={pending}>
-              {pending ? "Sending…" : "Ask the owners"}
+              {pending ? "Sending…" : "Ask the hosts"}
             </Button>
             <Button type="button" variant="secondary" className="min-h-10 px-3 text-[11.5px]" onClick={close}>
               Cancel
@@ -276,7 +276,7 @@ export function SettleBooking({ eventId, ready }: { eventId: string; ready: bool
     <Inline label="Settle booking" variant="primary">
       {(close) => (
         <>
-          <p className="text-[13.5px]">Settling makes this booking&apos;s figures final and locks its money: no new charges, payments, expenses, crew extras or vendor jobs. An owner can reopen it with a reason.</p>
+          <p className="text-[13.5px]">Settling makes this booking&apos;s figures final and locks its money: no new charges, payments, expenses, crew extras or vendor jobs. A host can reopen it with a reason.</p>
           <Field label="Note (optional)" name={`settle-${eventId}`} value={note} onChange={(e) => setNote(e.target.value)} placeholder="All paid, books closed" />
           <span className="flex gap-1.5">
             <Button type="button" className="min-h-10 px-3 text-[11.5px]" disabled={pending} onClick={() => run(() => settleBookingAction(eventId, note), close)}>
