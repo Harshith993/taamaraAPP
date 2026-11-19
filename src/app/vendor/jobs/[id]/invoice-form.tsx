@@ -54,20 +54,20 @@ export function InvoiceForm({ jobId, left, defaultGstRate, today }: { jobId: str
             GST
           </label>
           <span className="grid grid-cols-[84px_minmax(0,1fr)] gap-2">
-            <select aria-label="GST rate" value={rate} onChange={(e) => (setRate(e.target.value), setGst(""))} className="min-h-11 rounded-[3px] border-2 border-ink bg-paper px-2 text-[15px]">
+            <select aria-label="GST rate" value={rate} onChange={(e) => (setRate(e.target.value), setGst(""))} className="min-h-11 rounded-xl border border-line bg-paper px-2 text-[15px]">
               {[0, 5, 12, 18, 28].map((r) => (
                 <option key={r} value={r}>
                   {r}%
                 </option>
               ))}
             </select>
-            <input id="inv-gst" inputMode="decimal" value={gst === "" ? (t ? String(g) : "") : gst} onChange={(e) => setGst(e.target.value)} className="min-h-11 rounded-[3px] border-2 border-ink bg-paper px-3 text-[15px]" aria-invalid={fe.gstAmount ? true : undefined} />
+            <input id="inv-gst" inputMode="decimal" value={gst === "" ? (t ? String(g) : "") : gst} onChange={(e) => setGst(e.target.value)} className="min-h-11 rounded-xl border border-line bg-paper px-3 text-[15px]" aria-invalid={fe.gstAmount ? true : undefined} />
           </span>
           {fe.gstAmount && <span className="text-[13px] font-semibold text-now">{fe.gstAmount}</span>}
         </div>
       </div>
       <DocumentUpload label="The invoice (PDF or a clear photo)" onChange={setFileId} error={fe.fileId} />
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t-2 border-ink pt-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3">
         <span className="text-[14px]">
           Total <strong className="font-mono text-[18px]">{inr(total)}</strong>
         </span>

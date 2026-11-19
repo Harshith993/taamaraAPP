@@ -27,16 +27,16 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95] uppercase">{title}</h1>
+          <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">{title}</h1>
           <p className="mt-1 text-[15px] text-ink-quiet">
             {[...cal.days.values()].flat().length} functions on {busyDays.length} days{actor.grants.get("bookings.view") === "ASSIGNED" ? " · your bookings" : ""}
           </p>
         </div>
-        <nav aria-label="Months" className="flex border-2 border-ink font-mono text-[12.5px] font-semibold tracking-[0.06em] uppercase">
+        <nav aria-label="Months" className="flex border border-line font-mono text-[12.5px] font-semibold tracking-[0.06em] uppercase">
           <Link href={`/calendar?m=${cal.prev}`} className="flex min-h-10 items-center px-3.5 no-underline hover:bg-paper">
             ← Prev
           </Link>
-          <Link href="/calendar" className="flex min-h-10 items-center border-x-2 border-ink px-3.5 no-underline hover:bg-paper">
+          <Link href="/calendar" className="flex min-h-10 items-center border-x border-line px-3.5 no-underline hover:bg-paper">
             Today
           </Link>
           <Link href={`/calendar?m=${cal.next}`} className="flex min-h-10 items-center px-3.5 no-underline hover:bg-paper">
@@ -46,8 +46,8 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
       </div>
 
       {/* iPad and desktop: the month grid */}
-      <div className="hidden overflow-hidden rounded-[4px] border-2 border-ink bg-paper md:block">
-        <div className="grid grid-cols-7 border-b-2 border-ink bg-ground">
+      <div className="hidden overflow-hidden rounded-2xl shadow-[var(--shadow-card)] border border-line bg-paper md:block">
+        <div className="grid grid-cols-7 border-b border-line bg-ground">
           {WEEKDAYS.map((w) => (
             <span key={w} className="label-mono px-2 py-1.5 text-[11px]">
               {w}
@@ -64,7 +64,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
                 <ul className="mt-1 flex flex-col gap-1">
                   {items.map((f) => (
                     <li key={f.id}>
-                      <Link href={`/bookings/${f.eventId}`} className="flex gap-1.5 rounded-[2px] border border-rule-soft bg-paper px-1 py-0.5 text-[11.5px] leading-tight no-underline hover:border-ink">
+                      <Link href={`/bookings/${f.eventId}`} className="flex gap-1.5 rounded-lg border border-rule-soft bg-paper px-1 py-0.5 text-[11.5px] leading-tight no-underline hover:border-line">
                         <span className="w-1 shrink-0" style={{ background: f.color }} aria-hidden="true" />
                         <span className="min-w-0">
                           <span className="font-mono font-semibold">{formatTime(f.startsAt)}</span> <span className="font-semibold">{f.eventName}</span>

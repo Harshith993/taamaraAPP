@@ -12,7 +12,7 @@ const PETALS: [string, string][] = [
   ["#85A646", "M100 112Q150 76 198 82Q170 118 100 112Z"],
 ];
 
-export function LotusMark({ width = 32, gap = "#F6F0E3", title = "Taamara Taamara" }: { width?: number; gap?: string; title?: string }) {
+export function LotusMark({ width = 32, gap = "#FFFFFF", title = "Taamara Taamara" }: { width?: number; gap?: string; title?: string }) {
   return (
     <svg width={width} height={(width * 120) / 200} viewBox="0 0 200 120" role="img" aria-label={title}>
       <g stroke={gap} strokeWidth={4} strokeLinejoin="round">
@@ -24,32 +24,26 @@ export function LotusMark({ width = 32, gap = "#F6F0E3", title = "Taamara Taamar
   );
 }
 
-/** The lotus on a cream disc, for plum backgrounds. */
+/** The lotus on a white disc with a soft shadow. */
 export function LotusBadge({ size = 42 }: { size?: number }) {
   return (
-    <span className="grid shrink-0 place-items-center rounded-full bg-ground" style={{ width: size, height: size }}>
+    <span className="grid shrink-0 place-items-center rounded-full bg-white shadow-[var(--shadow-card)] ring-1 ring-line" style={{ width: size, height: size }}>
       <LotusMark width={size * 0.76} />
     </span>
   );
 }
 
-const STRIPE = ["#DD619A", "#E2A1BB", "#861A41", "#E8963A", "#D84F2F", "#F0B13C", "#F3C644", "#AFC147", "#85A646"];
 
-export function PetalStripe({ height = 6 }: { height?: number }) {
-  return (
-    <div aria-hidden="true" className="grid grid-cols-9" style={{ height }}>
-      {STRIPE.map((c) => (
-        <span key={c} style={{ background: c }} />
-      ))}
-    </div>
-  );
+/** The lotus rainbow as a soft gradient line. */
+export function PetalStripe({ height = 3 }: { height?: number }) {
+  return <div aria-hidden="true" className="rainbow opacity-80" style={{ height }} />;
 }
 
 export function Wordmark({ withTagline = true }: { withTagline?: boolean }) {
   return (
     <span className="flex flex-col leading-none">
-      <span className="font-condensed text-[22px] tracking-[0.02em]">TAAMARA TAAMARA</span>
-      {withTagline && <span className="mt-[3px] font-mono text-[10.5px] font-medium tracking-[0.22em] text-[#E9CFDA]">EVENTS &amp; BEYOND</span>}
+      <span className="font-condensed text-[19px] tracking-[-0.02em]">Taamara Taamara</span>
+      {withTagline && <span className="mt-[3px] text-[11.5px] font-medium text-ink-quiet">events &amp; beyond</span>}
     </span>
   );
 }

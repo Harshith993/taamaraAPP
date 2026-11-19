@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { WaitingAnnouncements } from "@/components/messages";
+import { ChevronRight } from "lucide-react";
 import { PortalShell } from "@/components/portal-shell";
-import { EmptyState, Panel, Tag } from "@/components/ui";
+import { EmptyState, MovingArrow, Panel, Tag } from "@/components/ui";
 import { db } from "@/lib/db";
 import {
   formatCalendarDate,
@@ -89,8 +90,8 @@ export default async function VendorHome() {
       subtitle="Taamara Taamara · vendor"
     >
       <div className="flex flex-col gap-3.5">
-        <Link href="/vendor/profile" className="label-mono self-end text-[12px] no-underline">
-          Your details, GST and bank →
+        <Link href="/vendor/profile" className="group inline-flex items-center gap-1 self-end text-[13.5px] font-medium text-ink-quiet no-underline hover:text-ink">
+          Your details, GST and bank <MovingArrow />
         </Link>
         <WaitingAnnouncements actor={actor} />
         <Panel title={`Upcoming jobs · ${upcoming.length}`}>
@@ -115,11 +116,12 @@ export default async function VendorHome() {
                   >
                     <Link
                       href={`/vendor/jobs/${j.id}`}
-                      className={`flex flex-col gap-1.5 px-3.5 py-3 text-ink no-underline hover:bg-ground ${NEEDS_YOU.has(j.status) ? "border-l-[6px] border-look" : ""}`}
+                      className={`group relative flex flex-col gap-1.5 px-4 py-3.5 pr-10 text-ink no-underline transition hover:bg-ground ${NEEDS_YOU.has(j.status) ? "border-l-4 border-[#f59e0b]" : ""}`}
                     >
+                      <ChevronRight aria-hidden className="absolute top-1/2 right-3 size-5 -translate-y-1/2 text-ink-quiet transition-transform group-hover:translate-x-1" />
                       <span className="flex items-center gap-2">
                         <span
-                          className="px-1.5 py-0.5 font-mono text-[11px] font-semibold uppercase"
+                          className="rounded-full px-2.5 py-0.5 text-[11.5px] font-semibold"
                           style={{ background: j.category?.color ?? "#E6DCCB" }}
                         >
                           {j.category?.name ?? "Job"}

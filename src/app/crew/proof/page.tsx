@@ -52,7 +52,7 @@ export default async function CrewProofPage({ searchParams }: { searchParams: Pr
       <div className="flex flex-col gap-3.5">
         <section className="flex flex-col gap-1">
           <span className="label-mono text-[11.5px] text-ink-quiet">{detail}</span>
-          <h1 className="font-condensed text-[34px] leading-[0.95] uppercase">{title}</h1>
+          <h1 className="font-condensed text-[34px] leading-[0.95]">{title}</h1>
         </section>
         {redo.length > 0 && <Notice tone="error">Please redo: {redo.map((r) => r.reviewNote).join(" · ")}</Notice>}
         {can(actor, "proof.upload") ? (

@@ -45,7 +45,7 @@ function Inline({ label, variant = "secondary", children }: { label: string; var
         {label}
       </Button>
     );
-  return <div className="flex w-full min-w-[260px] flex-col gap-2 rounded-[3px] border-2 border-ink bg-paper p-2.5 text-left">{children(() => setOpen(false))}</div>;
+  return <div className="flex w-full min-w-[260px] flex-col gap-2 rounded-xl border border-line bg-paper p-2.5 text-left">{children(() => setOpen(false))}</div>;
 }
 
 export function BillingDetailsForm({ eventId, client }: { eventId: string; client: { gstin: string | null; address: string | null; city: string | null; stateCode: string | null } }) {
@@ -134,7 +134,7 @@ export function NewInvoiceForm({ eventId, charges }: { eventId: string; charges:
                   disabled={!(c.id in picked)}
                   value={picked[c.id] ?? ""}
                   onChange={(e) => setPicked({ ...picked, [c.id]: e.target.value })}
-                  className="min-h-10 rounded-[3px] border-2 border-ink bg-paper px-2 text-right font-mono text-[14px] disabled:opacity-40"
+                  className="min-h-10 rounded-xl border border-line bg-paper px-2 text-right font-mono text-[14px] disabled:opacity-40"
                 />
               </div>
             ))}

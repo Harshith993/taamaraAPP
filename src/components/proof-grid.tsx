@@ -32,7 +32,7 @@ function Review({ id }: { id: string }) {
       {mode === "redo" && (
         <label className="flex flex-col gap-1">
           <span className="label-mono text-[11px]">What should be redone?</span>
-          <textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Left side drapes are uneven" className="rounded-[3px] border-2 border-ink bg-paper px-2 py-1.5 text-[13.5px]" />
+          <textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Left side drapes are uneven" className="rounded-xl border border-line bg-paper px-2 py-1.5 text-[13.5px]" />
         </label>
       )}
       <span className="flex flex-wrap gap-1.5">

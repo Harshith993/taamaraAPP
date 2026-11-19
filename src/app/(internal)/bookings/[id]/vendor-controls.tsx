@@ -63,7 +63,7 @@ export function InviteVendorForm({
   return (
     <form
       noValidate
-      className="flex flex-col gap-3 rounded-[4px] border-2 border-ink bg-paper p-3.5"
+      className="flex flex-col gap-3 rounded-2xl shadow-[var(--shadow-card)] border border-line bg-paper p-3.5"
       onSubmit={(e) => {
         e.preventDefault();
         const f = new FormData(e.currentTarget);
@@ -131,7 +131,7 @@ export function InviteVendorForm({
             return (
               <label
                 key={fn.id}
-                className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-[3px] border-2 px-3 text-[14px] ${on ? "border-ink bg-look" : "border-rule-soft"}`}
+                className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border px-3 text-[14px] ${on ? "border-line bg-look" : "border-rule-soft"}`}
               >
                 <input
                   type="checkbox"
@@ -229,7 +229,7 @@ export function VendorRowActions({
                 ? "50% advance, balance within 7 days of the event"
                 : "Client dropped this"
             }
-            className="rounded-[3px] border-2 border-ink bg-paper px-2 py-1.5 text-[13.5px]"
+            className="rounded-xl border border-line bg-paper px-2 py-1.5 text-[13.5px]"
           />
         </label>
         <span className="flex flex-wrap gap-1.5">

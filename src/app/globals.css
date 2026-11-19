@@ -1,19 +1,35 @@
 @import "tailwindcss";
 
-/* Taamara Taamara design language (docs/design/DESIGN-LANGUAGE.md): Cue Sheet layout, lotus colours. */
+/*
+ * Taamara Taamara design language v2 ("Daylight"): pure white, soft rounded cards with drop
+ * shadows, pastel rainbow tints from the lotus logo, a liquid-glass header, Space Grotesk headings,
+ * Geist text, Lucide icons and gentle hover motion (docs/design/DESIGN-LANGUAGE.md).
+ * Token names are kept from v1 so every screen picks up the new look.
+ */
 @theme {
-  --color-ground: #f6f0e3;
-  --color-paper: #fffcf6;
-  --color-ink: #2b1020;
-  --color-ink-quiet: #6b5560;
-  --color-rule-soft: #e6dccb;
+  --color-ground: #f6f6f9;
+  --color-paper: #ffffff;
+  --color-ink: #16141f;
+  --color-ink-quiet: #67647a;
+  --color-rule-soft: #efeef4;
+  --color-line: #e7e5ef;
   --color-plum: #861a41;
-  --color-plum-dark: #5e0f2c;
+  --color-plum-dark: #6b1434;
   --color-plum-deep: #4a0f28;
-  --color-now: #b5391c;
-  --color-look: #f3c644;
-  --color-ok: #85a646;
-  --color-ok-text: #4e7a1e;
+  --color-now: #e11d48;
+  --color-look: #fde68a;
+  --color-ok: #bbf7d0;
+  --color-ok-text: #15803d;
+
+  /* Pastel rainbow, one per lotus petal. */
+  --color-pastel-pink: #fce7f3;
+  --color-pastel-rose: #ffe4e6;
+  --color-pastel-orange: #ffedd5;
+  --color-pastel-yellow: #fef9c3;
+  --color-pastel-lime: #ecfccb;
+  --color-pastel-green: #dcfce7;
+  --color-pastel-sky: #e0f2fe;
+  --color-pastel-violet: #ede9fe;
 
   --color-petal-decor: #dd619a;
   --color-petal-pink: #e2a1bb;
@@ -22,15 +38,43 @@
   --color-petal-amber: #f0b13c;
   --color-petal-lime: #afc147;
 
-  --color-night-ground: #1c0b15;
-  --color-night-panel: #2a1220;
-  --color-night-rule: #5a3448;
-  --color-night-plum: #f28db8;
-  --color-night-text: #f6efe0;
+  --color-night-ground: #120a10;
+  --color-night-panel: #1f1219;
+  --color-night-rule: #3d2633;
+  --color-night-plum: #f9a8d4;
+  --color-night-text: #f8f5fa;
 
-  --font-display: var(--font-archivo), "Arial Narrow", sans-serif;
-  --font-sans: var(--font-plex-sans), "Segoe UI", system-ui, sans-serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, Menlo, monospace;
+  --font-display: var(--font-space-grotesk), system-ui, sans-serif;
+  --font-sans: var(--font-geist), system-ui, sans-serif;
+  /* Figures and small labels use Geist with even-width digits (calmer than a code font). */
+  --font-mono: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-card: 0 1px 2px rgb(22 20 31 / 0.04), 0 10px 30px -14px rgb(22 20 31 / 0.16);
+  --shadow-lift: 0 2px 4px rgb(22 20 31 / 0.05), 0 22px 44px -18px rgb(22 20 31 / 0.24);
+  --shadow-glass: 0 1px 0 rgb(255 255 255 / 0.8) inset, 0 8px 32px -12px rgb(22 20 31 / 0.18);
+
+  --animate-nudge: nudge 1.6s ease-in-out infinite;
+  --animate-twinkle: twinkle 2.4s ease-in-out infinite;
+  @keyframes nudge {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    50% {
+      transform: translateX(3px);
+    }
+  }
+  @keyframes twinkle {
+    0%,
+    100% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(0.82) rotate(18deg);
+      opacity: 0.7;
+    }
+  }
 }
 
 @layer base {
@@ -38,14 +82,22 @@
     -webkit-text-size-adjust: 100%;
   }
   body {
-    background: var(--color-ground);
+    background: #ffffff;
     color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
   :focus-visible {
-    outline: 3px solid var(--color-look);
+    outline: 3px solid #a78bfa;
     outline-offset: 2px;
+  }
+  a {
+    text-underline-offset: 3px;
+  }
+  .font-mono,
+  .label-mono,
+  table {
+    font-variant-numeric: tabular-nums;
   }
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -57,23 +109,61 @@
   }
 }
 
+/* Headings: Space Grotesk, tight and confident. */
 @utility font-condensed {
   font-family: var(--font-display);
-  font-stretch: 68%;
-  font-weight: 900;
+  font-weight: 700;
+  letter-spacing: -0.025em;
 }
 
+/* Small labels: Geist Mono, quiet capitals. */
 @utility label-mono {
   font-family: var(--font-mono);
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-weight: 500;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
+/* The rainbow from the lotus petals, as a soft gradient. */
+@utility rainbow {
+  background-image: linear-gradient(90deg, #f9a8d4, #fdba74, #fde68a, #bef264, #86efac, #7dd3fc, #c4b5fd);
+}
+@utility rainbow-soft {
+  background-image: linear-gradient(120deg, #fce7f3, #ffedd5 30%, #fef9c3 50%, #dcfce7 70%, #e0f2fe 85%, #ede9fe);
+}
+@utility rainbow-text {
+  background-image: linear-gradient(90deg, #db2777, #ea580c 30%, #ca8a04 50%, #16a34a 70%, #0284c7 85%, #7c3aed);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Liquid glass: frosted, translucent, with a light edge. */
+@utility glass {
+  background: rgb(255 255 255 / 0.62);
+  -webkit-backdrop-filter: blur(20px) saturate(170%);
+  backdrop-filter: blur(20px) saturate(170%);
+  box-shadow: var(--shadow-glass);
+}
+
+/* A card that lifts a little on hover. */
+@utility lift {
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lift);
+  }
+}
+
+/* Headers: liquid glass over a soft rainbow glow (was the plum lattice band). */
 @utility lattice-plum {
-  background-color: var(--color-plum);
-  background-image: url("/patterns/lattice-on-plum.svg");
-  background-size: 56px 56px;
+  background: rgb(255 255 255 / 0.66);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  box-shadow: var(--shadow-glass);
+  color: var(--color-ink);
 }
 
 @utility lattice-deep {
@@ -83,7 +173,5 @@
 }
 
 @utility lattice-cream {
-  background-color: var(--color-paper);
-  background-image: url("/patterns/lattice-on-cream.svg");
-  background-size: 56px 56px;
+  background-image: linear-gradient(120deg, #fce7f3, #ffedd5 30%, #fef9c3 50%, #dcfce7 70%, #e0f2fe 85%, #ede9fe);
 }

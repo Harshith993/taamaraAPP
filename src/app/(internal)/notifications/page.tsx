@@ -8,7 +8,7 @@ export default async function NotificationsPage() {
   await requireActor();
   return (
     <div className="flex max-w-3xl flex-col gap-4">
-      <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95] uppercase">Notifications</h1>
+      <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">Notifications</h1>
       <NotificationList />
     </div>
   );

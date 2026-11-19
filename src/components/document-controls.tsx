@@ -39,7 +39,7 @@ export function AddDocumentForm({ eventId, vendors, ownerOnly }: { eventId: stri
   return (
     <form
       noValidate
-      className="flex flex-col gap-3 rounded-[4px] border-2 border-ink bg-paper p-3.5"
+      className="flex flex-col gap-3 rounded-2xl shadow-[var(--shadow-card)] border border-line bg-paper p-3.5"
       onSubmit={(e) => {
         e.preventDefault();
         const f = new FormData(e.currentTarget);
@@ -82,13 +82,13 @@ export function AddDocumentForm({ eventId, vendors, ownerOnly }: { eventId: stri
             {vendors.map((v) => {
               const on = shareVendorIds.includes(v.id);
               return (
-                <label key={v.id} className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-[3px] border-2 px-2.5 text-[13.5px] ${on ? "border-ink bg-look" : "border-rule-soft"}`}>
+                <label key={v.id} className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border px-2.5 text-[13.5px] ${on ? "border-line bg-look" : "border-rule-soft"}`}>
                   <input type="checkbox" className="h-4 w-4 accent-plum" checked={on} onChange={() => setShare(on ? shareVendorIds.filter((x) => x !== v.id) : [...shareVendorIds, v.id])} />
                   {v.name}
                 </label>
               );
             })}
-            <label className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-[3px] border-2 px-2.5 text-[13.5px] ${shareWithCrew ? "border-ink bg-look" : "border-rule-soft"}`}>
+            <label className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border px-2.5 text-[13.5px] ${shareWithCrew ? "border-line bg-look" : "border-rule-soft"}`}>
               <input type="checkbox" className="h-4 w-4 accent-plum" checked={shareWithCrew} onChange={() => setCrew(!shareWithCrew)} />
               The booking&apos;s crew
             </label>

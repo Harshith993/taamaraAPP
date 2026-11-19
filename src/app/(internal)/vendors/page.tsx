@@ -31,24 +31,24 @@ export default async function VendorsPage({ searchParams }: { searchParams: Prom
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95] uppercase">Vendors</h1>
+          <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">Vendors</h1>
           <p className="mt-1 text-[15px] text-ink-quiet">Caterers, decorators, lights, sound, photographers and everyone else you book.</p>
         </div>
         {can(actor, "vendors.create") && <AddVendor departments={departments} seesTax={can(actor, "vendors.bank")} />}
       </div>
       <form className="flex flex-wrap items-center gap-2" action="/vendors">
-        <input name="q" defaultValue={sp.q} placeholder="Search name, phone or service" aria-label="Search vendors" className="min-h-11 min-w-[240px] flex-1 rounded-[3px] border-2 border-ink bg-paper px-3 text-[15px]" />
+        <input name="q" defaultValue={sp.q} placeholder="Search name, phone or service" aria-label="Search vendors" className="min-h-11 min-w-[240px] flex-1 rounded-xl border border-line bg-paper px-3 text-[15px]" />
         {dept && <input type="hidden" name="dept" value={dept} />}
-        <button type="submit" className="min-h-11 rounded-[3px] border-2 border-ink px-4 font-mono text-[12.5px] font-semibold uppercase">
+        <button type="submit" className="min-h-11 rounded-xl border border-line px-4 font-mono text-[12.5px] font-semibold uppercase">
           Search
         </button>
       </form>
       <nav aria-label="Departments" className="flex flex-wrap gap-1.5 text-[13px]">
-        <Link href={href({ dept: null })} aria-current={!dept ? "page" : undefined} className={`flex min-h-10 items-center rounded-[3px] border-2 px-3 no-underline ${!dept ? "border-ink bg-look" : "border-rule-soft"}`}>
+        <Link href={href({ dept: null })} aria-current={!dept ? "page" : undefined} className={`flex min-h-10 items-center rounded-xl border px-3 no-underline ${!dept ? "border-line bg-look" : "border-rule-soft"}`}>
           All
         </Link>
         {departments.map((d) => (
-          <Link key={d.id} href={href({ dept: d.id })} aria-current={dept === d.id ? "page" : undefined} className={`flex min-h-10 items-center gap-2 rounded-[3px] border-2 px-3 no-underline ${dept === d.id ? "border-ink bg-look" : "border-rule-soft"}`}>
+          <Link key={d.id} href={href({ dept: d.id })} aria-current={dept === d.id ? "page" : undefined} className={`flex min-h-10 items-center gap-2 rounded-xl border px-3 no-underline ${dept === d.id ? "border-line bg-look" : "border-rule-soft"}`}>
             <span className="h-3 w-3" style={{ background: d.color }} aria-hidden="true" />
             {d.name}
           </Link>

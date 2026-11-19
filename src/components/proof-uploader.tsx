@@ -157,11 +157,11 @@ export function ProofUploader({
     }
   }
 
-  const tone = night ? "border-night-rule bg-night-panel text-night-text" : "border-ink bg-paper";
+  const tone = night ? "border-night-rule bg-night-panel text-night-text" : "border-line bg-paper";
   const quiet = night ? "text-[#CDB8C4]" : "text-ink-quiet";
 
   return (
-    <div className={`flex flex-col gap-3 rounded-[4px] border-2 p-3.5 ${tone}`}>
+    <div className={`flex flex-col gap-3 rounded-2xl border-2 p-3.5 ${tone}`}>
       <p className={`text-[14px] ${quiet}`}>{prompt}</p>
       <div className="grid grid-cols-2 gap-2">
         <Button type="button" variant="look" className="min-h-[58px] text-[13px]" onClick={() => photoInput.current?.click()}>
@@ -226,7 +226,7 @@ export function ProofUploader({
               onChange={(e) => setCaption(e.target.value)}
               maxLength={300}
               placeholder="Stage drapes done, left side"
-              className={`min-h-11 rounded-[3px] border-2 px-3 text-[15px] ${night ? "border-night-rule bg-night-ground text-night-text" : "border-ink bg-paper"}`}
+              className={`min-h-11 rounded-xl border px-3 text-[15px] ${night ? "border-night-rule bg-night-ground text-night-text" : "border-line bg-paper"}`}
             />
           </label>
           <label className="flex min-h-11 items-center gap-2.5 text-[14px]">

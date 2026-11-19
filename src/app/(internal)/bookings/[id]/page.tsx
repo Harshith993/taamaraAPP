@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { MessageCircle, MessagesSquare, Camera, CheckSquare, Clock3, FileText, IndianRupee, LayoutDashboard, ListChecks, Store, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ButtonLink, EmptyState, Notice, Panel, Tag } from "@/components/ui";
@@ -52,15 +53,15 @@ import { InviteVendorForm, VendorRowActions } from "./vendor-controls";
 export const metadata: Metadata = { title: "Booking" };
 
 const TABS = [
-  { key: "overview", label: "Overview" },
-  { key: "schedule", label: "Schedule" },
-  { key: "needs", label: "Needs" },
-  { key: "vendors", label: "Vendors" },
-  { key: "crew", label: "Crew" },
-  { key: "tasks", label: "Tasks" },
-  { key: "proof", label: "Proof" },
-  { key: "docs", label: "Docs" },
-  { key: "money", label: "Money" },
+  { key: "overview", label: "Overview", icon: LayoutDashboard },
+  { key: "schedule", label: "Schedule", icon: Clock3 },
+  { key: "needs", label: "Needs", icon: ListChecks },
+  { key: "vendors", label: "Vendors", icon: Store },
+  { key: "crew", label: "Crew", icon: UsersRound },
+  { key: "tasks", label: "Tasks", icon: CheckSquare },
+  { key: "proof", label: "Proof", icon: Camera },
+  { key: "docs", label: "Docs", icon: FileText },
+  { key: "money", label: "Money", icon: IndianRupee },
 ] as const;
 type TabKey = (typeof TABS)[number]["key"];
 
@@ -108,7 +109,7 @@ export default async function BookingPage({
           >
             ← Bookings
           </Link>
-          <h1 className="font-condensed text-[clamp(30px,3.6vw,42px)] leading-[0.95] uppercase">
+          <h1 className="font-condensed text-[clamp(30px,3.6vw,42px)] leading-[0.95]">
             {header.name} · {header.category.name}
           </h1>
           <p className="text-[13.5px] text-ink-quiet">
@@ -132,13 +133,13 @@ export default async function BookingPage({
         </div>
         <span className="flex flex-wrap items-center gap-2">
           {actor.accountType === "INTERNAL" && can(actor, "chat.booking") && (
-            <a href={`/api/v1/channels/open?type=BOOKING_TEAM&eventId=${header.id}`} className="label-mono inline-flex min-h-11 items-center border-2 border-ink px-3 text-[12px] font-semibold no-underline">
-              Team chat
+            <a href={`/api/v1/channels/open?type=BOOKING_TEAM&eventId=${header.id}`} className="group inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold text-ink no-underline shadow-[var(--shadow-card)] transition hover:-translate-y-px">
+              <MessagesSquare aria-hidden className="size-4 text-[#7c3aed]" /> Team chat
             </a>
           )}
           {actor.accountType === "INTERNAL" && can(actor, "chat.direct") && (
-            <a href={`/api/v1/channels/open?type=CREW&eventId=${header.id}`} className="label-mono inline-flex min-h-11 items-center border-2 border-ink px-3 text-[12px] font-semibold no-underline">
-              Crew chat
+            <a href={`/api/v1/channels/open?type=CREW&eventId=${header.id}`} className="group inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold text-ink no-underline shadow-[var(--shadow-card)] transition hover:-translate-y-px">
+              <MessageCircle aria-hidden className="size-4 text-[#0284c7]" /> Crew chat
             </a>
           )}
           <Tag tone={EVENT_STATUS_TONE[header.status]}>{header.status}</Tag>
@@ -155,7 +156,7 @@ export default async function BookingPage({
           return (
             <li
               key={f.id}
-              className={`flex flex-col gap-0.5 rounded-[3px] border-2 border-ink px-2.5 py-2 ${live ? "bg-ink text-[#F6EFE0]" : "bg-paper"}`}
+              className={`flex flex-col gap-0.5 rounded-xl border border-line px-2.5 py-2 ${live ? "bg-ink text-[#F6EFE0]" : "bg-paper"}`}
             >
               <span
                 className={`font-mono text-[11.5px] font-semibold uppercase ${live ? "text-look" : "text-ink-quiet"}`}
@@ -176,17 +177,18 @@ export default async function BookingPage({
 
       <nav
         aria-label="Booking sections"
-        className="flex flex-wrap border-b-2 border-ink font-mono text-[12.5px] font-semibold tracking-[0.06em] uppercase"
+        className="flex w-fit max-w-full flex-wrap gap-1 rounded-[22px] border border-line bg-ground p-1 text-[13.5px] font-medium"
       >
         {TABS.filter((t) => (t.key === "money" ? can(actor, "finance.budget") || can(actor, "finance.billing") : t.key === "docs" ? can(actor, "documents.view") : true)).map((t) => (
           <Link
             key={t.key}
             href={`/bookings/${id}?tab=${t.key}`}
             aria-current={t.key === tab ? "page" : undefined}
-            className={`flex min-h-10 items-center px-3.5 no-underline ${t.key === tab ? "bg-look text-ink" : "text-ink-quiet hover:text-ink"}`}
+            className={`group flex min-h-10 items-center gap-1.5 rounded-full px-3.5 no-underline transition duration-150 ${t.key === tab ? "bg-white text-ink shadow-[var(--shadow-card)]" : "text-ink-quiet hover:-translate-y-px hover:text-ink"}`}
           >
+            <t.icon aria-hidden className="size-4 transition-transform group-hover:scale-110" />
             {t.label}
-            {counts[t.key] !== undefined ? ` ${counts[t.key]}` : ""}
+            {counts[t.key] !== undefined ? <span className="rounded-full bg-pastel-violet px-1.5 text-[11.5px] font-semibold text-[#5b21b6]">{counts[t.key]}</span> : null}
           </Link>
         ))}
       </nav>
@@ -272,7 +274,7 @@ async function Overview({ actor, header }: { actor: Actor; header: Header }) {
             ))}
           </ul>
           {edits && (
-            <div className="border-t-2 border-ink px-3.5 py-3">
+            <div className="border-t border-line px-3.5 py-3">
               <FunctionEditor eventId={header.id} venues={venues} />
             </div>
           )}
@@ -326,10 +328,10 @@ async function Overview({ actor, header }: { actor: Actor; header: Header }) {
               </dd>
               {money.expectedProfit !== null && (
                 <>
-                  <dt className="border-t-2 border-ink pt-1.5 font-semibold">
+                  <dt className="border-t border-line pt-1.5 font-semibold">
                     Expected profit
                   </dt>
-                  <dd className="border-t-2 border-ink pt-1.5 text-right font-mono font-semibold">
+                  <dd className="border-t border-line pt-1.5 text-right font-mono font-semibold">
                     {formatINR(money.expectedProfit)}
                   </dd>
                 </>
@@ -592,7 +594,7 @@ async function Vendors({ actor, eventId }: { actor: Actor; eventId: string }) {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[860px] border-collapse text-[13.5px]">
             <thead>
-              <tr className="label-mono border-b-2 border-ink text-left text-[11px] text-ink-quiet">
+              <tr className="label-mono border-b border-line text-left text-[11px] text-ink-quiet">
                 <th scope="col" className="px-3.5 py-2 font-semibold">
                   Vendor
                 </th>
@@ -1011,9 +1013,9 @@ const PAY_WORDS: Record<string, string> = { PENDING_APPROVAL: "Waiting for host"
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: "ok" | "now" }) {
   return (
-    <div className="rounded-[3px] border-2 border-ink bg-paper px-3 py-2">
-      <dt className="label-mono text-[11px] text-ink-quiet">{label}</dt>
-      <dd className={`font-condensed text-[28px] leading-tight ${tone === "ok" ? "text-ok-text" : tone === "now" ? "text-now" : ""}`}>{value}</dd>
+    <div className="lift rounded-[18px] border border-line bg-white px-4 py-3 shadow-[var(--shadow-card)]">
+      <dt className="text-[13px] font-medium text-ink-quiet">{label}</dt>
+      <dd className={`font-condensed text-[24px] leading-tight tabular-nums ${tone === "ok" ? "text-ok-text" : tone === "now" ? "text-now" : ""}`}>{value}</dd>
     </div>
   );
 }
@@ -1068,7 +1070,7 @@ async function Money({ actor, eventId }: { actor: Actor; eventId: string }) {
               {ledger.charges.length === 0 && <li className="px-3.5 py-3 text-[14px] text-ink-quiet">Nothing charged yet.</li>}
             </ul>
             {!locked && (
-              <div className="border-t-2 border-ink px-3.5 py-2.5">
+              <div className="border-t border-line px-3.5 py-2.5">
                 <ChargeForm eventId={eventId} />
               </div>
             )}
@@ -1094,7 +1096,7 @@ async function Money({ actor, eventId }: { actor: Actor; eventId: string }) {
               {receipts.length === 0 && <li className="px-3.5 py-3 text-[14px] text-ink-quiet">No payments received yet.</li>}
             </ul>
             {can(actor, "payments.recordIn") && !locked && (
-              <div className="border-t-2 border-ink px-3.5 py-2.5">
+              <div className="border-t border-line px-3.5 py-2.5">
                 <ReceiptForm eventId={eventId} today={today} />
               </div>
             )}
@@ -1157,7 +1159,7 @@ async function Money({ actor, eventId }: { actor: Actor; eventId: string }) {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[760px] border-collapse text-[13.5px]">
                 <thead>
-                  <tr className="label-mono border-b-2 border-ink text-left text-[11px] text-ink-quiet">
+                  <tr className="label-mono border-b border-line text-left text-[11px] text-ink-quiet">
                     <th scope="col" className="px-3.5 py-2 font-semibold">Crew</th>
                     <th scope="col" className="px-3 py-2 font-semibold">Worked</th>
                     <th scope="col" className="px-3 py-2 text-right font-semibold">Agreed</th>
@@ -1300,7 +1302,7 @@ function ClientInvoicesPanel({ eventId, inv, locked, today }: { eventId: string;
         {inv.invoices.length === 0 && <li className="px-3.5 py-3 text-[14px] text-ink-quiet">No invoices yet.</li>}
       </ul>
       {manage && (
-        <div className="border-t-2 border-ink px-3.5 py-2.5">
+        <div className="border-t border-line px-3.5 py-2.5">
           <NewInvoiceForm eventId={eventId} charges={inv.charges} />
         </div>
       )}
@@ -1365,7 +1367,7 @@ function BudgetPanel({ eventId, budget }: { eventId: string; budget: NonNullable
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] border-collapse text-[13.5px]">
             <thead>
-              <tr className="label-mono border-b-2 border-ink text-left text-[11px] text-ink-quiet">
+              <tr className="label-mono border-b border-line text-left text-[11px] text-ink-quiet">
                 <th scope="col" className="px-3.5 py-2 font-semibold">Kind of cost</th>
                 <th scope="col" className="px-3 py-2 text-right font-semibold">Estimate</th>
                 <th scope="col" className="px-3 py-2 text-right font-semibold">Actual so far</th>
@@ -1392,7 +1394,7 @@ function BudgetPanel({ eventId, budget }: { eventId: string; budget: NonNullable
         </div>
       )}
       {budget.draft && (
-        <div className="flex flex-col gap-2 border-t-2 border-ink px-3.5 py-3">
+        <div className="flex flex-col gap-2 border-t border-line px-3.5 py-3">
           <p className="label-mono text-[11.5px]">
             Draft v{budget.draft.version} · {formatINR(budget.draft.total)}
             {budget.approved ? ` (approved: ${formatINR(budget.approved.total)})` : ""}

@@ -43,8 +43,8 @@ export function AttendanceButtons({ shiftId, current, disabledReason, night = fa
               aria-pressed={on}
               disabled={pending || Boolean(disabledReason)}
               onClick={() => set(m.key)}
-              className={`min-h-11 rounded-[3px] border-2 px-1.5 font-mono text-[11.5px] font-semibold tracking-[0.04em] uppercase disabled:opacity-50 ${
-                on ? (night ? m.onNight : m.on) : night ? "border-night-rule text-night-text" : "border-ink text-ink"
+              className={`min-h-11 rounded-xl border px-1.5 font-mono text-[11.5px] font-semibold tracking-[0.04em] uppercase disabled:opacity-50 ${
+                on ? (night ? m.onNight : m.on) : night ? "border-night-rule text-night-text" : "border-line text-ink"
               }`}
             >
               {m.label}
@@ -106,7 +106,7 @@ export function AddCrewForm({ eventId, workers, functions, seesPay }: { eventId:
   return (
     <form
       noValidate
-      className="flex flex-col gap-3 rounded-[4px] border-2 border-ink bg-paper p-3.5"
+      className="flex flex-col gap-3 rounded-2xl shadow-[var(--shadow-card)] border border-line bg-paper p-3.5"
       onSubmit={(e) => {
         e.preventDefault();
         const f = new FormData(e.currentTarget);
@@ -164,15 +164,15 @@ export function AddCrewForm({ eventId, workers, functions, seesPay }: { eventId:
         {functions.map((fn) => {
           const s = shifts[fn.id];
           return (
-            <div key={fn.id} className={`grid grid-cols-[minmax(0,1fr)_110px] items-center gap-2 rounded-[3px] border-2 px-3 py-1.5 sm:grid-cols-[minmax(0,1fr)_120px_minmax(0,1fr)] ${s.on ? "border-ink bg-look/25" : "border-rule-soft"}`}>
+            <div key={fn.id} className={`grid grid-cols-[minmax(0,1fr)_110px] items-center gap-2 rounded-xl border px-3 py-1.5 sm:grid-cols-[minmax(0,1fr)_120px_minmax(0,1fr)] ${s.on ? "border-line bg-look/25" : "border-rule-soft"}`}>
               <label className="flex min-h-11 cursor-pointer items-center gap-2 text-[14px]">
                 <input type="checkbox" className="h-4 w-4 accent-plum" checked={s.on} onChange={() => setShifts((all) => ({ ...all, [fn.id]: { ...s, on: !s.on } }))} />
                 <span>
                   <strong>{fn.name}</strong> <span className="text-ink-quiet">{fn.when}</span>
                 </span>
               </label>
-              <input type="time" aria-label={`Reporting time for ${fn.name}`} value={s.time} disabled={!s.on} onChange={(e) => setShifts((all) => ({ ...all, [fn.id]: { ...s, time: e.target.value } }))} className="min-h-11 rounded-[3px] border-2 border-ink bg-paper px-2 font-mono text-[14px] disabled:opacity-40" />
-              <input aria-label={`Where to report for ${fn.name}`} placeholder="Gate 2" value={s.location} disabled={!s.on} onChange={(e) => setShifts((all) => ({ ...all, [fn.id]: { ...s, location: e.target.value } }))} className="col-span-2 min-h-11 rounded-[3px] border-2 border-ink bg-paper px-2 text-[14px] disabled:opacity-40 sm:col-span-1" />
+              <input type="time" aria-label={`Reporting time for ${fn.name}`} value={s.time} disabled={!s.on} onChange={(e) => setShifts((all) => ({ ...all, [fn.id]: { ...s, time: e.target.value } }))} className="min-h-11 rounded-xl border border-line bg-paper px-2 font-mono text-[14px] disabled:opacity-40" />
+              <input aria-label={`Where to report for ${fn.name}`} placeholder="Gate 2" value={s.location} disabled={!s.on} onChange={(e) => setShifts((all) => ({ ...all, [fn.id]: { ...s, location: e.target.value } }))} className="col-span-2 min-h-11 rounded-xl border border-line bg-paper px-2 text-[14px] disabled:opacity-40 sm:col-span-1" />
             </div>
           );
         })}
@@ -204,7 +204,7 @@ export function RemoveCrew({ assignmentId, name }: { assignmentId: string; name:
     );
   return (
     <span className="flex min-w-[200px] flex-col gap-1.5">
-      <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why? (they are told)" aria-label={`Why take ${name} off`} className="min-h-10 rounded-[3px] border-2 border-ink bg-paper px-2 text-[13.5px]" />
+      <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why? (they are told)" aria-label={`Why take ${name} off`} className="min-h-10 rounded-xl border border-line bg-paper px-2 text-[13.5px]" />
       <span className="flex gap-1.5">
         <Button type="button" variant="danger" className="min-h-9 px-3 text-[11.5px]" disabled={pending || !reason.trim()} onClick={() => start(async () => setResult(await removeCrewAction(assignmentId, reason)))}>
           {pending ? "Saving…" : "Take off"}
@@ -237,7 +237,7 @@ export function RespondButtons({ assignmentId }: { assignmentId: string }) {
       {declining && (
         <label className="flex flex-col gap-1">
           <span className="label-mono text-[12px]">Why can&apos;t you come?</span>
-          <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Working at another event" className="min-h-11 rounded-[3px] border-2 border-ink bg-paper px-3 text-[15px]" />
+          <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Working at another event" className="min-h-11 rounded-xl border border-line bg-paper px-3 text-[15px]" />
         </label>
       )}
       <div className="grid grid-cols-2 gap-2">

@@ -23,24 +23,24 @@ export default async function RosterPage({ searchParams }: { searchParams: Promi
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95] uppercase">Crew</h1>
+          <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">Crew</h1>
           <p className="mt-1 text-[15px] text-ink-quiet">Everyone you hire per event: decorators, helpers, electricians, waiters, drivers.</p>
         </div>
         {can(actor, "crew.create") && <AddWorker skills={skills} seesPay={seesPay} />}
       </div>
       <form className="flex flex-wrap items-center gap-2" action="/roster">
-        <input name="q" defaultValue={sp.q} placeholder="Search name, phone or city" aria-label="Search crew" className="min-h-11 min-w-[240px] flex-1 rounded-[3px] border-2 border-ink bg-paper px-3 text-[15px]" />
+        <input name="q" defaultValue={sp.q} placeholder="Search name, phone or city" aria-label="Search crew" className="min-h-11 min-w-[240px] flex-1 rounded-xl border border-line bg-paper px-3 text-[15px]" />
         {skill && <input type="hidden" name="skill" value={skill} />}
-        <button type="submit" className="min-h-11 rounded-[3px] border-2 border-ink px-4 font-mono text-[12.5px] font-semibold uppercase">
+        <button type="submit" className="min-h-11 rounded-xl border border-line px-4 font-mono text-[12.5px] font-semibold uppercase">
           Search
         </button>
       </form>
       <nav aria-label="Skills" className="flex flex-wrap gap-1.5 text-[13px]">
-        <Link href={`/roster${sp.q ? `?q=${encodeURIComponent(sp.q)}` : ""}`} aria-current={!skill ? "page" : undefined} className={`flex min-h-10 items-center rounded-[3px] border-2 px-3 no-underline ${!skill ? "border-ink bg-look" : "border-rule-soft"}`}>
+        <Link href={`/roster${sp.q ? `?q=${encodeURIComponent(sp.q)}` : ""}`} aria-current={!skill ? "page" : undefined} className={`flex min-h-10 items-center rounded-xl border px-3 no-underline ${!skill ? "border-line bg-look" : "border-rule-soft"}`}>
           All
         </Link>
         {skills.map((s) => (
-          <Link key={s.id} href={`/roster?skill=${s.id}${sp.q ? `&q=${encodeURIComponent(sp.q)}` : ""}`} aria-current={skill === s.id ? "page" : undefined} className={`flex min-h-10 items-center rounded-[3px] border-2 px-3 no-underline ${skill === s.id ? "border-ink bg-look" : "border-rule-soft"}`}>
+          <Link key={s.id} href={`/roster?skill=${s.id}${sp.q ? `&q=${encodeURIComponent(sp.q)}` : ""}`} aria-current={skill === s.id ? "page" : undefined} className={`flex min-h-10 items-center rounded-xl border px-3 no-underline ${skill === s.id ? "border-line bg-look" : "border-rule-soft"}`}>
             {s.name}
           </Link>
         ))}

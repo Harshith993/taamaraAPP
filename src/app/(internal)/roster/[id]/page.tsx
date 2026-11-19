@@ -44,7 +44,7 @@ export default async function WorkerProfile({ params }: { params: Promise<{ id: 
             ))}
             {w.status !== "ACTIVE" && <Tag tone="quiet">INACTIVE</Tag>}
           </span>
-          <h1 className="font-condensed text-[clamp(30px,3.6vw,42px)] leading-[0.95] uppercase">{w.name}</h1>
+          <h1 className="font-condensed text-[clamp(30px,3.6vw,42px)] leading-[0.95]">{w.name}</h1>
           <p className="text-[14px] text-ink-quiet">
             <a href={`tel:${w.phone}`}>{formatPhone(w.phone)}</a>
             {w.city ? ` · ${w.city}` : ""}

@@ -57,7 +57,7 @@ export function CompanyForm({ initial }: { initial: CompanyDetails }) {
         <label htmlFor="f-bankDetails" className="label-mono text-[12px]">
           Bank details printed on invoices
         </label>
-        <textarea id="f-bankDetails" name="bankDetails" rows={3} defaultValue={initial.bankDetails ?? ""} placeholder="Bank, account name, account number, IFSC, UPI ID" className="rounded-[3px] border-2 border-ink bg-paper px-3 py-2 text-[15px]" />
+        <textarea id="f-bankDetails" name="bankDetails" rows={3} defaultValue={initial.bankDetails ?? ""} placeholder="Bank, account name, account number, IFSC, UPI ID" className="rounded-xl border border-line bg-paper px-3 py-2 text-[15px]" />
         <span className="text-[12.5px] text-ink-quiet">Stored encrypted. Clients pay into this account, so check it carefully.</span>
       </div>
       <div className="flex flex-wrap items-center gap-3">

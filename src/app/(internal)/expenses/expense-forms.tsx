@@ -26,7 +26,7 @@ export function ExpenseForm({ bookings, categories, allowNoBooking, today, thres
   return (
     <form
       noValidate
-      className="flex flex-col gap-3 rounded-[4px] border-2 border-ink bg-paper p-3.5"
+      className="flex flex-col gap-3 rounded-2xl shadow-[var(--shadow-card)] border border-line bg-paper p-3.5"
       onSubmit={(e) => {
         e.preventDefault();
         const f = new FormData(e.currentTarget);

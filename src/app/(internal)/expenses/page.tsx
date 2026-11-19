@@ -40,7 +40,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95] uppercase">Expenses</h1>
+        <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">Expenses</h1>
         <p className="mt-1 text-[15px] text-ink-quiet">
           Small spends on a booking: tea, transport, last-minute buys. Attach the bill (needed above {formatINR(RECEIPT_REQUIRED_ABOVE)}); an owner approves; money from your own pocket is repaid.
         </p>
@@ -51,7 +51,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
           {toRepay.length} approved expense{toRepay.length === 1 ? "" : "s"} to repay: {formatINR(toRepay.reduce((s, e) => s + e.amount, 0))}
         </p>
       )}
-      <nav aria-label="Filter expenses" className="flex flex-wrap self-start border-2 border-ink font-mono text-[12.5px] font-semibold tracking-[0.06em] uppercase">
+      <nav aria-label="Filter expenses" className="flex flex-wrap self-start border border-line font-mono text-[12.5px] font-semibold tracking-[0.06em] uppercase">
         {STATES.map((s) => (
           <Link key={s.key} href={`/expenses?state=${s.key}`} aria-current={s.key === state ? "page" : undefined} className={`flex min-h-10 items-center px-3.5 no-underline ${s.key === state ? "bg-ink text-[#F6EFE0]" : "text-ink hover:bg-paper"}`}>
             {s.label}

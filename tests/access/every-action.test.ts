@@ -42,8 +42,7 @@ import * as vinv from "@/modules/vendors/invoices";
 import * as jobs from "@/modules/vendors/jobs";
 import { makeEvent, makeUser, makeVendor, makeWorker, testDb } from "../support/factories";
 
-const ROLES = ["owner", "manager", "otherManager", "accountant", "supervisor", "vendor", "crew"] as const;
-type Role = (typeof ROLES)[number];
+type Role = "owner" | "manager" | "otherManager" | "accountant" | "supervisor" | "vendor" | "crew";
 const staffOnly: Role[] = ["vendor", "crew"];
 const notTeam: Role[] = ["otherManager", "accountant", "vendor", "crew"];
 const money: Role[] = ["manager", "otherManager", "supervisor", "vendor", "crew"];

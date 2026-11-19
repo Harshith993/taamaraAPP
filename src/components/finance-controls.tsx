@@ -44,7 +44,7 @@ function Inline({ label, children, variant = "secondary" }: { label: string; chi
         {label}
       </Button>
     );
-  return <div className="flex w-full min-w-[260px] flex-col gap-2 rounded-[3px] border-2 border-ink bg-paper p-2.5 text-left">{children(() => setOpen(false))}</div>;
+  return <div className="flex w-full min-w-[260px] flex-col gap-2 rounded-xl border border-line bg-paper p-2.5 text-left">{children(() => setOpen(false))}</div>;
 }
 
 function Outcome({ result }: { result: ActionResult | null }) {

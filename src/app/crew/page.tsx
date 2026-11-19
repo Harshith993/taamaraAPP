@@ -5,7 +5,8 @@ import { CheckInButton, RespondButtons } from "@/components/crew-controls";
 import { WaitingAnnouncements } from "@/components/messages";
 import { PortalShell } from "@/components/portal-shell";
 import { TaskButtons } from "@/components/task-controls";
-import { ButtonLink, EmptyState, Notice, Panel, Tag } from "@/components/ui";
+import { Camera, MapPin, MessageCircle, Phone, Sparkles } from "lucide-react";
+import { ButtonLink, EmptyState, MovingArrow, Notice, Panel, Tag } from "@/components/ui";
 import { db } from "@/lib/db";
 import { firstName, formatDate, formatINR, formatTime, toNumber } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
@@ -85,12 +86,12 @@ export default async function CrewHome() {
   return (
     <PortalShell title={`Hi ${firstName(actor.name)}`} subtitle={`${formatDate(now, { weekday: "short", day: "numeric", month: "short" })} · ${shifts.length} shift${shifts.length === 1 ? "" : "s"} coming up`}>
       <div className="flex flex-col gap-3.5">
-        <Link href="/crew/me" className="label-mono self-end text-[12px] no-underline">
-          Me: days off, pay, password →
+        <Link href="/crew/me" className="group inline-flex items-center gap-1 self-end text-[13.5px] font-medium text-ink-quiet no-underline hover:text-ink">
+          Me: days off, pay, password <MovingArrow />
         </Link>
         <WaitingAnnouncements actor={actor} />
         {offers.map((o) => (
-          <section key={o.id} aria-label={`New booking: ${o.event.name}`} className="flex flex-col gap-2.5 rounded-[4px] border-2 border-ink bg-paper p-3.5">
+          <section key={o.id} aria-label={`New booking: ${o.event.name}`} className="flex flex-col gap-2.5 rounded-2xl shadow-[var(--shadow-card)] border border-line bg-paper p-3.5">
             <span className="flex items-center justify-between gap-2">
               <span className="label-mono text-[11.5px]">New booking · please answer</span>
               <Tag tone="look">NEW</Tag>
@@ -119,9 +120,12 @@ export default async function CrewHome() {
         ))}
 
         {next ? (
-          <section aria-label="Your next shift" className="overflow-hidden rounded-[4px] border-2 border-ink bg-paper">
-            <div className="flex flex-col gap-2.5 p-3.5">
-              <span className="label-mono text-[11.5px]">{window === "open" ? "Today" : "Your next shift"}</span>
+          <section aria-label="Your next shift" className="overflow-hidden rounded-[24px] border border-line bg-white shadow-[var(--shadow-lift)]">
+            <div aria-hidden className="rainbow h-1.5" />
+            <div className="flex flex-col gap-2.5 p-4">
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-pastel-violet px-2.5 py-0.5 text-[12px] font-semibold text-[#5b21b6]">
+                <Sparkles aria-hidden className="size-3.5 animate-twinkle" /> {window === "open" ? "Today" : "Your next shift"}
+              </span>
               <span className="text-[17px] leading-tight font-bold">
                 {next.assignment.event.name}
                 {next.function ? ` · ${next.function.name}` : ""}
@@ -130,29 +134,32 @@ export default async function CrewHome() {
               <span className="flex items-end justify-between gap-3">
                 <span className="flex flex-col">
                   <span className="label-mono text-[11.5px] text-ink-quiet">Report by</span>
-                  <span className="font-condensed text-[64px] leading-[0.85] text-plum tabular-nums">{formatTime(next.reportAt)}</span>
+                  <span className="font-condensed rainbow-text text-[64px] leading-[0.95] tabular-nums">{formatTime(next.reportAt)}</span>
                 </span>
                 <span className="text-right text-[13px] text-ink-quiet">{formatDate(next.reportAt, { weekday: "long", day: "numeric", month: "short" })}</span>
               </span>
-              <span className="flex flex-col text-[15px]">
-                <strong>{venue?.name ?? next.function?.venueText ?? "Venue to be confirmed"}</strong>
+              <span className="flex flex-col rounded-2xl bg-ground px-3.5 py-3 text-[15px]">
+                <strong className="flex items-center gap-1.5">
+                  <MapPin aria-hidden className="size-4 text-[#db2777]" />
+                  {venue?.name ?? next.function?.venueText ?? "Venue to be confirmed"}
+                </strong>
                 {next.location && <span>Report at: {next.location}</span>}
                 {venue?.address && <span className="text-[13px] text-ink-quiet">{venue.address}</span>}
                 {venue?.mapUrl && (
-                  <a href={venue.mapUrl} target="_blank" rel="noopener noreferrer" className="mt-1 text-[14px] font-semibold">
-                    Directions
+                  <a href={venue.mapUrl} target="_blank" rel="noopener noreferrer" className="group mt-1 inline-flex items-center gap-1 text-[14px] font-semibold">
+                    Directions <MovingArrow />
                   </a>
                 )}
               </span>
               {selfCheckIn && next.attendance === "PENDING" && window === "open" && <CheckInButton shiftId={next.id} />}
               {can(actor, "proof.upload") && (
-                <ButtonLink href={`/crew/proof?a=${next.assignment.id}`} variant="look" className="min-h-[58px] w-full text-[13px]">
-                  Add proof of work
+                <ButtonLink href={`/crew/proof?a=${next.assignment.id}`} variant="look" className="min-h-[58px] w-full text-[15px]">
+                  <Camera aria-hidden className="size-5" /> Add proof of work
                 </ButtonLink>
               )}
               {can(actor, "chat.direct") && (
-                <a href={`/api/v1/channels/open?type=CREW&eventId=${next.assignment.eventId}`} className="flex min-h-11 items-center justify-center rounded-[3px] border-2 border-ink px-3 font-mono text-[12.5px] font-semibold uppercase no-underline">
-                  Crew chat · {next.assignment.event.name}
+                <a href={`/api/v1/channels/open?type=CREW&eventId=${next.assignment.eventId}`} className="flex min-h-12 items-center justify-center gap-2 rounded-full border border-line bg-white px-4 text-[14px] font-semibold text-ink no-underline shadow-[var(--shadow-card)] transition hover:-translate-y-px">
+                  <MessageCircle aria-hidden className="size-[18px] text-[#0284c7]" /> Crew chat · {next.assignment.event.name}
                 </a>
               )}
               {contacts.filter((c) => c.user.phoneNumber).length > 0 && (
@@ -160,8 +167,9 @@ export default async function CrewHome() {
                   {contacts
                     .filter((c) => c.user.phoneNumber)
                     .map((c) => (
-                      <a key={`${c.role}-${c.user.name}`} href={`tel:${c.user.phoneNumber}`} className="flex min-h-11 items-center justify-between rounded-[3px] border-2 border-ink px-3 text-[14px] no-underline">
-                        <span>
+                      <a key={`${c.role}-${c.user.name}`} href={`tel:${c.user.phoneNumber}`} className="flex min-h-12 items-center justify-between rounded-2xl border border-line px-3.5 text-[14px] text-ink no-underline transition hover:bg-ground">
+                        <span className="flex items-center gap-2">
+                          <Phone aria-hidden className="size-4 text-[#16a34a]" />
                           Call {c.role === "SUPERVISOR" ? "supervisor" : "manager"} · <strong>{firstName(c.user.name)}</strong>
                         </span>
                         <span className="font-mono text-[12.5px]">{formatPhone(c.user.phoneNumber!)}</span>
@@ -171,17 +179,17 @@ export default async function CrewHome() {
               )}
             </div>
             <div
-              className={`flex min-h-[34px] items-center px-3.5 font-mono text-[12px] font-semibold tracking-[0.04em] ${
-                next.attendance === "PRESENT" ? "bg-ok" : next.attendance === "LATE" ? "bg-look" : next.attendance === "ABSENT" ? "bg-now text-[#FFF6EE]" : "bg-ground"
+              className={`flex min-h-[40px] items-center px-4 text-[13px] font-semibold ${
+                next.attendance === "PRESENT" ? "bg-pastel-green text-[#166534]" : next.attendance === "LATE" ? "bg-pastel-yellow text-[#854d0e]" : next.attendance === "ABSENT" ? "bg-pastel-rose text-[#be123c]" : "bg-ground text-ink-quiet"
               }`}
             >
               {next.attendance === "PRESENT" || next.attendance === "LATE"
-                ? `CHECKED IN${next.checkInAt ? ` ${formatTime(next.checkInAt)}` : ""}${next.attendance === "LATE" ? " · LATE" : ""}`
+                ? `Checked in${next.checkInAt ? ` at ${formatTime(next.checkInAt)}` : ""}${next.attendance === "LATE" ? " · late" : ""}`
                 : next.attendance === "ABSENT"
-                  ? "MARKED ABSENT · CALL YOUR SUPERVISOR"
+                  ? "Marked absent — call your supervisor"
                   : selfCheckIn
-                    ? "NOT CHECKED IN YET"
-                    : "YOUR SUPERVISOR MARKS YOU IN AT THE VENUE"}
+                    ? "Not checked in yet"
+                    : "Your supervisor marks you in at the venue"}
             </div>
           </section>
         ) : (

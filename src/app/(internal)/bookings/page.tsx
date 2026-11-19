@@ -34,7 +34,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <nav aria-label="Filter bookings" className="flex border-2 border-ink font-mono text-[12.5px] font-semibold tracking-[0.06em] uppercase">
+        <nav aria-label="Filter bookings" className="flex border border-line font-mono text-[12.5px] font-semibold tracking-[0.06em] uppercase">
           {RANGES.map((r) => (
             <Link key={r.key} href={`/bookings?range=${r.key}${sp.q ? `&q=${encodeURIComponent(sp.q)}` : ""}`} aria-current={r.key === range ? "page" : undefined} className={`flex min-h-10 items-center px-3.5 no-underline ${r.key === range ? "bg-ink text-[#F6EFE0]" : "text-ink hover:bg-paper"}`}>
               {r.label}
@@ -46,8 +46,8 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
           <label htmlFor="q" className="sr-only">
             Search bookings
           </label>
-          <input id="q" name="q" defaultValue={sp.q} placeholder="Name, code or function" className="min-h-11 w-60 rounded-[3px] border-2 border-ink bg-paper px-3 text-[14.5px]" />
-          <button type="submit" className="min-h-11 rounded-[3px] border-2 border-ink px-3 font-mono text-[12px] font-semibold uppercase">
+          <input id="q" name="q" defaultValue={sp.q} placeholder="Name, code or function" className="min-h-11 w-60 rounded-xl border border-line bg-paper px-3 text-[14.5px]" />
+          <button type="submit" className="min-h-11 rounded-xl border border-line px-3 font-mono text-[12px] font-semibold uppercase">
             Search
           </button>
         </form>
@@ -60,7 +60,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] border-collapse text-[14px]">
               <thead>
-                <tr className="label-mono border-b-2 border-ink text-left text-[11px] text-ink-quiet">
+                <tr className="label-mono border-b border-line text-left text-[11px] text-ink-quiet">
                   <th scope="col" className="px-3.5 py-2 font-semibold">Booking</th>
                   <th scope="col" className="px-3 py-2 font-semibold">Dates</th>
                   <th scope="col" className="px-3 py-2 font-semibold">Next function</th>

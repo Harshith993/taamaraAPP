@@ -155,7 +155,7 @@ export function QuoteForm({
                 id={`g-${l.key}`}
                 value={l.gstRate}
                 onChange={(e) => update(l.key, { gstRate: e.target.value })}
-                className="min-h-11 rounded-[3px] border-2 border-ink bg-paper px-2 text-[15px]"
+                className="min-h-11 rounded-xl border border-line bg-paper px-2 text-[15px]"
               >
                 {GST_RATES.map((g) => (
                   <option key={g} value={g}>
@@ -224,12 +224,12 @@ export function QuoteForm({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="What's included, transport, payment terms"
-              className="rounded-[3px] border-2 border-ink bg-paper px-3 py-2 text-[15px]"
+              className="rounded-xl border border-line bg-paper px-3 py-2 text-[15px]"
             />
           </div>
         </div>
       </div>
-      <div className="flex flex-wrap items-end justify-between gap-3 border-t-2 border-ink bg-ground px-3.5 py-3">
+      <div className="flex flex-wrap items-end justify-between gap-3 border-t border-line bg-ground px-3.5 py-3">
         <dl className="grid grid-cols-[auto_auto] gap-x-4 text-[13.5px]">
           <dt className="text-ink-quiet">Before GST</dt>
           <dd className="text-right font-mono">{inr(priced.subtotal)}</dd>

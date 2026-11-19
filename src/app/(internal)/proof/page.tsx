@@ -42,12 +42,12 @@ export default async function ProofPage({ searchParams }: { searchParams: Promis
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95] uppercase">Proof of work</h1>
+        <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">Proof of work</h1>
         <p className="mt-1 text-[15px] text-ink-quiet">Photos and videos from vendors and crew. Approve each one, or ask for it to be redone with a note.</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <nav aria-label="Filter by state" className="flex flex-wrap border-2 border-ink font-mono text-[12.5px] font-semibold tracking-[0.06em] uppercase">
+        <nav aria-label="Filter by state" className="flex flex-wrap border border-line font-mono text-[12.5px] font-semibold tracking-[0.06em] uppercase">
           {STATES.map((s) => (
             <Link key={s.key} href={href(s.key, booking?.id ?? null)} aria-current={s.key === state ? "page" : undefined} className={`flex min-h-10 items-center px-3.5 no-underline ${s.key === state ? "bg-ink text-[#F6EFE0]" : "text-ink hover:bg-paper"}`}>
               {s.label}
@@ -56,11 +56,11 @@ export default async function ProofPage({ searchParams }: { searchParams: Promis
         </nav>
         {bookings.length > 1 && (
           <nav aria-label="Filter by booking" className="flex flex-wrap gap-1.5 text-[13px]">
-            <Link href={href(state, null)} aria-current={!booking ? "page" : undefined} className={`flex min-h-10 items-center rounded-[3px] border-2 px-3 no-underline ${!booking ? "border-ink bg-look" : "border-rule-soft"}`}>
+            <Link href={href(state, null)} aria-current={!booking ? "page" : undefined} className={`flex min-h-10 items-center rounded-xl border px-3 no-underline ${!booking ? "border-line bg-look" : "border-rule-soft"}`}>
               Every booking
             </Link>
             {bookings.map((b) => (
-              <Link key={b.id} href={href(state, b.id)} aria-current={booking?.id === b.id ? "page" : undefined} className={`flex min-h-10 items-center rounded-[3px] border-2 px-3 no-underline ${booking?.id === b.id ? "border-ink bg-look" : "border-rule-soft"}`}>
+              <Link key={b.id} href={href(state, b.id)} aria-current={booking?.id === b.id ? "page" : undefined} className={`flex min-h-10 items-center rounded-xl border px-3 no-underline ${booking?.id === b.id ? "border-line bg-look" : "border-rule-soft"}`}>
                 {b.name}
               </Link>
             ))}

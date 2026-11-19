@@ -56,7 +56,7 @@ export function DeclineJob({ jobId }: { jobId: string }) {
           onChange={(e) => setReason(e.target.value)}
           rows={2}
           placeholder="Booked elsewhere that night"
-          className="rounded-[3px] border-2 border-ink bg-paper px-3 py-2 text-[15px]"
+          className="rounded-xl border border-line bg-paper px-3 py-2 text-[15px]"
         />
       </label>
       <div className="flex flex-wrap gap-2">
@@ -131,7 +131,7 @@ export function ProgressButton({
               ? "Truck reached the venue"
               : "All lights tested"
           }
-          className="min-h-11 rounded-[3px] border-2 border-ink bg-paper px-3 text-[15px]"
+          className="min-h-11 rounded-xl border border-line bg-paper px-3 text-[15px]"
         />
       </label>
       <Button

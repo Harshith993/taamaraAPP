@@ -27,7 +27,7 @@ export function DecisionButtons({ id, canRevise, warning }: { id: string; canRev
       {mode && (
         <label className="flex flex-col gap-1">
           <span className="label-mono text-[11.5px]">{mode === "REVISE" ? "What should they change?" : "Why not?"}</span>
-          <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={2} className="rounded-[3px] border-2 border-ink bg-paper px-3 py-2 text-[14px]" />
+          <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={2} className="rounded-xl border border-line bg-paper px-3 py-2 text-[14px]" />
         </label>
       )}
       <div className="flex flex-wrap gap-2">

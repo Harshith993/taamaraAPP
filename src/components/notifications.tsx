@@ -1,4 +1,5 @@
 /** The bell (with the unread count) and the notifications list, for every kind of login. */
+import { Bell } from "lucide-react";
 import Link from "next/link";
 import { markAllReadAction, openNotificationAction } from "@/app/actions/notifications";
 import { EmptyState, Panel } from "@/components/ui";
@@ -15,13 +16,10 @@ export async function NotificationBell() {
     <Link
       href={notificationsPath(actor)}
       aria-label={n ? `Notifications, ${n} unread` : "Notifications"}
-      className="relative grid h-11 min-w-11 place-items-center rounded-[3px] border border-white/40 px-2 text-[#F6EFE0] no-underline hover:bg-white/10"
+      className="relative grid size-11 place-items-center rounded-full border border-line bg-white text-ink-quiet no-underline transition hover:-translate-y-px hover:text-ink hover:shadow-[var(--shadow-card)]"
     >
-      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square">
-        <path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4l2-2Z" />
-        <path d="M10 20a2 2 0 0 0 4 0" />
-      </svg>
-      {n > 0 && <span className="absolute -top-1.5 -right-1.5 min-w-5 bg-look px-1 text-center font-mono text-[11px] font-bold text-ink">{n > 99 ? "99+" : n}</span>}
+      <Bell aria-hidden className="size-[18px]" />
+      {n > 0 && <span className="absolute -top-1 -right-1 min-w-5 rounded-full bg-[#f43f5e] px-1.5 text-center text-[11px] font-bold text-white ring-2 ring-white">{n > 99 ? "99+" : n}</span>}
     </Link>
   );
 }

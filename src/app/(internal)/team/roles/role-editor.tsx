@@ -48,7 +48,7 @@ export function RoleEditor({ roles }: { roles: EditableRole[] }) {
 
   return (
     <div className="flex flex-col">
-      <div role="tablist" aria-label="Role" className="flex flex-wrap border-b-2 border-ink bg-ground">
+      <div role="tablist" aria-label="Role" className="flex flex-wrap border-b border-line bg-ground">
         {roles.map((r) => (
           <button
             key={r.key}
@@ -116,7 +116,7 @@ function GroupRows({ group, perms, draft, setScope }: { group: string; perms: ty
               {locked ? (
                 <span className="label-mono text-[11px] text-ink-quiet">Hosts only</span>
               ) : (
-                <select id={id} value={draft[p.key] ?? ""} onChange={(e) => setScope(p.key, e.target.value)} className="min-h-11 w-full rounded-[3px] border-2 border-ink bg-paper px-2 text-[14px]">
+                <select id={id} value={draft[p.key] ?? ""} onChange={(e) => setScope(p.key, e.target.value)} className="min-h-11 w-full rounded-xl border border-line bg-paper px-2 text-[14px]">
                   <option value="">No access</option>
                   {p.scopes.map((s) => (
                     <option key={s} value={s}>

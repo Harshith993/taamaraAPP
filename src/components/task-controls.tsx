@@ -38,7 +38,7 @@ export function TaskButtons({ taskId, actions, proofHref, size = "small" }: { ta
   return (
     <div className="flex flex-col items-stretch gap-1.5 sm:items-end">
       {sendingBack && (
-        <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="What still needs doing?" aria-label="What still needs doing" className="min-h-10 rounded-[3px] border-2 border-ink bg-paper px-2 text-[13.5px] sm:min-w-[240px]" />
+        <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="What still needs doing?" aria-label="What still needs doing" className="min-h-10 rounded-xl border border-line bg-paper px-2 text-[13.5px] sm:min-w-[240px]" />
       )}
       <span className="flex flex-wrap gap-1.5 sm:justify-end">
         {actions.addProof && proofHref && (
@@ -107,7 +107,7 @@ export function AddTaskForm({ eventId, people, functions }: { eventId: string; p
   return (
     <form
       noValidate
-      className="flex flex-col gap-3 rounded-[4px] border-2 border-ink bg-paper p-3.5"
+      className="flex flex-col gap-3 rounded-2xl shadow-[var(--shadow-card)] border border-line bg-paper p-3.5"
       onSubmit={(e) => {
         e.preventDefault();
         const f = new FormData(e.currentTarget);

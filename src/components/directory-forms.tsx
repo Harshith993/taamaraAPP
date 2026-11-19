@@ -27,7 +27,7 @@ function useRun() {
   };
 }
 
-const FORM = "flex flex-col gap-3 rounded-[4px] border-2 border-ink bg-paper p-3.5";
+const FORM = "flex flex-col gap-3 rounded-2xl shadow-[var(--shadow-card)] border border-line bg-paper p-3.5";
 
 function Chips({ name, options, selected, onChange, error }: { name: string; options: { id: string; name: string }[]; selected: string[]; onChange: (ids: string[]) => void; error?: string }) {
   return (
@@ -37,7 +37,7 @@ function Chips({ name, options, selected, onChange, error }: { name: string; opt
         {options.map((o) => {
           const on = selected.includes(o.id);
           return (
-            <label key={o.id} className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-[3px] border-2 px-2.5 text-[13.5px] ${on ? "border-ink bg-look" : "border-rule-soft"}`}>
+            <label key={o.id} className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border px-2.5 text-[13.5px] ${on ? "border-line bg-look" : "border-rule-soft"}`}>
               <input type="checkbox" className="h-4 w-4 accent-plum" checked={on} onChange={() => onChange(on ? selected.filter((x) => x !== o.id) : [...selected, o.id])} />
               {o.name}
             </label>
@@ -137,7 +137,7 @@ export function VendorForm({ initial, departments, seesTax, onDone, goTo }: { in
       <Chips name="Departments" options={departments} selected={cats} onChange={setCats} error={fe.categoryIds} />
       <label className="flex flex-col gap-1">
         <span className="label-mono text-[12px]">Notes for the team (vendors never see these)</span>
-        <textarea name="notes" rows={2} defaultValue={initial?.notes} className="rounded-[3px] border-2 border-ink bg-paper px-3 py-2 text-[15px]" />
+        <textarea name="notes" rows={2} defaultValue={initial?.notes} className="rounded-xl border border-line bg-paper px-3 py-2 text-[15px]" />
       </label>
       <div className="flex gap-2">
         <Button type="submit" disabled={pending}>
@@ -292,7 +292,7 @@ export function WorkerForm({ initial, skills, seesPay, onDone, goTo }: { initial
       <Chips name="Skills" options={skills} selected={picked} onChange={setPicked} error={fe.skillIds} />
       <label className="flex flex-col gap-1">
         <span className="label-mono text-[12px]">Notes for the team</span>
-        <textarea name="notes" rows={2} defaultValue={initial?.notes} className="rounded-[3px] border-2 border-ink bg-paper px-3 py-2 text-[15px]" />
+        <textarea name="notes" rows={2} defaultValue={initial?.notes} className="rounded-xl border border-line bg-paper px-3 py-2 text-[15px]" />
       </label>
       <div className="flex gap-2">
         <Button type="submit" disabled={pending}>

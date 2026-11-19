@@ -114,12 +114,12 @@ const { BASE, PHONE, IPAD, launch, checker, query } = require("./lib.cjs");
     // 6. Event day for today's birthday (Aman runs it): night mode, attendance
     {
       const { ctx, page } = await signIn("aman@demo.taamara.in", IPAD);
-      await page.getByRole("link", { name: "Event day" }).click();
+      await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Event day" }).click();
       await page.waitForURL(/\/event-day/);
       const body = await page.textContent("main");
       check("event day shows today's booking, crew and vendors", /Kabir's 1st Birthday/.test(body) && /Vikas Jangid/.test(body) && /Gulmohar Decor/.test(body));
       const bg = await page.evaluate(() => getComputedStyle(document.querySelector("main").parentElement).backgroundColor);
-      check("event day is in night mode", bg === "rgb(28, 11, 21)", bg);
+      check("event day is in night mode", bg === "rgb(18, 10, 16)", bg);
       const vikas = page.getByRole("group", { name: "Attendance for Vikas Jangid" });
       await vikas.getByRole("button", { name: "Late" }).click();
       await page.waitForTimeout(1200);

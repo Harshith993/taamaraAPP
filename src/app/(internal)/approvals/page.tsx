@@ -80,14 +80,14 @@ function ApprovalCard({ item }: { item: PendingApproval }) {
                   <td className="py-1.5 pr-2 text-ink-quiet">GST</td>
                   <td className="py-1.5 text-right font-mono text-ink-quiet">{formatINR(item.tax, { decimals: true })}</td>
                 </tr>
-                <tr className="border-t-2 border-ink font-semibold">
+                <tr className="border-t border-line font-semibold">
                   <td className="py-1.5 pr-2">Total</td>
                   <td className="py-1.5 text-right font-mono">{formatINR(item.total)}</td>
                 </tr>
               </tbody>
             </table>
             {item.rivals.length > 0 && (
-              <div className="rounded-[3px] bg-ground px-3 py-2">
+              <div className="rounded-xl bg-ground px-3 py-2">
                 <p className="label-mono mb-1 text-[11px]">Other {item.department ?? ""} quotes on this booking</p>
                 {item.rivals.map((r) => (
                   <p key={r.vendor} className="flex justify-between text-[13.5px]">

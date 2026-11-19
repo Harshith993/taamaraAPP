@@ -45,7 +45,7 @@ function Toggle({ label, children, variant = "secondary", small }: { label: stri
   return <>{children(() => setOpen(false))}</>;
 }
 
-const FORM = "flex flex-col gap-3 rounded-[4px] border-2 border-ink bg-paper p-3.5";
+const FORM = "flex flex-col gap-3 rounded-2xl shadow-[var(--shadow-card)] border border-line bg-paper p-3.5";
 const STATUS_OPTIONS = [
   { value: "TENTATIVE", label: "Tentative" },
   { value: "CONFIRMED", label: "Confirmed" },
@@ -89,7 +89,7 @@ export function DetailsEditor({ eventId, initial, categories }: { eventId: strin
           </div>
           <label className="flex flex-col gap-1">
             <span className="label-mono text-[12px]">Notes</span>
-            <textarea name="description" rows={3} defaultValue={initial.description ?? ""} className="rounded-[3px] border-2 border-ink bg-paper px-3 py-2 text-[15px]" />
+            <textarea name="description" rows={3} defaultValue={initial.description ?? ""} className="rounded-xl border border-line bg-paper px-3 py-2 text-[15px]" />
           </label>
           <label className="flex min-h-11 items-center gap-2 text-[14px]">
             <input type="checkbox" name="share" defaultChecked={initial.shareHostContactWithVendors} className="h-5 w-5 accent-plum" /> Vendors on this booking can see the host&apos;s name and phone
@@ -125,7 +125,7 @@ export function TeamEditor({ eventId, candidates, managerIds, supervisorIds }: {
               <legend className="label-mono mb-1 text-[11.5px]">{g.title}</legend>
               <div className="flex flex-wrap gap-1.5">
                 {g.who.map((c) => (
-                  <label key={c.id} className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-[3px] border-2 px-2.5 text-[13.5px] ${g.list.includes(c.id) ? "border-ink bg-look" : "border-rule-soft"}`}>
+                  <label key={c.id} className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border px-2.5 text-[13.5px] ${g.list.includes(c.id) ? "border-line bg-look" : "border-rule-soft"}`}>
                     <input type="checkbox" className="h-4 w-4 accent-plum" checked={g.list.includes(c.id)} onChange={() => g.set(flip(g.list, c.id))} />
                     {c.name}
                   </label>
@@ -215,7 +215,7 @@ export function CancelBooking({ eventId }: { eventId: string }) {
         <div className={FORM}>
           <label className="flex flex-col gap-1">
             <span className="label-mono text-[12px]">Why is it cancelled?</span>
-            <textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} className="rounded-[3px] border-2 border-ink bg-paper px-3 py-2 text-[15px]" placeholder="Client postponed to next season" />
+            <textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} className="rounded-xl border border-line bg-paper px-3 py-2 text-[15px]" placeholder="Client postponed to next season" />
           </label>
           <p className="text-[13px] text-ink-quiet">The team, booked vendors and crew are told. Money already recorded stays; refunds and payments are handled under Money.</p>
           {result && !result.ok && <Notice tone="error">{result.error}</Notice>}
@@ -336,7 +336,7 @@ export function DoneToggle({ itemId, done, night = false }: { itemId: string; do
         aria-pressed={done}
         disabled={pending}
         onClick={() => run(() => setScheduleDoneAction(itemId, !done))}
-        className={`min-h-11 min-w-11 rounded-[3px] border-2 px-2.5 font-mono text-[11.5px] font-semibold uppercase ${done ? "border-ok bg-ok text-ink" : night ? "border-night-rule text-night-text" : "border-ink text-ink"}`}
+        className={`min-h-11 min-w-11 rounded-xl border px-2.5 font-mono text-[11.5px] font-semibold uppercase ${done ? "border-ok bg-ok text-ink" : night ? "border-night-rule text-night-text" : "border-line text-ink"}`}
       >
         {done ? "✓ Done" : "Done?"}
       </button>

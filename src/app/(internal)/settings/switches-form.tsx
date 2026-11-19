@@ -38,7 +38,7 @@ export function SwitchesForm({ initial, labels }: { initial: CompanySwitches; la
           <span className="text-[15px] font-semibold">{labels.maxVideoSeconds.label}</span>
           <span className="text-[13px] text-ink-quiet">{labels.maxVideoSeconds.help}</span>
         </span>
-        <input type="number" min={15} max={300} step={15} value={v.maxVideoSeconds} onChange={(e) => (setV({ ...v, maxVideoSeconds: Number(e.target.value) }), setResult(null))} className="min-h-11 w-24 rounded-[3px] border-2 border-ink bg-paper px-2 text-right font-mono text-[15px]" />
+        <input type="number" min={15} max={300} step={15} value={v.maxVideoSeconds} onChange={(e) => (setV({ ...v, maxVideoSeconds: Number(e.target.value) }), setResult(null))} className="min-h-11 w-24 rounded-xl border border-line bg-paper px-2 text-right font-mono text-[15px]" />
       </label>
       <div className="flex flex-wrap items-center gap-3 px-3.5 py-3">
         <Button type="submit" disabled={pending}>

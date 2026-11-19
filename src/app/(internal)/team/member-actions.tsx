@@ -31,7 +31,7 @@ export function MemberActions({ userId, name, status, roleKey, accountType, isSe
               defaultValue={roleKey}
               disabled={pending}
               onChange={(e) => run(() => setRoleAction(userId, e.target.value))}
-              className="min-h-11 rounded-[3px] border-2 border-ink bg-paper px-2 text-[14px]"
+              className="min-h-11 rounded-xl border border-line bg-paper px-2 text-[14px]"
             >
               {INTERNAL_ROLES.map((r) => (
                 <option key={r.value} value={r.value}>
@@ -62,7 +62,7 @@ export function MemberActions({ userId, name, status, roleKey, accountType, isSe
         <div className="flex flex-wrap items-center justify-end gap-2">
           <label className="flex items-center gap-2 text-[13px]">
             New temporary password
-            <input value={reset} onChange={(e) => setReset(e.target.value)} className="min-h-11 w-44 rounded-[3px] border-2 border-ink bg-paper px-2 font-mono text-[14px]" />
+            <input value={reset} onChange={(e) => setReset(e.target.value)} className="min-h-11 w-44 rounded-xl border border-line bg-paper px-2 font-mono text-[14px]" />
           </label>
           <Button
             type="button"

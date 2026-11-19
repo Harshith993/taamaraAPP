@@ -1,3 +1,4 @@
+import { ArrowLeft, LogOut } from "lucide-react";
 import Link from "next/link";
 import { signOutAction } from "@/app/actions/auth";
 import { LotusBadge, PetalStripe } from "@/components/brand";
@@ -8,18 +9,18 @@ import { NotificationBell } from "@/components/notifications";
 export function PortalShell({ title, subtitle, back, children }: { title: string; subtitle: string; back?: { href: string; label: string }; children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="lattice-plum text-[#F6EFE0]">
+      <header className="lattice-plum sticky top-0 z-40 text-ink">
         <div className="mx-auto flex max-w-[720px] items-center gap-2.5 px-4 pt-[max(env(safe-area-inset-top),16px)] pb-3">
           <LotusBadge size={40} />
           <span className="flex min-w-0 flex-1 flex-col leading-none">
-            <span className="font-condensed truncate text-[22px] uppercase sm:text-[26px]">{title}</span>
-            <span className="mt-1 font-mono text-[10.5px] font-medium tracking-[0.14em] text-[#F0D9E3] uppercase">{subtitle}</span>
+            <span className="font-condensed truncate text-[22px] sm:text-[26px]">{title}</span>
+            <span className="mt-1 truncate text-[12px] font-medium text-ink-quiet">{subtitle}</span>
           </span>
           <MessagesButton />
           <NotificationBell />
           <form action={signOutAction}>
-            <button type="submit" className="min-h-11 rounded-[3px] border border-white/40 px-3 font-mono text-[11px] font-semibold tracking-[0.06em] text-[#F6EFE0] uppercase">
-              Sign out
+            <button type="submit" aria-label="Sign out" className="grid size-11 place-items-center rounded-full border border-line bg-white text-ink-quiet transition hover:-translate-y-px hover:text-ink">
+              <LogOut aria-hidden className="size-[18px]" />
             </button>
           </form>
         </div>
@@ -27,8 +28,8 @@ export function PortalShell({ title, subtitle, back, children }: { title: string
       <PetalStripe />
       <main className="mx-auto w-full max-w-[720px] flex-1 px-3.5 pt-3.5 pb-[max(env(safe-area-inset-bottom),24px)]">
         {back && (
-          <Link href={back.href} className="label-mono mb-3 inline-flex min-h-9 items-center text-[12px] no-underline">
-            ← {back.label}
+          <Link href={back.href} className="group mb-3 inline-flex min-h-9 items-center gap-1.5 text-[13.5px] font-medium text-ink-quiet no-underline hover:text-ink">
+            <ArrowLeft aria-hidden className="size-4 transition-transform group-hover:-translate-x-1" /> {back.label}
           </Link>
         )}
         {children}

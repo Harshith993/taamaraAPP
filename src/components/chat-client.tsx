@@ -71,7 +71,7 @@ export function Composer({ channelId }: { channelId: string }) {
     });
   return (
     <form
-      className="flex flex-col gap-2 border-t-2 border-ink bg-paper px-3 py-2.5"
+      className="flex flex-col gap-2 border-t border-line bg-paper px-3 py-2.5"
       onSubmit={(e) => {
         e.preventDefault();
         send();
@@ -96,7 +96,7 @@ export function Composer({ channelId }: { channelId: string }) {
             }
           }}
           placeholder="Write a message"
-          className="min-h-11 flex-1 resize-y rounded-[3px] border-2 border-ink bg-ground px-3 py-2 text-[15px]"
+          className="min-h-11 flex-1 resize-y rounded-xl border border-line bg-ground px-3 py-2 text-[15px]"
         />
         {!attach && (
           <Button type="button" variant="secondary" className="min-h-11 px-3 text-[11.5px]" onClick={() => setAttach(true)} aria-label="Attach a photo or PDF">
@@ -193,7 +193,7 @@ export function AnnouncementForm({ audiences, bookings }: { audiences: { value: 
         <label htmlFor="f-ann-body" className="label-mono text-[12px]">
           Message
         </label>
-        <textarea id="f-ann-body" name="body" rows={3} maxLength={2000} className="rounded-[3px] border-2 border-ink bg-paper px-3 py-2 text-[15px]" placeholder="Crew please report by 17:30. Wear the black T-shirt." />
+        <textarea id="f-ann-body" name="body" rows={3} maxLength={2000} className="rounded-xl border border-line bg-paper px-3 py-2 text-[15px]" placeholder="Crew please report by 17:30. Wear the black T-shirt." />
         {fe.body && <span className="text-[13px] font-semibold text-now">{fe.body}</span>}
       </div>
       <label className="flex min-h-11 items-center gap-2.5 text-[14.5px]">

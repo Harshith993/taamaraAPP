@@ -49,12 +49,11 @@ export function LoginForm({ next }: { next: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4 rounded-[4px] border-2 border-ink bg-paper p-5" noValidate>
-      <h2 className="label-mono text-[13px]">Sign in</h2>
+    <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
       {error && <Notice tone="error">{error}</Notice>}
       <Field label="Phone number or email" name="login" autoComplete="username" inputMode="email" placeholder="98100 00005" required />
       <Field label="Password" name="password" type="password" autoComplete="current-password" required />
-      <Button type="submit" disabled={busy} className="min-h-12 text-[13.5px]">
+      <Button type="submit" disabled={busy} className="min-h-12 text-[15px]">
         {busy ? "Signing in…" : "Sign in"}
       </Button>
     </form>

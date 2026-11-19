@@ -33,7 +33,7 @@ export function MediaTile({ media, label, band }: { media: MediaView; label: str
   const failed = media.status === "FAILED";
 
   return (
-    <figure className="flex flex-col overflow-hidden rounded-[3px] border-2 border-ink bg-paper">
+    <figure className="flex flex-col overflow-hidden rounded-xl border border-line bg-paper">
       <button
         type="button"
         disabled={processing || failed || (!media.viewUrl && !media.originalUrl)}
@@ -67,7 +67,7 @@ export function MediaTile({ media, label, band }: { media: MediaView; label: str
         onClick={(e) => {
           if (e.target === dialog.current) dialog.current?.close();
         }}
-        className="m-auto max-h-[92dvh] w-[min(96vw,1100px)] border-2 border-ink bg-ink p-0 text-[#F6EFE0] backdrop:bg-[#1C0B15]/85"
+        className="m-auto max-h-[92dvh] w-[min(96vw,1100px)] border border-line bg-ink p-0 text-[#F6EFE0] backdrop:bg-[#1C0B15]/85"
       >
         <div className="flex items-center justify-between gap-3 px-3 py-2">
           <span className="truncate font-mono text-[12px] font-semibold tracking-[0.04em] uppercase">{label}</span>

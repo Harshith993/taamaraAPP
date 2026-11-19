@@ -67,7 +67,7 @@ export function NewBookingForm({ categories, clients }: { categories: { id: stri
             <label htmlFor="f-description" className="label-mono text-[12px]">
               Notes (optional)
             </label>
-            <textarea id="f-description" name="description" rows={2} className="rounded-[3px] border-2 border-ink bg-paper px-3 py-2 text-[15px]" placeholder="Theme, family wishes, anything the team should know" />
+            <textarea id="f-description" name="description" rows={2} className="rounded-xl border border-line bg-paper px-3 py-2 text-[15px]" placeholder="Theme, family wishes, anything the team should know" />
           </div>
         </div>
       </Panel>

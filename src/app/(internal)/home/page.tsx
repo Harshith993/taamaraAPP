@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { WaitingAnnouncements } from "@/components/messages";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { EmptyState, Notice, Panel, Tag } from "@/components/ui";
+import { BadgeCheck, CalendarDays, IndianRupee, MessageCircle, MoonStar, Sparkles } from "lucide-react";
+import { EmptyState, FeatureCard, Notice, Panel, Tag } from "@/components/ui";
+import { unreadTotal } from "@/modules/communication/chat";
 import { db } from "@/lib/db";
 import { firstName, formatCalendarDate, formatDate, formatINR, formatTime, greeting, todayAsDate, toNumber } from "@/lib/format";
 import { EVENT_STATUS_TONE } from "@/modules/events/labels";
@@ -58,6 +60,17 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   }
 
   const bookingScope = scopeOf(actor, "bookings.view");
+  const unread = await unreadTotal(db, actor);
+  const toPay = can(actor, "finance.company") ? await db.payment.count({ where: { direction: "OUT", status: "APPROVED" } }) : 0;
+  const nextFn = events.flatMap((e) => e.functions.map((f) => ({ ...f, event: e.name }))).filter((f) => f.startsAt >= new Date()).sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())[0];
+  // A row of the places people go most, each with what is waiting there.
+  const cards = [
+    can(actor, "approvals.decide") && { href: "/approvals", icon: <BadgeCheck className="size-5" aria-hidden />, tint: "violet" as const, title: "Approvals", text: approvals.length ? "Quotes, payments and extras waiting for you." : "Nothing waiting — you're all caught up.", count: approvals.length },
+    can(actor, "finance.company") && { href: "/money", icon: <IndianRupee className="size-5" aria-hidden />, tint: "green" as const, title: "Money", text: toPay ? "Approved payments to send out." : "Billing, payments and the monthly P&L.", count: toPay },
+    { href: "/messages", icon: <MessageCircle className="size-5" aria-hidden />, tint: "sky" as const, title: "Messages", text: unread ? "New messages from the team, vendors and crew." : "Team chats, vendor threads and announcements.", count: unread },
+    can(actor, "bookings.view") && { href: "/calendar", icon: <CalendarDays className="size-5" aria-hidden />, tint: "pink" as const, title: "Calendar", text: nextFn ? `Next: ${nextFn.name} — ${nextFn.event}, ${formatDate(nextFn.startsAt, { weekday: "short", day: "numeric", month: "short" })}.` : "Every function this month at a glance." },
+    can(actor, "attendance.mark") && { href: "/event-day", icon: <MoonStar className="size-5" aria-hidden />, tint: "orange" as const, title: "Event day", text: "Night mode for the venue: cues, crew and proof." },
+  ].filter(Boolean) as Parameters<typeof FeatureCard>[0][];
   const roleNames = actor.isOwner ? actor.hostTitle! : actor.roles.map((r) => ROLES[r].name).join(", ");
 
   return (
@@ -65,8 +78,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       {denied && <Notice tone="error">That page is not part of your access. Ask a host if you need it.</Notice>}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95] uppercase">
-            {greeting()}, {firstName(actor.name)}
+          <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">
+            {greeting()}, <span className="rainbow-text">{firstName(actor.name)}</span>
+            <Sparkles aria-hidden className="ml-2 inline size-7 animate-twinkle align-[-2px] text-[#a855f7]" />
           </h1>
           <p className="mt-1 text-[15px] text-ink-quiet">
             {formatDate(new Date(), { weekday: "long", day: "numeric", month: "long" })} · {events.length} upcoming booking{events.length === 1 ? "" : "s"}
@@ -74,6 +88,14 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           </p>
         </div>
       </div>
+
+      <ul aria-label="Shortcuts" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+        {cards.map((c) => (
+          <li key={c.href} className="flex">
+            <FeatureCard {...c} />
+          </li>
+        ))}
+      </ul>
 
       <WaitingAnnouncements actor={actor} />
 

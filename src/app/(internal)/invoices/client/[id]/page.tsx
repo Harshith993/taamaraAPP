@@ -36,7 +36,7 @@ export default async function ClientInvoicePage({ params }: { params: Promise<{ 
         <PrintButton />
       </div>
 
-      <article aria-label={title} className="relative mx-auto w-full max-w-[860px] border-2 border-ink bg-white p-6 text-[13px] text-black sm:p-8 print:max-w-none print:border-0 print:p-0">
+      <article aria-label={title} className="relative mx-auto w-full max-w-[860px] border border-line bg-white p-6 text-[13px] text-black sm:p-8 print:max-w-none print:border-0 print:p-0">
         {inv.status === "CANCELLED" && (
           <p role="status" className="mb-3 border-2 border-now px-3 py-2 font-mono text-[12px] font-bold text-now uppercase">
             Cancelled{inv.cancelReason ? `: ${inv.cancelReason}` : ""}
@@ -44,7 +44,7 @@ export default async function ClientInvoicePage({ params }: { params: Promise<{ 
         )}
         <header className="flex flex-wrap items-start justify-between gap-4 border-b-2 border-black pb-3">
           <div className="flex flex-col leading-snug">
-            <span className="font-condensed text-[26px] leading-none uppercase">{inv.tradeName}</span>
+            <span className="font-condensed text-[26px] leading-none">{inv.tradeName}</span>
             {s.name !== inv.tradeName && <span className="font-semibold">{s.name}</span>}
             <span>{[s.address, s.city].filter(Boolean).join(", ")}</span>
             <span>
@@ -55,7 +55,7 @@ export default async function ClientInvoicePage({ params }: { params: Promise<{ 
             {(s.phone || s.email) && <span>{[s.phone, s.email].filter(Boolean).join(" · ")}</span>}
           </div>
           <div className="flex flex-col items-end gap-0.5 text-right">
-            <h1 className="font-condensed text-[24px] leading-none uppercase">{title}</h1>
+            <h1 className="font-condensed text-[24px] leading-none">{title}</h1>
             <span className="font-mono text-[15px] font-bold">{inv.number ?? "Not yet numbered"}</span>
             <span>Date: {day(inv.issueDate)}</span>
             {inv.dueDate && <span>Due: {day(inv.dueDate)}</span>}

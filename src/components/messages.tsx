@@ -1,4 +1,5 @@
 /** Messages for every kind of login: the header button, the conversations list, a thread, announcements. */
+import { MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AckButton, AnnouncementForm, Composer, LiveThread, RemoveMessage, ScrollToEnd } from "@/components/chat-client";
@@ -20,12 +21,10 @@ export async function MessagesButton() {
     <Link
       href={messagesBase(actor.accountType)}
       aria-label={n ? `Messages, ${n} unread` : "Messages"}
-      className="relative grid h-11 min-w-11 place-items-center rounded-[3px] border border-white/40 px-2 text-[#F6EFE0] no-underline hover:bg-white/10"
+      className="relative grid size-11 place-items-center rounded-full border border-line bg-white text-ink-quiet no-underline transition hover:-translate-y-px hover:text-ink hover:shadow-[var(--shadow-card)]"
     >
-      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square">
-        <path d="M4 5h16v11H9l-5 4V5Z" />
-      </svg>
-      {n > 0 && <span className="absolute -top-1.5 -right-1.5 min-w-5 bg-look px-1 text-center font-mono text-[11px] font-bold text-ink">{n > 99 ? "99+" : n}</span>}
+      <MessageCircle aria-hidden className="size-[18px]" />
+      {n > 0 && <span className="absolute -top-1 -right-1 min-w-5 rounded-full bg-[#f43f5e] px-1.5 text-center text-[11px] font-bold text-white ring-2 ring-white">{n > 99 ? "99+" : n}</span>}
     </Link>
   );
 }
@@ -169,8 +168,8 @@ export async function ThreadView({ actor, channelId }: { actor: Actor; channelId
           </Link>
         )}
       </div>
-      <section aria-label={t.name} className="flex flex-col rounded-[4px] border-2 border-ink bg-paper">
-        <h1 className="border-b-2 border-ink px-3.5 py-2.5 font-mono text-[13px] font-semibold tracking-[0.08em] uppercase">
+      <section aria-label={t.name} className="flex flex-col rounded-2xl shadow-[var(--shadow-card)] border border-line bg-paper">
+        <h1 className="border-b border-line px-3.5 py-2.5 font-mono text-[13px] font-semibold tracking-[0.08em] uppercase">
           <span className="text-plum">{KIND_LABEL[t.type]}</span> · {t.name}
         </h1>
         <LiveThread channelId={t.id} />
@@ -182,7 +181,7 @@ export async function ThreadView({ actor, channelId }: { actor: Actor; channelId
             return (
               <li key={m.id} className="flex flex-col">
                 {showDay && <span className="label-mono my-1 self-center text-[10.5px] text-ink-quiet">{day}</span>}
-                <div className={`max-w-[85%] rounded-[3px] border-2 px-3 py-2 ${m.mine ? "self-end border-plum bg-[#7A1F4D12]" : "self-start border-ink bg-ground"}`}>
+                <div className={`max-w-[85%] rounded-xl border px-3 py-2 ${m.mine ? "self-end border-plum bg-[#7A1F4D12]" : "self-start border-line bg-ground"}`}>
                   {!m.mine && (
                     <span className="block text-[12px] font-bold text-plum">
                       {m.from?.name ?? "Someone"}
@@ -195,7 +194,7 @@ export async function ThreadView({ actor, channelId }: { actor: Actor; channelId
                       {f.kind === "photo" && f.originalUrl ? (
                         <a href={f.originalUrl} target="_blank" rel="noopener" aria-label={`Open ${f.filename}`}>
                           {/* eslint-disable-next-line @next/next/no-img-element -- signed, per-person links */}
-                          <img src={f.originalUrl} alt={f.filename} loading="lazy" className="max-h-60 w-full rounded-[2px] border border-ink object-cover" />
+                          <img src={f.originalUrl} alt={f.filename} loading="lazy" className="max-h-60 w-full rounded-lg border border-line object-cover" />
                         </a>
                       ) : (
                         <a href={f.originalUrl ?? undefined} target="_blank" rel="noopener" className="font-mono text-[13px] font-semibold">

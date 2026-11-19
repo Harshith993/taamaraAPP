@@ -67,14 +67,14 @@ const { BASE, PHONE, launch, checker } = require("./lib.cjs");
     // 3. Calendar
     {
       const { ctx, page } = await signIn("98000 00001");
-      await page.getByRole("link", { name: "Calendar" }).click();
+      await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Calendar" }).click();
       await page.waitForURL(/\/calendar/);
       const grid = await page.textContent("main");
       check("calendar shows this month's functions", /Aditi & Karan/.test(grid) && /Kabir's 1st Birthday/.test(grid));
       await page.screenshot({ path: `${out}/81-calendar.png`, fullPage: true });
       await page.setViewportSize({ width: 1180, height: 820 });
       const navH = await page.evaluate(() => document.querySelector('nav[aria-label="Main"]').getBoundingClientRect().height);
-      check("owner menu still fits one line on iPad landscape", navH <= 46, `${navH}px`);
+      check("owner menu still fits one line on iPad landscape", navH <= 56, `${navH}px`);
       await page.setViewportSize(PHONE);
       check("phone shows the agenda list", await page.locator(".md\\:hidden li").first().isVisible());
       await page.screenshot({ path: `${out}/82-calendar-phone.png`, fullPage: true });

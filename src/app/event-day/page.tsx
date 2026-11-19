@@ -48,21 +48,21 @@ export default async function EventDayPage({ searchParams }: { searchParams: Pro
         <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-3 px-4 pt-[max(env(safe-area-inset-top),12px)] pb-3 sm:px-8">
           <LotusBadge size={40} />
           <span className="flex min-w-0 flex-1 flex-col leading-none">
-            <span className="font-condensed text-[28px] uppercase">Event day</span>
+            <span className="font-condensed text-[28px]">Event day</span>
             <span className="mt-1 font-mono text-[11px] font-medium tracking-[0.12em] text-[#F0D9E3] uppercase">{dayLabel}{data.isToday ? " · today" : ""}</span>
           </span>
           <nav aria-label="Event day" className="flex flex-wrap gap-1.5 font-mono text-[11.5px] font-semibold tracking-[0.06em] uppercase">
             {!data.isToday && (
-              <Link href="/event-day?date=" className="flex min-h-11 items-center rounded-[3px] border border-white/40 px-3 text-night-text no-underline">
+              <Link href="/event-day?date=" className="flex min-h-11 items-center rounded-xl border border-white/40 px-3 text-night-text no-underline">
                 Today
               </Link>
             )}
-            <Link href="/home?stay=1" className="flex min-h-11 items-center rounded-[3px] border border-white/40 px-3 text-night-text no-underline">
+            <Link href="/home?stay=1" className="flex min-h-11 items-center rounded-xl border border-white/40 px-3 text-night-text no-underline">
               Back to the app
             </Link>
             <NotificationBell />
             <form action={signOutAction}>
-              <button type="submit" className="min-h-11 rounded-[3px] border border-white/40 px-3 uppercase">
+              <button type="submit" className="min-h-11 rounded-xl border border-white/40 px-3 uppercase">
                 Sign out
               </button>
             </form>
@@ -72,10 +72,10 @@ export default async function EventDayPage({ searchParams }: { searchParams: Pro
       <PetalStripe />
 
       <main className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-5 px-3.5 pt-4 pb-[max(env(safe-area-inset-bottom),28px)] sm:px-8">
-        {data.showingNext && <p className="rounded-[3px] border-2 border-night-rule px-3 py-2 text-[14px] font-semibold">Nothing on today. This is the next event day.</p>}
+        {data.showingNext && <p className="rounded-xl border-2 border-night-rule px-3 py-2 text-[14px] font-semibold">Nothing on today. This is the next event day.</p>}
         {data.bookings.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-16 text-center">
-            <p className="font-condensed text-[36px] uppercase">Nothing scheduled</p>
+            <p className="font-condensed text-[36px]">Nothing scheduled</p>
             <p className="max-w-prose text-[15px] text-[#CDB8C4]">When a booking you run has a function, its run sheet, crew and vendors appear here on the day.</p>
           </div>
         )}
@@ -90,7 +90,7 @@ export default async function EventDayPage({ searchParams }: { searchParams: Pro
               <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-night-rule pb-3">
                 <div className="flex min-w-0 flex-col gap-1">
                   <span className="font-mono text-[11.5px] font-semibold tracking-[0.08em] text-night-plum uppercase">{b.code}</span>
-                  <h1 className="font-condensed text-[clamp(32px,5vw,52px)] leading-[0.92] uppercase">
+                  <h1 className="font-condensed text-[clamp(32px,5vw,52px)] leading-[0.92]">
                     {b.name} · {b.functions.map((f) => f.name).join(" + ")}
                   </h1>
                   <p className="text-[14.5px] text-[#CDB8C4]">
@@ -114,22 +114,22 @@ export default async function EventDayPage({ searchParams }: { searchParams: Pro
               </div>
 
               <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <div className="rounded-[3px] border-2 border-night-rule bg-night-panel px-3 py-2">
+                <div className="rounded-xl border-2 border-night-rule bg-night-panel px-3 py-2">
                   <dt className="font-mono text-[11px] font-semibold tracking-[0.08em] text-[#CDB8C4] uppercase">Next cue</dt>
                   <dd className="text-[15px] font-bold">{next ? `${next.title} ${inWords(minutesUntil(next.startsAt, now))}` : "None left"}</dd>
                 </div>
-                <div className="rounded-[3px] border-2 border-night-rule bg-night-panel px-3 py-2">
+                <div className="rounded-xl border-2 border-night-rule bg-night-panel px-3 py-2">
                   <dt className="font-mono text-[11px] font-semibold tracking-[0.08em] text-[#CDB8C4] uppercase">Crew in</dt>
                   <dd className="font-condensed text-[34px] leading-none">
                     {arrived}
                     <span className="text-[20px] text-[#CDB8C4]"> / {b.crew.length}</span>
                   </dd>
                 </div>
-                <div className="rounded-[3px] border-2 border-night-rule bg-night-panel px-3 py-2">
+                <div className="rounded-xl border-2 border-night-rule bg-night-panel px-3 py-2">
                   <dt className="font-mono text-[11px] font-semibold tracking-[0.08em] text-[#CDB8C4] uppercase">Vendors</dt>
                   <dd className="font-condensed text-[34px] leading-none">{b.vendors.length}</dd>
                 </div>
-                <Link href={`/proof?booking=${b.id}`} className={`rounded-[3px] border-2 px-3 py-2 no-underline ${b.proofToCheck ? "border-look bg-look text-ink" : "border-night-rule bg-night-panel text-night-text"}`}>
+                <Link href={`/proof?booking=${b.id}`} className={`rounded-xl border-2 px-3 py-2 no-underline ${b.proofToCheck ? "border-look bg-look text-ink" : "border-night-rule bg-night-panel text-night-text"}`}>
                   <span className="block font-mono text-[11px] font-semibold tracking-[0.08em] uppercase">Proof to check</span>
                   <span className="font-condensed text-[34px] leading-none">{b.proofToCheck}</span>
                 </Link>
@@ -137,7 +137,7 @@ export default async function EventDayPage({ searchParams }: { searchParams: Pro
 
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
                 <div className="flex flex-col gap-4">
-                  <div className="overflow-hidden rounded-[4px] border-2 border-night-rule bg-night-panel">
+                  <div className="overflow-hidden rounded-2xl border-2 border-night-rule bg-night-panel">
                     <h2 className="border-b-2 border-night-rule px-3.5 py-2 font-mono text-[12px] font-semibold tracking-[0.08em] uppercase">Run sheet · {b.schedule.length}</h2>
                     {b.schedule.length === 0 ? (
                       <p className="px-3.5 py-4 text-[14px] text-[#CDB8C4]">No run sheet for this day yet.</p>
@@ -167,7 +167,7 @@ export default async function EventDayPage({ searchParams }: { searchParams: Pro
                     )}
                   </div>
 
-                  <div className="overflow-hidden rounded-[4px] border-2 border-night-rule bg-night-panel">
+                  <div className="overflow-hidden rounded-2xl border-2 border-night-rule bg-night-panel">
                     <h2 className="border-b-2 border-night-rule px-3.5 py-2 font-mono text-[12px] font-semibold tracking-[0.08em] uppercase">Vendors due · {b.vendors.length}</h2>
                     <ul>
                       {b.vendors.map((v) => (
@@ -181,7 +181,7 @@ export default async function EventDayPage({ searchParams }: { searchParams: Pro
                             </span>
                           </span>
                           {v.phone && (
-                            <a href={`tel:${v.phone}`} className="flex min-h-11 items-center rounded-[3px] border-2 border-night-rule px-2.5 font-mono text-[12px] font-semibold text-night-text no-underline">
+                            <a href={`tel:${v.phone}`} className="flex min-h-11 items-center rounded-xl border-2 border-night-rule px-2.5 font-mono text-[12px] font-semibold text-night-text no-underline">
                               Call
                             </a>
                           )}
@@ -193,7 +193,7 @@ export default async function EventDayPage({ searchParams }: { searchParams: Pro
                 </div>
 
                 <div className="flex flex-col gap-4">
-                  <div className="overflow-hidden rounded-[4px] border-2 border-night-rule bg-night-panel">
+                  <div className="overflow-hidden rounded-2xl border-2 border-night-rule bg-night-panel">
                     <h2 className="flex items-center justify-between border-b-2 border-night-rule px-3.5 py-2 font-mono text-[12px] font-semibold tracking-[0.08em] uppercase">
                       <span>Crew check-in</span>
                       <span>
@@ -233,7 +233,7 @@ export default async function EventDayPage({ searchParams }: { searchParams: Pro
                     </ul>
                   </div>
 
-                  <div className="overflow-hidden rounded-[4px] border-2 border-night-rule bg-night-panel">
+                  <div className="overflow-hidden rounded-2xl border-2 border-night-rule bg-night-panel">
                     <h2 className="border-b-2 border-night-rule px-3.5 py-2 font-mono text-[12px] font-semibold tracking-[0.08em] uppercase">Tasks due · {b.tasks.length}</h2>
                     <ul>
                       {b.tasks.map((t) => (
@@ -260,17 +260,17 @@ export default async function EventDayPage({ searchParams }: { searchParams: Pro
                     )}
                   </div>
 
-                  <div className="rounded-[4px] border-2 border-night-rule bg-night-panel px-3.5 py-3">
+                  <div className="rounded-2xl border-2 border-night-rule bg-night-panel px-3.5 py-3">
                     <h2 className="mb-2 font-mono text-[12px] font-semibold tracking-[0.08em] uppercase">Team</h2>
                     <ul className="flex flex-wrap gap-2">
                       {b.team.map((m) => (
                         <li key={`${m.role}-${m.name}`}>
                           {m.phone ? (
-                            <a href={`tel:${m.phone}`} className="flex min-h-11 items-center gap-2 rounded-[3px] border-2 border-night-rule px-3 text-[14px] text-night-text no-underline">
+                            <a href={`tel:${m.phone}`} className="flex min-h-11 items-center gap-2 rounded-xl border-2 border-night-rule px-3 text-[14px] text-night-text no-underline">
                               <span className="font-mono text-[10.5px] text-[#CDB8C4] uppercase">{m.role === "MANAGER" ? "Manager" : "Supervisor"}</span> {m.name}
                             </a>
                           ) : (
-                            <span className="flex min-h-11 items-center gap-2 rounded-[3px] border-2 border-night-rule px-3 text-[14px]">
+                            <span className="flex min-h-11 items-center gap-2 rounded-xl border-2 border-night-rule px-3 text-[14px]">
                               <span className="font-mono text-[10.5px] text-[#CDB8C4] uppercase">{m.role === "MANAGER" ? "Manager" : "Supervisor"}</span> {m.name}
                             </span>
                           )}

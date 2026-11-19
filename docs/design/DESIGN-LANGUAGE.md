@@ -1,4 +1,26 @@
-# Taamara Taamara: design language (v1)
+# Taamara Taamara: design language (v2, "Daylight")
+
+**19 Nov 2026, the host's request:** a more engaging, simple look: pure white background, pastel rainbow colours from the lotus, soft rounded cards with drop shadows, a liquid-glass header, Space Grotesk headings and Geist text, Lucide icons, hover animations, moving arrows and sparkle accents. No skeleton loaders. This replaces the v1 Cue Sheet look (D18 → D48). The v1 description below is kept for reference; token names are unchanged so every screen picked up v2.
+
+## v2 at a glance
+
+| Piece | v2 |
+|---|---|
+| Page | Pure white (`#FFFFFF`); `ground` `#F6F6F9` for soft fills |
+| Ink | `#16141F` text, `#67647A` quiet text, `#E7E5EF` lines (`line`) |
+| Brand | Plum `#861A41` for links and accents; primary buttons are ink pills |
+| Rainbow | Pastels per petal: pink `#FCE7F3`, orange `#FFEDD5`, yellow `#FEF9C3`, lime `#ECFCCB`, green `#DCFCE7`, sky `#E0F2FE`, violet `#EDE9FE`, rose `#FFE4E6`; `rainbow`, `rainbow-soft`, `rainbow-text` utilities |
+| Cards | White, 1 px line, 18–24 px corners, `--shadow-card`; `lift` utility rises 2 px with `--shadow-lift` on hover |
+| Header | Liquid glass (`lattice-plum` utility is now frosted white with blur), a soft rainbow glow behind it, a 3 px rainbow line under it |
+| Type | Space Grotesk (headings, `font-condensed`), Geist (text and figures with even-width digits) |
+| Icons | Lucide (`lucide-react`), in pastel icon tiles (`IconTile`) |
+| Motion | Buttons and cards lift on hover; arrows slide (`group-hover:translate-x-1`) or nudge (`MovingArrow`); sparkles twinkle; all off with reduced motion |
+| Components | `Button`/`ButtonLink` pills (primary ink, look = rainbow pastel), `Tag` pastel pills, `FeatureCard` (icon, title, text, count, arrow), `Panel`, `Field`, `Notice`, `EmptyState` with a sparkle |
+| Event day | Stays dark (night mode) for venues |
+
+---
+
+## v1 (Cue Sheet), for reference
 
 **Direction:** C · Cue Sheet, recoloured in the Taamara Taamara lotus palette (owner decision, 17 Nov 2026).
 **Canvas:** "Taamara App Designs", page "Taamara Taamara · Cue Sheet". Sources are in `phase3-system/`.

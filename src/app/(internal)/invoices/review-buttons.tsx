@@ -18,7 +18,7 @@ export function InvoiceReview({ id, status, warning }: { id: string; status: str
     <div className="flex flex-col gap-1.5">
       {warning && canVerify && <p className="text-[12.5px] font-semibold text-now">{warning}</p>}
       {mode && (
-        <textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder={mode === "DISPUTE" ? "GST number missing on the invoice" : "Entered twice by mistake"} aria-label={mode === "DISPUTE" ? "What should the vendor correct?" : "Why is it void?"} className="rounded-[3px] border-2 border-ink bg-paper px-2 py-1.5 text-[13.5px]" />
+        <textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder={mode === "DISPUTE" ? "GST number missing on the invoice" : "Entered twice by mistake"} aria-label={mode === "DISPUTE" ? "What should the vendor correct?" : "Why is it void?"} className="rounded-xl border border-line bg-paper px-2 py-1.5 text-[13.5px]" />
       )}
       <span className="flex flex-wrap gap-1.5">
         {mode ? (

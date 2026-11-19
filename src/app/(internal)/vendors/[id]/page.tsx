@@ -37,13 +37,13 @@ export default async function VendorProfile({ params }: { params: Promise<{ id: 
         <div className="flex flex-col gap-1">
           <span className="flex flex-wrap gap-1.5">
             {v.departments.map((d) => (
-              <span key={d.id} className="px-1.5 py-0.5 font-mono text-[11px] font-semibold uppercase" style={{ background: d.color }}>
+              <span key={d.id} className="rounded-full px-2.5 py-0.5 text-[11.5px] font-semibold" style={{ background: d.color }}>
                 {d.name}
               </span>
             ))}
             {v.status !== "ACTIVE" && <Tag tone={v.status === "BLACKLISTED" ? "now" : "quiet"}>{v.status}</Tag>}
           </span>
-          <h1 className="font-condensed text-[clamp(30px,3.6vw,42px)] leading-[0.95] uppercase">{v.company}</h1>
+          <h1 className="font-condensed text-[clamp(30px,3.6vw,42px)] leading-[0.95]">{v.company}</h1>
           <p className="text-[14px] text-ink-quiet">
             {v.contact}
             {v.phone ? ` · ${formatPhone(v.phone)}` : ""}
@@ -131,7 +131,7 @@ export default async function VendorProfile({ params }: { params: Promise<{ id: 
             </dl>
           </Panel>
           {seesTax && v.bank?.needsCheck && (
-            <div className="flex flex-col gap-2 rounded-[4px] border-2 border-now bg-[#B5391C12] p-3.5">
+            <div className="flex flex-col gap-2 rounded-2xl border-2 border-now bg-[#B5391C12] p-3.5">
               <p className="text-[14px] font-semibold text-now">
                 {v.company} changed their bank details{v.bank.changedByVendorAt ? ` on ${formatDate(v.bank.changedByVendorAt, { day: "numeric", month: "short" })}` : ""}. Payments wait until someone calls them on their usual number and confirms.
               </p>

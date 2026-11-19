@@ -152,7 +152,7 @@ export default async function VendorJobPage({
           <span className="flex items-center gap-2">
             {job.department && (
               <span
-                className="px-1.5 py-0.5 font-mono text-[11px] font-semibold uppercase"
+                className="rounded-full px-2.5 py-0.5 text-[11.5px] font-semibold"
                 style={{ background: job.department.color }}
               >
                 {job.department.name}
@@ -162,12 +162,12 @@ export default async function VendorJobPage({
               {job.event.name}
             </span>
             {!["DECLINED", "CANCELLED"].includes(job.status) && (
-              <a href={`/api/v1/channels/open?type=VENDOR_THREAD&eventId=${job.event.id}&vendorId=${job.vendorId}`} className="label-mono ml-auto inline-flex min-h-11 items-center border-2 border-ink px-3 text-[11.5px] font-semibold no-underline">
+              <a href={`/api/v1/channels/open?type=VENDOR_THREAD&eventId=${job.event.id}&vendorId=${job.vendorId}`} className="label-mono ml-auto inline-flex min-h-11 items-center border border-line px-3 text-[11.5px] font-semibold no-underline">
                 Message the team
               </a>
             )}
           </span>
-          <h1 className="font-condensed text-[34px] leading-[0.95] uppercase">
+          <h1 className="font-condensed text-[34px] leading-[0.95]">
             {job.scope}
           </h1>
           {job.reportingAt && (
@@ -457,7 +457,7 @@ export default async function VendorJobPage({
               </ul>
             )}
             {can(actor, "quotes.submit") && balance.left > 0.5 ? (
-              <div className={`px-3.5 py-3 ${invoices.length ? "border-t-2 border-ink" : ""}`}>
+              <div className={`px-3.5 py-3 ${invoices.length ? "border-t border-line" : ""}`}>
                 <p className="mb-3 text-[13.5px] text-ink-quiet">
                   {acceptedWO.number}: {formatINR(balance.amount)}, invoiced {formatINR(balance.invoiced)} so far. Send an invoice for the advance or the balance.
                 </p>
@@ -511,7 +511,7 @@ export default async function VendorJobPage({
                 {t.phone && (
                   <a
                     href={`tel:${t.phone}`}
-                    className="inline-flex min-h-11 items-center rounded-[3px] border-2 border-ink px-3 font-mono text-[13px] font-semibold no-underline"
+                    className="inline-flex min-h-11 items-center rounded-xl border border-line px-3 font-mono text-[13px] font-semibold no-underline"
                   >
                     {formatPhone(t.phone)}
                   </a>

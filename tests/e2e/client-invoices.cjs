@@ -67,7 +67,8 @@ async function setSwitch(page, on) {
       check("a draft is made from the booking's charges", /DRAFT/.test(await panel.textContent()));
       await panel.getByRole("button", { name: "Issue", exact: true }).click();
       await panel.getByRole("button", { name: "Issue invoice" }).click();
-      await panel.getByText(/Issued as /).waitFor({ timeout: 10000 });
+      // The list refreshes at once, so wait for the database rather than the passing message.
+      for (let i = 0; i < 20 && !(await query(`SELECT 1 FROM client_invoices WHERE "eventId" = $1 AND status = 'ISSUED'`, [ev.id])).length; i++) await page.waitForTimeout(500);
       const [inv] = await query(`SELECT id, number, total, cgst, sgst FROM client_invoices WHERE "eventId" = $1 AND status = 'ISSUED' ORDER BY "createdAt" DESC`, [ev.id]);
       check("issuing gives a gap-free number and splits the tax", /^TT-\d\d-\d\d-\d{4}$/.test(inv.number) && Number(inv.cgst) === 8550 && Number(inv.sgst) === 8550 && Number(inv.total) === 112100, `${inv.number} ${inv.total}`);
       await page.screenshot({ path: `${out}/i0-booking-invoices.png`, fullPage: true });

@@ -14,7 +14,7 @@ export function SetPasswordForm({ firstTime }: { firstTime: boolean }) {
 
   const err = state && !state.ok ? state : null;
   return (
-    <form action={action} className="flex flex-col gap-4 rounded-[4px] border-2 border-ink bg-paper p-5">
+    <form action={action} className="flex flex-col gap-4 rounded-2xl shadow-[var(--shadow-card)] border border-line bg-paper p-5">
       <p className="text-[14.5px]">
         {firstTime ? "A host set up your login with a temporary password. Choose your own now; only you will know it." : "Choose a new password. You will stay signed in on this device only."}
       </p>
