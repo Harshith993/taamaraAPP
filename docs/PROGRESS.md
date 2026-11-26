@@ -104,6 +104,8 @@ All of this is on the branch `claude/gallant-dirac-mw3e53`, one commit per piece
 
 Tests: 338 automated tests in 27 files (`npm test`) and 19 browser check scripts with 230+ checks, run against a production build on a fresh demo database: `smoke` 23, `bookings` 9, `approvals`, `vendor-flow` 15, `proof` 12, `crew-day` 13, `invoices` 8, `planning` 8, `directory` 10, `docs-calendar` 9, `notifications` 6, `finance` 12, `expenses` 5, `self-service` 5, `budget` 4, `settlement` 13, `client-invoices` 18, `messages` 13, `security` 8. Run each with `node tests/e2e/<name>.cjs <screenshot-folder>` while the app runs on :3000 with the demo seed.
 
+Dependency audit (26 Nov, `npm audit --omit=dev`): 3 high and 2 moderate, from two sources. `effect` comes in through Prisma's own config tooling (`@prisma/config`), used when running migrations rather than serving pages; fix by upgrading Prisma when a patched release is out. `uuid` comes in through `exceljs`; the flaw needs uuid v3/v5/v6 with a caller-supplied buffer, which the export code doesn't use. The suggested `npm audit fix --force` would downgrade exceljs to 3.4.0 (breaking), so it was not applied. Check again before Phase 10.
+
 Known: the attendance step of `crew-day` only passes when run between 06:00 India time and the next morning, because marking opens 6 hours before the seeded shift (12:00); run at 01:30 it fails for that reason only. The `pg` driver prints a deprecation warning from inside Prisma's own query engine during some transactions. Our own code no longer overlaps queries in transactions (`inSequence`). Check Prisma's adapter before upgrading to `pg` 9.
 
 ## Next up
