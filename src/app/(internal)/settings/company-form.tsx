@@ -54,7 +54,7 @@ export function CompanyForm({ initial }: { initial: CompanyDetails }) {
         <Field label="Invoice number prefix" name="invoicePrefix" defaultValue={initial.invoicePrefix} error={fe.invoicePrefix} hint="Invoices are numbered like TT-26-27-0001, one series per financial year." />
       </div>
       <div className="flex flex-col gap-1">
-        <label htmlFor="f-bankDetails" className="label-mono text-[12px]">
+        <label htmlFor="f-bankDetails" className="text-[13px] font-medium text-ink">
           Bank details printed on invoices
         </label>
         <textarea id="f-bankDetails" name="bankDetails" rows={3} defaultValue={initial.bankDetails ?? ""} placeholder="Bank, account name, account number, IFSC, UPI ID" className="rounded-xl border border-line bg-paper px-3 py-2 text-[15px]" />

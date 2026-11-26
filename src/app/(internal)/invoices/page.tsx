@@ -31,9 +31,9 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
         <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">Vendor invoices</h1>
         <p className="mt-1 text-[15px] text-ink-quiet">Check each invoice against its work order and the approved proof. Verified invoices are ready for payment.</p>
       </div>
-      <nav aria-label="Filter invoices" className="flex flex-wrap self-start border border-line font-mono text-[12.5px] font-semibold tracking-[0.06em] uppercase">
+      <nav aria-label="Filter invoices" className="flex w-fit max-w-full flex-wrap self-start gap-1 rounded-full border border-line bg-ground p-1 text-[13.5px] font-medium">
         {STATES.map((s) => (
-          <Link key={s.key} href={`/invoices?state=${s.key}`} aria-current={s.key === state ? "page" : undefined} className={`flex min-h-10 items-center px-3.5 no-underline ${s.key === state ? "bg-ink text-[#F6EFE0]" : "text-ink hover:bg-paper"}`}>
+          <Link key={s.key} href={`/invoices?state=${s.key}`} aria-current={s.key === state ? "page" : undefined} className={`flex min-h-9 items-center rounded-full px-3.5 no-underline transition ${s.key === state ? "bg-white text-ink shadow-[var(--shadow-card)]" : "text-ink-quiet hover:text-ink"}`}>
             {s.label}
           </Link>
         ))}

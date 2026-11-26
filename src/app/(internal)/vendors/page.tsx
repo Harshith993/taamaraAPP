@@ -39,7 +39,7 @@ export default async function VendorsPage({ searchParams }: { searchParams: Prom
       <form className="flex flex-wrap items-center gap-2" action="/vendors">
         <input name="q" defaultValue={sp.q} placeholder="Search name, phone or service" aria-label="Search vendors" className="min-h-11 min-w-[240px] flex-1 rounded-xl border border-line bg-paper px-3 text-[15px]" />
         {dept && <input type="hidden" name="dept" value={dept} />}
-        <button type="submit" className="min-h-11 rounded-xl border border-line px-4 font-mono text-[12.5px] font-semibold uppercase">
+        <button type="submit" className="group inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-line bg-white px-5 text-[14px] font-semibold text-ink no-underline shadow-[0_1px_2px_rgb(22_20_31/0.05)] transition hover:-translate-y-px hover:bg-ground">
           Search
         </button>
       </form>

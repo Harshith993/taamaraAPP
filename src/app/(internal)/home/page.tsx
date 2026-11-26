@@ -148,7 +148,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
 
         <div className="flex min-w-0 flex-[1_1_340px] flex-col gap-4">
           {can(actor, "approvals.decide") && (
-            <Panel title={`Approvals waiting · ${approvals.length}`} action={approvals.length ? <Link href="/approvals" className="label-mono text-[11.5px] no-underline">Open →</Link> : undefined}>
+            <Panel title={`Approvals waiting · ${approvals.length}`} action={approvals.length ? <Link href="/approvals" className="group inline-flex items-center gap-1 text-[13.5px] font-semibold text-plum no-underline">Open <span aria-hidden="true" className="inline-block transition-transform duration-200 group-hover:translate-x-1">→</span></Link> : undefined}>
               {approvals.length === 0 ? (
                 <EmptyState title="Nothing waiting" />
               ) : (

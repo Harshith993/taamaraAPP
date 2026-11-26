@@ -104,7 +104,7 @@ export async function MessagesHome({ actor }: { actor: Actor }) {
                 <Link href={`${base}/${c.id}`} className="grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3.5 py-2.5 text-ink no-underline hover:bg-ground">
                   <span className="flex min-w-0 flex-col leading-tight">
                     <span className={`truncate ${c.unread ? "font-bold" : "font-semibold"}`}>
-                      <span className="label-mono mr-1.5 text-[10.5px] text-plum">{KIND_LABEL[c.type]}</span>
+                      <span className={`mr-1.5 inline-flex rounded-full px-2 py-px align-[1px] text-[11px] font-semibold ${c.type === "VENDOR_THREAD" ? "bg-pastel-orange text-[#c2410c]" : c.type === "CREW" ? "bg-pastel-sky text-[#0369a1]" : "bg-pastel-violet text-[#6d28d9]"}`}>{KIND_LABEL[c.type]}</span>
                       {c.name}
                     </span>
                     <span className="truncate text-[13px] text-ink-quiet">{c.last ? `${c.last.mine ? "You" : c.last.from ?? ""}: ${c.last.body}` : "No messages yet"}</span>
@@ -112,7 +112,7 @@ export async function MessagesHome({ actor }: { actor: Actor }) {
                   <span className="flex flex-col items-end gap-1">
                     {c.last && <span className="label-mono text-[11px] text-ink-quiet">{when(c.last.at)}</span>}
                     {c.unread > 0 && (
-                      <span className="min-w-6 bg-look px-1.5 text-center font-mono text-[11.5px] font-bold" aria-label={`${c.unread} unread`}>
+                      <span className="min-w-6 rounded-full bg-[#f43f5e] px-2 text-center text-[11.5px] font-bold text-white" aria-label={`${c.unread} unread`}>
                         {c.unread}
                       </span>
                     )}
@@ -159,17 +159,15 @@ export async function ThreadView({ actor, channelId }: { actor: Actor; channelId
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Link href={base} className="label-mono text-[12px]">
+        <Link href={base} className="group inline-flex w-fit items-center gap-1 text-[13.5px] font-medium text-ink-quiet no-underline hover:text-ink">
           ← All messages
         </Link>
         {t.event && actor.accountType === "INTERNAL" && (
-          <Link href={`/bookings/${t.event.id}`} className="label-mono text-[12px]">
-            Open booking →
-          </Link>
+          <Link href={`/bookings/${t.event.id}`} className="group inline-flex items-center gap-1 text-[13.5px] font-semibold text-plum no-underline">Open booking <span aria-hidden="true" className="inline-block transition-transform duration-200 group-hover:translate-x-1">→</span></Link>
         )}
       </div>
       <section aria-label={t.name} className="flex flex-col rounded-2xl shadow-[var(--shadow-card)] border border-line bg-paper">
-        <h1 className="border-b border-line px-3.5 py-2.5 font-mono text-[13px] font-semibold tracking-[0.08em] uppercase">
+        <h1 className="border-b border-line px-4 py-3 font-condensed text-[17px] font-semibold">
           <span className="text-plum">{KIND_LABEL[t.type]}</span> · {t.name}
         </h1>
         <LiveThread channelId={t.id} />

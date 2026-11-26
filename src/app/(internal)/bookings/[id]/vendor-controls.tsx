@@ -122,7 +122,7 @@ export function InviteVendorForm({
         />
       </div>
       <fieldset className="flex flex-col gap-1">
-        <legend className="label-mono mb-1 text-[12px]">
+        <legend className="mb-1 text-[13px] font-medium text-ink">
           For which functions
         </legend>
         <div className="flex flex-wrap gap-2">

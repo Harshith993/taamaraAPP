@@ -51,9 +51,9 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
           {toRepay.length} approved expense{toRepay.length === 1 ? "" : "s"} to repay: {formatINR(toRepay.reduce((s, e) => s + e.amount, 0))}
         </p>
       )}
-      <nav aria-label="Filter expenses" className="flex flex-wrap self-start border border-line font-mono text-[12.5px] font-semibold tracking-[0.06em] uppercase">
+      <nav aria-label="Filter expenses" className="flex w-fit max-w-full flex-wrap self-start gap-1 rounded-full border border-line bg-ground p-1 text-[13.5px] font-medium">
         {STATES.map((s) => (
-          <Link key={s.key} href={`/expenses?state=${s.key}`} aria-current={s.key === state ? "page" : undefined} className={`flex min-h-10 items-center px-3.5 no-underline ${s.key === state ? "bg-ink text-[#F6EFE0]" : "text-ink hover:bg-paper"}`}>
+          <Link key={s.key} href={`/expenses?state=${s.key}`} aria-current={s.key === state ? "page" : undefined} className={`flex min-h-9 items-center rounded-full px-3.5 no-underline transition ${s.key === state ? "bg-white text-ink shadow-[var(--shadow-card)]" : "text-ink-quiet hover:text-ink"}`}>
             {s.label}
           </Link>
         ))}

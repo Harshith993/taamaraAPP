@@ -336,7 +336,7 @@ export function DoneToggle({ itemId, done, night = false }: { itemId: string; do
         aria-pressed={done}
         disabled={pending}
         onClick={() => run(() => setScheduleDoneAction(itemId, !done))}
-        className={`min-h-11 min-w-11 rounded-xl border px-2.5 font-mono text-[11.5px] font-semibold uppercase ${done ? "border-ok bg-ok text-ink" : night ? "border-night-rule text-night-text" : "border-line text-ink"}`}
+        className={`min-h-11 min-w-11 rounded-full border px-3.5 text-[13px] font-semibold transition ${done ? "border-ok bg-ok text-ink" : night ? "border-night-rule text-night-text" : "border-line text-ink"}`}
       >
         {done ? "✓ Done" : "Done?"}
       </button>

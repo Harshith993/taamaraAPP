@@ -19,8 +19,8 @@ export function SwitchesForm({ initial, labels }: { initial: CompanySwitches; la
         <span className="text-[13px] text-ink-quiet">{labels[k].help}</span>
       </span>
       <span className="flex items-center gap-2">
-        <span className="font-mono text-[11.5px] font-semibold uppercase">{v[k] ? "On" : "Off"}</span>
-        <input type="checkbox" role="switch" className="h-6 w-6 accent-plum" checked={v[k]} onChange={(e) => (setV({ ...v, [k]: e.target.checked }), setResult(null))} />
+        <span className={`text-[12.5px] font-semibold ${v[k] ? "text-[#15803d]" : "text-ink-quiet"}`}>{v[k] ? "On" : "Off"}</span>
+        <input type="checkbox" role="switch" className="relative h-7 w-12 shrink-0 cursor-pointer appearance-none rounded-full bg-[#e7e5ef] shadow-[inset_0_1px_2px_rgb(22_20_31/0.12)] transition-colors duration-200 before:absolute before:top-1 before:left-1 before:size-5 before:rounded-full before:bg-white before:shadow-[0_1px_3px_rgb(22_20_31/0.3)] before:transition-transform before:duration-200 before:content-[''] checked:bg-[#22c55e] checked:before:translate-x-5" checked={v[k]} onChange={(e) => (setV({ ...v, [k]: e.target.checked }), setResult(null))} />
       </span>
     </label>
   ));

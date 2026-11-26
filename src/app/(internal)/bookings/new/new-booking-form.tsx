@@ -64,7 +64,7 @@ export function NewBookingForm({ categories, clients }: { categories: { id: stri
           <SelectField label="Status" name="status" options={[{ value: "TENTATIVE", label: "Tentative" }, { value: "CONFIRMED", label: "Confirmed" }]} />
           <Field label="Expected guests" name="expectedGuests" type="number" min={0} inputMode="numeric" />
           <div className="flex flex-col gap-1 sm:col-span-2 lg:col-span-3">
-            <label htmlFor="f-description" className="label-mono text-[12px]">
+            <label htmlFor="f-description" className="text-[13px] font-medium text-ink">
               Notes (optional)
             </label>
             <textarea id="f-description" name="description" rows={2} className="rounded-xl border border-line bg-paper px-3 py-2 text-[15px]" placeholder="Theme, family wishes, anything the team should know" />

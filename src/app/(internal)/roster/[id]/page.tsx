@@ -31,7 +31,7 @@ export default async function WorkerProfile({ params }: { params: Promise<{ id: 
 
   return (
     <div className="flex flex-col gap-4">
-      <Link href="/roster" className="label-mono text-[12px] no-underline">
+      <Link href="/roster" className="group inline-flex w-fit items-center gap-1 text-[13.5px] font-medium text-ink-quiet no-underline hover:text-ink">
         ← Crew
       </Link>
       <div className="flex flex-wrap items-end justify-between gap-3">

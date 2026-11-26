@@ -32,14 +32,14 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
             {[...cal.days.values()].flat().length} functions on {busyDays.length} days{actor.grants.get("bookings.view") === "ASSIGNED" ? " · your bookings" : ""}
           </p>
         </div>
-        <nav aria-label="Months" className="flex border border-line font-mono text-[12.5px] font-semibold tracking-[0.06em] uppercase">
-          <Link href={`/calendar?m=${cal.prev}`} className="flex min-h-10 items-center px-3.5 no-underline hover:bg-paper">
+        <nav aria-label="Months" className="flex w-fit max-w-full flex-wrap gap-1 rounded-full border border-line bg-ground p-1 text-[13.5px] font-medium">
+          <Link href={`/calendar?m=${cal.prev}`} className="group flex min-h-9 items-center gap-1 rounded-full px-3.5 text-ink no-underline transition hover:bg-white hover:shadow-[var(--shadow-card)]">
             ← Prev
           </Link>
-          <Link href="/calendar" className="flex min-h-10 items-center border-x border-line px-3.5 no-underline hover:bg-paper">
+          <Link href="/calendar" className="flex min-h-9 items-center rounded-full bg-white px-3.5 font-semibold text-ink no-underline shadow-[var(--shadow-card)]">
             Today
           </Link>
-          <Link href={`/calendar?m=${cal.next}`} className="flex min-h-10 items-center px-3.5 no-underline hover:bg-paper">
+          <Link href={`/calendar?m=${cal.next}`} className="group flex min-h-9 items-center gap-1 rounded-full px-3.5 text-ink no-underline transition hover:bg-white hover:shadow-[var(--shadow-card)]">
             Next →
           </Link>
         </nav>

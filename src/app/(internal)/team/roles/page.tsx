@@ -17,7 +17,7 @@ export default async function RolesPage() {
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">WHAT EACH ROLE CAN DO</h1>
+          <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">What each role can do</h1>
           <p className="mt-1 max-w-prose text-[15px] text-ink-quiet">
             &ldquo;Their bookings&rdquo; means only the bookings a person is assigned to. Changes apply the next time they open a page, and every change is kept in the audit log.
           </p>

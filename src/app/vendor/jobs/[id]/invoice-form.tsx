@@ -50,7 +50,7 @@ export function InvoiceForm({ jobId, left, defaultGstRate, today }: { jobId: str
         <Field label="Invoice date" name="invoiceDate" type="date" defaultValue={today} max={today} error={fe.invoiceDate} />
         <Field label="Amount before GST ₹" name="taxable" inputMode="decimal" value={taxable} onChange={(e) => setTaxable(e.target.value)} error={fe.taxableAmount} hint={`Up to ${inr(left)} left on the work order, with GST`} />
         <div className="flex flex-col gap-1">
-          <label htmlFor="inv-gst" className="label-mono text-[12px]">
+          <label htmlFor="inv-gst" className="text-[13px] font-medium text-ink">
             GST
           </label>
           <span className="grid grid-cols-[84px_minmax(0,1fr)] gap-2">

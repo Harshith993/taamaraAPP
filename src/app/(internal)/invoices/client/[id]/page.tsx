@@ -30,7 +30,7 @@ export default async function ClientInvoicePage({ params }: { params: Promise<{ 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <Link href={`/bookings/${inv.event.id}?tab=money`} className="label-mono text-[12px]">
+        <Link href={`/bookings/${inv.event.id}?tab=money`} className="group inline-flex w-fit items-center gap-1 text-[13.5px] font-medium text-ink-quiet no-underline hover:text-ink">
           ← {inv.event.name}
         </Link>
         <PrintButton />
@@ -38,7 +38,7 @@ export default async function ClientInvoicePage({ params }: { params: Promise<{ 
 
       <article aria-label={title} className="relative mx-auto w-full max-w-[860px] border border-line bg-white p-6 text-[13px] text-black sm:p-8 print:max-w-none print:border-0 print:p-0">
         {inv.status === "CANCELLED" && (
-          <p role="status" className="mb-3 border-2 border-now px-3 py-2 font-mono text-[12px] font-bold text-now uppercase">
+          <p role="status" className="mb-3 rounded-xl border border-[#fecdd3] bg-pastel-rose px-3 py-2 text-[13px] font-bold text-[#be123c]">
             Cancelled{inv.cancelReason ? `: ${inv.cancelReason}` : ""}
           </p>
         )}

@@ -197,7 +197,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
               <span className="label-mono text-[12px]">To</span>
               <input type="date" name="to" defaultValue={today} className="min-h-11 rounded-xl border border-line bg-paper px-2.5 text-[15px]" />
             </label>
-            <button type="submit" className="min-h-11 rounded-xl border border-line px-4 font-mono text-[12.5px] font-semibold uppercase">
+            <button type="submit" className="group inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-line bg-white px-5 text-[14px] font-semibold text-ink no-underline shadow-[0_1px_2px_rgb(22_20_31/0.05)] transition hover:-translate-y-px hover:bg-ground">
               Download Excel
             </button>
           </form>

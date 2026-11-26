@@ -148,7 +148,7 @@ export function QuoteForm({
               error={fe[`items.${i}.rate`]}
             />
             <div className="flex flex-col gap-1">
-              <label htmlFor={`g-${l.key}`} className="label-mono text-[12px]">
+              <label htmlFor={`g-${l.key}`} className="text-[13px] font-medium text-ink">
                 GST
               </label>
               <select
@@ -215,7 +215,7 @@ export function QuoteForm({
             error={fe.validUntil}
           />
           <div className="flex flex-col gap-1">
-            <label htmlFor="q-notes" className="label-mono text-[12px]">
+            <label htmlFor="q-notes" className="text-[13px] font-medium text-ink">
               Notes (optional)
             </label>
             <textarea

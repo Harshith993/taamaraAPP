@@ -32,7 +32,7 @@ const FORM = "flex flex-col gap-3 rounded-2xl shadow-[var(--shadow-card)] border
 function Chips({ name, options, selected, onChange, error }: { name: string; options: { id: string; name: string }[]; selected: string[]; onChange: (ids: string[]) => void; error?: string }) {
   return (
     <fieldset className="flex flex-col gap-1">
-      <legend className="label-mono mb-1 text-[12px]">{name}</legend>
+      <legend className="mb-1 text-[13px] font-medium text-ink">{name}</legend>
       <div className="flex flex-wrap gap-1.5">
         {options.map((o) => {
           const on = selected.includes(o.id);

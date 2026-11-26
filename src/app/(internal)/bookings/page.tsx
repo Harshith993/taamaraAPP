@@ -27,16 +27,16 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">BOOKINGS</h1>
+          <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">Bookings</h1>
           <p className="mt-1 text-[15px] text-ink-quiet">{actor.grants.get("bookings.view") === "ASSIGNED" ? "Bookings you are assigned to." : "Every booking."}</p>
         </div>
         {can(actor, "bookings.create") && <ButtonLink href="/bookings/new">+ New booking</ButtonLink>}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <nav aria-label="Filter bookings" className="flex border border-line font-mono text-[12.5px] font-semibold tracking-[0.06em] uppercase">
+        <nav aria-label="Filter bookings" className="flex w-fit max-w-full flex-wrap gap-1 rounded-full border border-line bg-ground p-1 text-[13.5px] font-medium">
           {RANGES.map((r) => (
-            <Link key={r.key} href={`/bookings?range=${r.key}${sp.q ? `&q=${encodeURIComponent(sp.q)}` : ""}`} aria-current={r.key === range ? "page" : undefined} className={`flex min-h-10 items-center px-3.5 no-underline ${r.key === range ? "bg-ink text-[#F6EFE0]" : "text-ink hover:bg-paper"}`}>
+            <Link key={r.key} href={`/bookings?range=${r.key}${sp.q ? `&q=${encodeURIComponent(sp.q)}` : ""}`} aria-current={r.key === range ? "page" : undefined} className={`flex min-h-9 items-center rounded-full px-3.5 no-underline transition ${r.key === range ? "bg-white text-ink shadow-[var(--shadow-card)]" : "text-ink-quiet hover:text-ink"}`}>
               {r.label}
             </Link>
           ))}
@@ -47,7 +47,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
             Search bookings
           </label>
           <input id="q" name="q" defaultValue={sp.q} placeholder="Name, code or function" className="min-h-11 w-60 rounded-xl border border-line bg-paper px-3 text-[14.5px]" />
-          <button type="submit" className="min-h-11 rounded-xl border border-line px-3 font-mono text-[12px] font-semibold uppercase">
+          <button type="submit" className="group inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-line bg-white px-5 text-[14px] font-semibold text-ink no-underline shadow-[0_1px_2px_rgb(22_20_31/0.05)] transition hover:-translate-y-px hover:bg-ground">
             Search
           </button>
         </form>

@@ -105,7 +105,7 @@ export default async function BookingPage({
         <div className="flex min-w-0 flex-col gap-1">
           <Link
             href="/bookings"
-            className="label-mono text-[12px] no-underline"
+            className="group inline-flex w-fit items-center gap-1 text-[13.5px] font-medium text-ink-quiet no-underline hover:text-ink"
           >
             ← Bookings
           </Link>
@@ -662,17 +662,17 @@ async function Vendors({ actor, eventId }: { actor: Actor; eventId: string }) {
                         <span
                           role="img"
                           aria-label={`Stage ${step} of ${VENDOR_STAGES.length}`}
-                          className="grid w-36 grid-cols-6 gap-0.5"
+                          className="grid w-36 grid-cols-6 gap-1"
                         >
                           {VENDOR_STAGES.map((st, i) => (
                             <span
                               key={st}
-                              className={`h-1.5 ${i < step ? "bg-ink" : "bg-rule-soft"}`}
+                              className={`h-1.5 rounded-full ${i < step ? "bg-[#a78bfa]" : "bg-rule-soft"}`}
                             />
                           ))}
                         </span>
                         <span
-                          className={`font-mono text-[11px] font-semibold uppercase ${needsYou ? "text-plum" : ""}`}
+                          className={`text-[12.5px] font-semibold ${needsYou ? "text-plum" : ""}`}
                         >
                           {VENDOR_STAGE_WORDS[r.status] ?? r.status}
                         </span>
@@ -707,7 +707,7 @@ async function Vendors({ actor, eventId }: { actor: Actor; eventId: string }) {
                     {staff && (
                       <td className="px-3.5 py-2.5 text-right">
                         {can(actor, "chat.direct") && !["DECLINED", "CANCELLED"].includes(r.status) && (
-                          <a href={`/api/v1/channels/open?type=VENDOR_THREAD&eventId=${eventId}&vendorId=${r.vendorId}`} className="label-mono mr-2 inline-flex min-h-9 items-center text-[11.5px] font-semibold">
+                          <a href={`/api/v1/channels/open?type=VENDOR_THREAD&eventId=${eventId}&vendorId=${r.vendorId}`} className="mr-2 inline-flex min-h-9 items-center gap-1 rounded-full bg-pastel-sky px-3 text-[13px] font-semibold text-[#0369a1] no-underline transition hover:-translate-y-px">
                             Message
                           </a>
                         )}

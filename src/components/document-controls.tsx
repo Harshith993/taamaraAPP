@@ -77,7 +77,7 @@ export function AddDocumentForm({ eventId, vendors, ownerOnly }: { eventId: stri
       </div>
       {visibility === "SHARED" && (
         <fieldset className="flex flex-col gap-1">
-          <legend className="label-mono mb-1 text-[12px]">Share with</legend>
+          <legend className="mb-1 text-[13px] font-medium text-ink">Share with</legend>
           <div className="flex flex-wrap gap-1.5">
             {vendors.map((v) => {
               const on = shareVendorIds.includes(v.id);

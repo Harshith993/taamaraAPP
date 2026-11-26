@@ -47,9 +47,9 @@ export default async function ProofPage({ searchParams }: { searchParams: Promis
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <nav aria-label="Filter by state" className="flex flex-wrap border border-line font-mono text-[12.5px] font-semibold tracking-[0.06em] uppercase">
+        <nav aria-label="Filter by state" className="flex w-fit max-w-full flex-wrap gap-1 rounded-full border border-line bg-ground p-1 text-[13.5px] font-medium">
           {STATES.map((s) => (
-            <Link key={s.key} href={href(s.key, booking?.id ?? null)} aria-current={s.key === state ? "page" : undefined} className={`flex min-h-10 items-center px-3.5 no-underline ${s.key === state ? "bg-ink text-[#F6EFE0]" : "text-ink hover:bg-paper"}`}>
+            <Link key={s.key} href={href(s.key, booking?.id ?? null)} aria-current={s.key === state ? "page" : undefined} className={`flex min-h-9 items-center rounded-full px-3.5 no-underline transition ${s.key === state ? "bg-white text-ink shadow-[var(--shadow-card)]" : "text-ink-quiet hover:text-ink"}`}>
               {s.label}
             </Link>
           ))}
@@ -76,7 +76,7 @@ export default async function ProofPage({ searchParams }: { searchParams: Promis
         </Panel>
       ) : (
         [...groups.entries()].map(([id, g]) => (
-          <Panel key={id} title={`${g.name} · ${g.items.length}`} action={<Link href={`/bookings/${id}?tab=proof`} className="label-mono text-[11.5px] no-underline">Booking →</Link>}>
+          <Panel key={id} title={`${g.name} · ${g.items.length}`} action={<Link href={`/bookings/${id}?tab=proof`} className="group inline-flex items-center gap-1 text-[13.5px] font-semibold text-plum no-underline">Booking <span aria-hidden="true" className="inline-block transition-transform duration-200 group-hover:translate-x-1">→</span></Link>}>
             <div className="p-3.5">
               <ProofGrid items={g.items} />
             </div>

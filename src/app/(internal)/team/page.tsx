@@ -24,7 +24,7 @@ export default async function TeamPage() {
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">TEAM</h1>
+          <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">Team</h1>
           <p className="mt-1 text-[15px] text-ink-quiet">Everyone who can sign in. Only hosts see this page.</p>
         </div>
         <ButtonLink href="/team/roles" variant="secondary">

@@ -43,7 +43,7 @@ export function AttendanceButtons({ shiftId, current, disabledReason, night = fa
               aria-pressed={on}
               disabled={pending || Boolean(disabledReason)}
               onClick={() => set(m.key)}
-              className={`min-h-11 rounded-xl border px-1.5 font-mono text-[11.5px] font-semibold tracking-[0.04em] uppercase disabled:opacity-50 ${
+              className={`min-h-11 rounded-full border px-2 text-[13px] font-semibold transition disabled:opacity-50 ${
                 on ? (night ? m.onNight : m.on) : night ? "border-night-rule text-night-text" : "border-line text-ink"
               }`}
             >
@@ -160,7 +160,7 @@ export function AddCrewForm({ eventId, workers, functions, seesPay }: { eventId:
         </p>
       )}
       <fieldset className="flex flex-col gap-1.5">
-        <legend className="label-mono mb-1 text-[12px]">Shifts · reporting time</legend>
+        <legend className="mb-1 text-[13px] font-medium text-ink">Shifts · reporting time</legend>
         {functions.map((fn) => {
           const s = shifts[fn.id];
           return (

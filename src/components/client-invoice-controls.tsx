@@ -107,7 +107,7 @@ export function NewInvoiceForm({ eventId, charges }: { eventId: string; charges:
             ]}
           />
           <fieldset className="flex flex-col gap-1.5">
-            <legend className="label-mono mb-1 text-[12px]">Charges to bill</legend>
+            <legend className="mb-1 text-[13px] font-medium text-ink">Charges to bill</legend>
             {open.map((c) => (
               <div key={c.id} className="grid grid-cols-[auto_minmax(0,1fr)_8rem] items-center gap-2">
                 <input

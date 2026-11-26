@@ -190,7 +190,7 @@ export function AnnouncementForm({ audiences, bookings }: { audiences: { value: 
       </div>
       <Field label="Title" name="title" placeholder="Sangeet: report at gate 2" error={fe.title} maxLength={120} />
       <div className="flex flex-col gap-1">
-        <label htmlFor="f-ann-body" className="label-mono text-[12px]">
+        <label htmlFor="f-ann-body" className="text-[13px] font-medium text-ink">
           Message
         </label>
         <textarea id="f-ann-body" name="body" rows={3} maxLength={2000} className="rounded-xl border border-line bg-paper px-3 py-2 text-[15px]" placeholder="Crew please report by 17:30. Wear the black T-shirt." />

@@ -30,7 +30,7 @@ export default async function VendorProfile({ params }: { params: Promise<{ id: 
 
   return (
     <div className="flex flex-col gap-4">
-      <Link href="/vendors" className="label-mono text-[12px] no-underline">
+      <Link href="/vendors" className="group inline-flex w-fit items-center gap-1 text-[13.5px] font-medium text-ink-quiet no-underline hover:text-ink">
         ← Vendors
       </Link>
       <div className="flex flex-wrap items-end justify-between gap-3">

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { MessageCircle } from "lucide-react";
 import { PortalShell } from "@/components/portal-shell";
 import { Notice, Panel, Tag } from "@/components/ui";
 import { db } from "@/lib/db";
@@ -162,8 +163,8 @@ export default async function VendorJobPage({
               {job.event.name}
             </span>
             {!["DECLINED", "CANCELLED"].includes(job.status) && (
-              <a href={`/api/v1/channels/open?type=VENDOR_THREAD&eventId=${job.event.id}&vendorId=${job.vendorId}`} className="label-mono ml-auto inline-flex min-h-11 items-center border border-line px-3 text-[11.5px] font-semibold no-underline">
-                Message the team
+              <a href={`/api/v1/channels/open?type=VENDOR_THREAD&eventId=${job.event.id}&vendorId=${job.vendorId}`} className="group ml-auto inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-white px-4 text-[13.5px] font-semibold text-ink no-underline shadow-[var(--shadow-card)] transition hover:-translate-y-px">
+                <MessageCircle aria-hidden className="size-4 text-[#0284c7]" /> Message the team
               </a>
             )}
           </span>
