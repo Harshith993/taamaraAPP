@@ -22,6 +22,9 @@ export default async function InternalLayout({ children }: { children: React.Rea
   if (can(actor, "finance.company")) items.push({ href: "/money", label: "Money", badge: await db.payment.count({ where: { direction: "OUT", status: "APPROVED" } }) });
   if (can(actor, "payments.prepare")) items.push({ href: "/invoices", label: "Invoices", badge: await invoicesToCheckCount(db, actor) });
   if (can(actor, "expenses.record")) items.push({ href: "/expenses", label: "Expenses" });
+  // Cash advances (D57): the office sees them all; a manager or supervisor sees the menu item while they carry one.
+  if (can(actor, "payments.prepare")) items.push({ href: "/advances", label: "Advances", badge: await db.cashAdvance.count({ where: { status: "APPROVED" } }) });
+  else if (can(actor, "expenses.record") && (await db.cashAdvance.count({ where: { userId: actor.userId, status: { in: ["GIVEN", "APPROVED", "PENDING_APPROVAL"] } } }))) items.push({ href: "/advances", label: "Advances" });
   if (can(actor, "approvals.decide")) {
     items.push({ href: "/approvals", label: "Approvals", badge: await db.approvalRequest.count({ where: { state: "PENDING" } }) });
   }

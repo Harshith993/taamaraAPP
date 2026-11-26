@@ -8,7 +8,7 @@ import { DecisionButtons } from "./decision-buttons";
 
 export const metadata: Metadata = { title: "Approvals" };
 
-const KIND_LABEL = { quote: "Vendor quote", payment: "Payment", crew: "Crew pay extra", expense: "Expense", budget: "Booking budget", missing: "Needs attention" } as const;
+const KIND_LABEL = { quote: "Vendor quote", payment: "Payment", crew: "Crew pay extra", expense: "Expense", budget: "Booking budget", advance: "Cash advance", missing: "Needs attention" } as const;
 
 export default async function ApprovalsPage() {
   const actor = await requirePermission("approvals.decide");
@@ -18,7 +18,7 @@ export default async function ApprovalsPage() {
     <div className="flex flex-col gap-5">
       <div>
         <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">Approvals · {items.length}</h1>
-        <p className="mt-1 text-[15px] text-ink-quiet">Quotes, payments, expenses and crew extras waiting for a host. Everything you decide is kept in the audit log.</p>
+        <p className="mt-1 text-[15px] text-ink-quiet">Quotes, payments, expenses, cash advances and crew extras waiting for a host. Everything you decide is kept in the audit log.</p>
       </div>
       {items.length === 0 ? (
         <Panel>
@@ -41,8 +41,10 @@ function ApprovalCard({ item }: { item: PendingApproval }) {
       ? "You prepared this payment, so the other host needs to approve it."
       : item.kind === "expense" && item.selfPrepared
         ? "You recorded this expense, so the other host needs to approve it."
+        : item.kind === "advance" && item.selfPrepared
+          ? "You prepared this advance, so the other host needs to approve it."
         : item.kind === "expense" && !item.receipt
-          ? "No receipt attached (small amount)."
+          ? "No receipt attached (recorded before every expense needed one)."
       : item.kind === "payment" && item.isFinal && item.approvedProof === 0
         ? "Final payment: no approved proof of this vendor's work yet."
         : null;
@@ -170,7 +172,7 @@ function ApprovalCard({ item }: { item: PendingApproval }) {
             <span className="text-ink-quiet">Spent on</span>
             <span>{formatDate(item.spentOn, { timeZone: "UTC", day: "numeric", month: "short" })}</span>
             <span className="text-ink-quiet">Paid by</span>
-            <span>{item.paidVia === "OWN_POCKET" ? `${item.requestedBy ?? "them"}, to be repaid` : "The company"}</span>
+            <span>{item.paidVia === "OWN_POCKET" ? `${item.requestedBy ?? "them"}, to be repaid` : item.paidVia === "CASH_ADVANCE" ? "Their cash advance" : "The company"}</span>
             <span className="text-ink-quiet">Receipt</span>
             <span>
               {item.receipt?.originalUrl ? (
@@ -181,6 +183,19 @@ function ApprovalCard({ item }: { item: PendingApproval }) {
                 "None"
               )}
             </span>
+          </div>
+        )}
+
+        {item.kind === "advance" && (
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[13.5px]">
+            <span className="text-ink-quiet">Carried by</span>
+            <span className="font-semibold">{item.holder}</span>
+            <span className="text-ink-quiet">For</span>
+            <span>{item.purpose}</span>
+            <span className="text-ink-quiet">Handed over as</span>
+            <span>{item.method === "CASH" ? "Cash" : item.method}</span>
+            <span className="text-ink-quiet">Already holding</span>
+            <span>{item.openAdvances ? `${formatINR(item.alreadyHolding)} in ${item.openAdvances} open advance${item.openAdvances === 1 ? "" : "s"}` : "Nothing"}</span>
           </div>
         )}
 

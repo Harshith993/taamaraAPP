@@ -109,6 +109,14 @@ export function paymentWhere(actor: Actor, permission: PermissionKey = "payments
   return { direction: "OUT", event: { members: { some: { userId: actor.userId } } } };
 }
 
+/** Cash advances (D57): hosts and the accountant see every one; a manager or supervisor sees the ones they carry. */
+export function cashAdvanceWhere(actor: Actor): Prisma.CashAdvanceWhereInput {
+  if (actor.status !== "ACTIVE" || actor.accountType !== "INTERNAL") return NOTHING;
+  if (scopeOf(actor, "payments.prepare") === "ALL" || scopeOf(actor, "finance.company") === "ALL") return {};
+  if (can(actor, "expenses.record")) return { userId: actor.userId };
+  return NOTHING;
+}
+
 /** Throws unless the actor can reach this booking for the permission. */
 export async function assertEventAccess(
   db: { event: { count(args: { where: Prisma.EventWhereInput }): Promise<number> } },

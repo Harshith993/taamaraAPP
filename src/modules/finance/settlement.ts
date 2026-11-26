@@ -11,6 +11,7 @@
  *   - every booked vendor's work is signed off, invoiced, checked and paid
  *   - every crew member on it is paid in full, with no extras waiting
  *   - no payments, expenses or other approvals are waiting, and nobody is owed for an expense
+ *   - every cash advance given for it is closed (D57)
  *
  * Settling stores the final figures on the booking and locks its money: no new charges,
  * payments, expenses, crew extras, invoices, budgets, vendor jobs or crew (database triggers).
@@ -32,7 +33,7 @@ import { BOOKED_JOB_STATUSES, bookingFigures, PAID_CREW_STATUSES, round2, type B
 const TOLERANCE = 0.5;
 
 export interface SettlementCheck {
-  key: "completed" | "client" | "vendors" | "crew" | "waiting" | "expenses" | "charged";
+  key: "completed" | "client" | "vendors" | "crew" | "waiting" | "expenses" | "charged" | "advances";
   ok: boolean;
   /** "block" stops settling; "warn" is shown but doesn't stop it. */
   level: "block" | "warn";
@@ -44,7 +45,7 @@ async function computeChecks(tx: DbTx, eventId: string) {
   const event = await tx.event.findUnique({ where: { id: eventId }, select: { id: true, name: true, code: true, status: true, settledAt: true, settledById: true, settlementSnapshot: true } });
   if (!event) throw new NotFoundError("That booking");
   const figures = (await bookingFigures(tx, [eventId])).get(eventId)!;
-  const [jobs, crew, waitingPayments, expenses, approvals] = await inSequence([
+  const [jobs, crew, waitingPayments, expenses, approvals, advances] = await inSequence([
     tx.vendorAssignment.findMany({
       where: { eventId, status: { in: [...BOOKED_JOB_STATUSES] } },
       orderBy: { createdAt: "asc" },
@@ -64,6 +65,7 @@ async function computeChecks(tx: DbTx, eventId: string) {
     tx.payment.findMany({ where: { eventId, status: { in: ["PENDING_APPROVAL", "APPROVED"] } }, select: { amount: true, status: true, direction: true } }),
     tx.expense.findMany({ where: { eventId, OR: [{ status: "SUBMITTED" }, { status: "APPROVED", paidVia: "OWN_POCKET" }] }, select: { description: true, amount: true, status: true } }),
     tx.approvalRequest.findMany({ where: { eventId, state: "PENDING", type: { in: ["QUOTATION", "BUDGET"] } }, select: { type: true, summary: true } }),
+    tx.cashAdvance.findMany({ where: { eventId, status: { in: ["PENDING_APPROVAL", "APPROVED", "GIVEN"] } }, select: { amount: true, status: true, purpose: true, user: { select: { name: true } } } }),
   ]);
   const paidOutTo = (vendorId: string) => tx.payment.aggregate({ where: { eventId, vendorId, direction: "OUT", status: "PAID" }, _sum: { amount: true } });
 
@@ -126,6 +128,14 @@ async function computeChecks(tx: DbTx, eventId: string) {
     level: "block",
     label: "Expenses are approved and repaid",
     details: expenses.map((e) => `${e.description} (${formatINR(e.amount)}): ${e.status === "SUBMITTED" ? "waiting for a host" : "not yet repaid"}.`),
+  });
+
+  checks.push({
+    key: "advances",
+    ok: advances.length === 0,
+    level: "block",
+    label: "Cash advances for it are closed",
+    details: advances.map((a) => `${a.user.name}: ${formatINR(a.amount)} for ${a.purpose} (${a.status === "GIVEN" ? "still open" : a.status === "APPROVED" ? "not handed over yet" : "waiting for a host"}).`),
   });
 
   const ready = event.status === "COMPLETED" && checks.every((c) => c.ok || c.level === "warn");

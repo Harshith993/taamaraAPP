@@ -23,6 +23,7 @@ import * as docs from "@/modules/documents/service";
 import * as planning from "@/modules/events/planning";
 import * as events from "@/modules/events/service";
 import * as workspace from "@/modules/events/workspace";
+import * as advances from "@/modules/finance/advances";
 import * as budgets from "@/modules/finance/budgets";
 import * as clientInv from "@/modules/finance/client-invoices";
 import * as expenses from "@/modules/finance/expenses";
@@ -407,6 +408,40 @@ const CASES: Case[] = [
   { name: "listRoles", deny: ownerOnly, run: (a) => roles.listRoles(testDb, a) },
   { name: "updateRoleGrants", deny: ownerOnly, run: async (a) => roles.updateRoleGrants(testDb, a, "SUPERVISOR", (await roles.listRoles(testDb, A.owner)).find((r) => r.key === "SUPERVISOR")!.grants) },
   { name: "updateSwitches", deny: ownerOnly, run: async (a) => settings.updateSwitches(testDb, a, await settings.getSwitches(testDb)) },
+  // ── Cash advances (D57)
+  { name: "giveAdvance", deny: money, allow: ["accountant"], run: (a) => advances.giveAdvance(testDb, a, { holderId: managerId, amount: 500, purpose: "Tea on site" }) },
+  {
+    name: "markAdvanceGiven",
+    deny: money,
+    allow: ["accountant"],
+    setup: async () => ({ adv: (await testDb.cashAdvance.create({ data: { userId: managerId, amount: 500, purpose: "Tea", status: "APPROVED" } })).id }),
+    run: (a, _w, x) => advances.markAdvanceGiven(testDb, a, x.adv, { method: "CASH", givenOn: day(0) }),
+  },
+  {
+    name: "closeAdvance",
+    deny: money,
+    allow: ["accountant"],
+    setup: async () => ({ adv: (await testDb.cashAdvance.create({ data: { userId: managerId, amount: 500, purpose: "Tea", status: "GIVEN", givenOn: new Date() } })).id }),
+    run: (a, _w, x) => advances.closeAdvance(testDb, a, x.adv, { returned: 500 }),
+  },
+  {
+    name: "voidAdvance",
+    deny: money,
+    allow: ["accountant"],
+    setup: async () => ({ adv: (await testDb.cashAdvance.create({ data: { userId: managerId, amount: 500, purpose: "Tea", status: "APPROVED" } })).id }),
+    run: (a, _w, x) => advances.voidAdvance(testDb, a, x.adv, "Not needed"),
+  },
+  { name: "advanceHolders", deny: money, allow: ["accountant"], run: (a) => advances.advanceHolders(testDb, a) },
+  {
+    name: "advanceBalances",
+    deny: ["otherManager", "vendor", "crew"],
+    allow: ["accountant"],
+    setup: async () => {
+      await testDb.cashAdvance.create({ data: { userId: managerId, amount: 500, purpose: "Tea", status: "GIVEN", givenOn: new Date() } });
+      return {};
+    },
+    run: async (a) => (await advances.advanceBalances(testDb, a)).people.filter((p) => p.userId === managerId),
+  },
   { name: "getCompany", deny: money, allow: ["accountant"], run: (a) => company.getCompany(testDb, a) },
   { name: "updateCompany", deny: money, allow: ["accountant"], run: async (a) => company.updateCompany(testDb, a, { legalName: (await company.readCompany(testDb)).legalName, tradeName: "Taamara Taamara" }) },
 ];
@@ -427,6 +462,9 @@ const EXEMPT: Record<string, string> = {
   listInvoices: "filtered list",
   invoicesToCheckCount: "filtered count",
   listExpenses: "filtered list",
+  listAdvances: "filtered list (cashAdvanceWhere; tests/advances.test.ts)",
+  spendableAdvances: "the holder's own advances only",
+  decideAdvance: "runs inside decideApproval, which is tested here",
   listProof: "filtered list",
   proofToCheckCount: "filtered count",
   listAnnouncements: "filtered list",

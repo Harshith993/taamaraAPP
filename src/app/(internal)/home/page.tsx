@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import { WaitingAnnouncements } from "@/components/messages";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BadgeCheck, CalendarDays, IndianRupee, MessageCircle, MoonStar, Sparkles } from "lucide-react";
+import { BadgeCheck, CalendarDays, IndianRupee, MessageCircle, MoonStar, Sparkles, Wallet } from "lucide-react";
 import { EmptyState, FeatureCard, Notice, Panel, Tag } from "@/components/ui";
 import { unreadTotal } from "@/modules/communication/chat";
 import { db } from "@/lib/db";
 import { firstName, formatCalendarDate, formatDate, formatINR, formatTime, greeting, todayAsDate, toNumber } from "@/lib/format";
 import { EVENT_STATUS_TONE } from "@/modules/events/labels";
+import { spendableAdvances } from "@/modules/finance/advances";
 import { ROLES } from "@/modules/identity/permissions";
 import { can, eventWhere, scopeOf, taskWhere } from "@/modules/identity/policy";
 import { requireActor } from "@/modules/identity/session";
@@ -59,6 +60,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
     for (const r of received) if (r.eventId) billing.get(r.eventId)!.received = toNumber(r._sum.amount);
   }
 
+  // Company cash this manager or supervisor is carrying (D57).
+  const myAdvances = can(actor, "payments.prepare") ? [] : await spendableAdvances(db, actor);
+  const cashWithMe = myAdvances.reduce((s, a) => s + a.left + a.waiting, 0);
   const bookingScope = scopeOf(actor, "bookings.view");
   const unread = await unreadTotal(db, actor);
   const toPay = can(actor, "finance.company") ? await db.payment.count({ where: { direction: "OUT", status: "APPROVED" } }) : 0;
@@ -67,6 +71,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const cards = [
     can(actor, "approvals.decide") && { href: "/approvals", icon: <BadgeCheck className="size-5" aria-hidden />, tint: "violet" as const, title: "Approvals", text: approvals.length ? "Quotes, payments and extras waiting for you." : "Nothing waiting — you're all caught up.", count: approvals.length },
     can(actor, "finance.company") && { href: "/money", icon: <IndianRupee className="size-5" aria-hidden />, tint: "green" as const, title: "Money", text: toPay ? "Approved payments to send out." : "Billing, payments and the monthly P&L.", count: toPay },
+    myAdvances.length > 0 && { href: "/advances", icon: <Wallet className="size-5" aria-hidden />, tint: "yellow" as const, title: "Company cash with you", text: `${formatINR(cashWithMe)} in ${myAdvances.length} advance${myAdvances.length === 1 ? "" : "s"}. Record spending with the bill; return the rest.`, count: formatINR(cashWithMe) },
     { href: "/messages", icon: <MessageCircle className="size-5" aria-hidden />, tint: "sky" as const, title: "Messages", text: unread ? "New messages from the team, vendors and crew." : "Team chats, vendor threads and announcements.", count: unread },
     can(actor, "bookings.view") && { href: "/calendar", icon: <CalendarDays className="size-5" aria-hidden />, tint: "pink" as const, title: "Calendar", text: nextFn ? `Next: ${nextFn.name} — ${nextFn.event}, ${formatDate(nextFn.startsAt, { weekday: "short", day: "numeric", month: "short" })}.` : "Every function this month at a glance." },
     can(actor, "eventDay.run") && { href: "/event-day", icon: <MoonStar className="size-5" aria-hidden />, tint: "orange" as const, title: "Event day", text: "Night mode for the venue: cues, crew and proof." },

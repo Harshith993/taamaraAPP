@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MarkPaid, PreparePayment } from "@/components/finance-controls";
-import { ArrowDownLeft, ArrowUpRight, Clock, HandCoins, Receipt, TrendingUp, type LucideIcon } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Clock, HandCoins, Receipt, TrendingUp, Wallet, type LucideIcon } from "lucide-react";
 import { EmptyState, IconTile, Panel, Tag, type Tint } from "@/components/ui";
 import { db } from "@/lib/db";
 import { formatCalendarDate, formatDate, formatINR, todayInIndia } from "@/lib/format";
 import { EVENT_STATUS_TONE } from "@/modules/events/labels";
 import { moneyOverview } from "@/modules/finance/overview";
+import { advanceBalances } from "@/modules/finance/advances";
 import { EXPORT_KINDS, EXPORT_LABELS } from "@/modules/finance/exports";
 import { financialYearOf, fyLabel, fyMonths, monthlyPnl, type PnlMonth } from "@/modules/finance/pnl";
 import { can } from "@/modules/identity/policy";
@@ -62,7 +63,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
   const sp = await searchParams;
   const thisFy = financialYearOf(today);
   const fy = /^\d{4}$/.test(sp.fy ?? "") && Math.abs(Number(sp.fy) - thisFy) <= 10 ? Number(sp.fy) : thisFy;
-  const [m, pnl] = await Promise.all([moneyOverview(db, actor), monthlyPnl(db, actor, fyMonths(fy))]);
+  const [m, pnl, cash] = await Promise.all([moneyOverview(db, actor), monthlyPnl(db, actor, fyMonths(fy)), advanceBalances(db, actor)]);
   const pays = can(actor, "payments.markPaid");
   const prepares = can(actor, "payments.prepare");
 
@@ -125,6 +126,38 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
             </tbody>
           </table>
         </div>
+      </Panel>
+
+      <Panel
+        title={`Cash with the team · ${formatINR(cash.held)}`}
+        action={
+          <Link href="/advances" className="label-mono inline-flex min-h-11 items-center px-2 text-[12px]">
+            Cash advances →
+          </Link>
+        }
+      >
+        {cash.people.length === 0 ? (
+          <EmptyState title="Nobody is holding company cash">Advances given to managers and supervisors appear here until they are closed.</EmptyState>
+        ) : (
+          <ul aria-label="Company cash held per person" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
+            {cash.people.map((p) => (
+              <li key={p.userId} className="flex items-center justify-between gap-3 border-b border-rule-soft px-3.5 py-2.5">
+                <span className="flex items-center gap-2.5">
+                  <IconTile tint="yellow" size="sm">
+                    <Wallet aria-hidden className="size-4" />
+                  </IconTile>
+                  <span className="flex flex-col leading-tight">
+                    <span className="font-semibold">{p.name}</span>
+                    <span className="text-[12.5px] text-ink-quiet">
+                      {p.open} open{p.toHandOver ? ` · ${formatINR(p.toHandOver)} to hand over` : ""}
+                    </span>
+                  </span>
+                </span>
+                <span className="font-mono font-semibold">{formatINR(p.held)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </Panel>
 
       <div className="flex flex-wrap items-start gap-4">

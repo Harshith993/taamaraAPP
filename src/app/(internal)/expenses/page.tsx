@@ -3,6 +3,7 @@ import Link from "next/link";
 import { EmptyState, Panel, Tag } from "@/components/ui";
 import { db } from "@/lib/db";
 import { formatCalendarDate, formatINR, todayAsDate, todayInIndia } from "@/lib/format";
+import { spendableAdvances } from "@/modules/finance/advances";
 import { listExpenses } from "@/modules/finance/expenses";
 import { can, eventWhere } from "@/modules/identity/policy";
 import { requirePermission } from "@/modules/identity/session";
@@ -20,11 +21,11 @@ const STATES = [
   { key: "REJECTED", label: "Not approved" },
 ];
 
-export default async function ExpensesPage({ searchParams }: { searchParams: Promise<{ state?: string }> }) {
+export default async function ExpensesPage({ searchParams }: { searchParams: Promise<{ state?: string; advance?: string }> }) {
   const actor = await requirePermission("expenses.record");
   const sp = await searchParams;
   const state = STATES.find((s) => s.key === sp.state)?.key ?? "all";
-  const [expenses, bookings, categories] = await Promise.all([
+  const [expenses, bookings, categories, advances] = await Promise.all([
     listExpenses(db, actor, { status: state }),
     db.event.findMany({
       where: { AND: [eventWhere(actor, "expenses.record"), { status: { notIn: ["CANCELLED", "SETTLED"] } }, { OR: [{ endDate: { gte: new Date(todayAsDate().getTime() - 30 * 86400_000) } }, { endDate: null }] }] },
@@ -33,7 +34,9 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
       take: 100,
     }),
     db.expenseCategory.findMany({ where: { group: { not: "VENDOR" } }, orderBy: { sortOrder: "asc" }, select: { id: true, name: true } }),
+    spendableAdvances(db, actor),
   ]);
+  const startAdvance = advances.find((a) => a.id === sp.advance)?.id ?? null;
   const repays = can(actor, "payments.markPaid");
   const toRepay = expenses.filter((e) => e.status === "APPROVED" && e.paidVia === "OWN_POCKET");
 
@@ -42,10 +45,10 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
       <div>
         <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">Expenses</h1>
         <p className="mt-1 text-[15px] text-ink-quiet">
-          Small spends on a booking: tea, transport, last-minute buys. Attach the bill for every expense, however small; a host approves; money from your own pocket is repaid.
+          Small spends on a booking: tea, transport, last-minute buys. Attach the bill for every expense, however small; a host approves; money from your own pocket is repaid. Spending from a cash advance comes off what is left on it.
         </p>
       </div>
-      <ExpenseForm bookings={bookings} categories={categories} allowNoBooking={actor.grants.get("expenses.record") === "ALL"} today={todayInIndia()} />
+      <ExpenseForm bookings={bookings} categories={categories} allowNoBooking={actor.grants.get("expenses.record") === "ALL"} today={todayInIndia()} advances={advances.map((a) => ({ id: a.id, label: `Cash advance: ${a.purpose} (${formatINR(a.left)} left)`, eventId: a.event?.id ?? null, left: a.left }))} startAdvance={startAdvance} />
       {repays && toRepay.length > 0 && (
         <p className="text-[14px] font-semibold text-plum">
           {toRepay.length} approved expense{toRepay.length === 1 ? "" : "s"} to repay: {formatINR(toRepay.reduce((s, e) => s + e.amount, 0))}

@@ -241,6 +241,15 @@ enum ExpenseStatus {
   REIMBURSED
 }
 
+enum CashAdvanceStatus {
+  PENDING_APPROVAL
+  APPROVED
+  GIVEN
+  CLOSED
+  REJECTED
+  VOIDED
+}
+
 enum ExpensePaidVia {
   COMPANY
   CASH_ADVANCE
@@ -253,6 +262,7 @@ enum ApprovalType {
   EXPENSE
   CREW_ADJUSTMENT
   BUDGET
+  CASH_ADVANCE
 }
 
 enum DocumentKind {
@@ -1429,19 +1439,41 @@ model Expense {
   @@map("expenses")
 }
 
+/// Company cash carried by a manager or supervisor (D57). Given → spent as expenses with bills →
+/// the rest returned or settled → closed. Never deleted; voided with a reason (database triggers).
 model CashAdvance {
-  id        String    @id @default(uuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
-  eventId   String?
-  event     Event?    @relation(fields: [eventId], references: [id], onDelete: Restrict)
-  amount    Decimal   @db.Decimal(14, 2)
-  givenOn   DateTime  @db.Date
-  settledAt DateTime?
-  note      String?
-  createdAt DateTime  @default(now())
-  expenses  Expense[]
+  id             String            @id @default(uuid())
+  /// The holder: a manager or supervisor.
+  userId         String
+  user           User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  eventId        String?
+  event          Event?            @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  amount         Decimal           @db.Decimal(14, 2)
+  purpose        String            @default("")
+  status         CashAdvanceStatus @default(PENDING_APPROVAL)
+  method         PaymentMethod     @default(CASH)
+  reference      String?
+  givenOn        DateTime?         @db.Date
+  givenById      String?
+  requestedById  String?
+  approvedById   String?
+  approvedAt     DateTime?
+  /// Cash brought back when the advance was closed.
+  returnedAmount Decimal           @default(0) @db.Decimal(14, 2)
+  /// When it was closed.
+  settledAt      DateTime?
+  closedById     String?
+  closeNote      String?
+  voidedById     String?
+  voidedAt       DateTime?
+  voidReason     String?
+  note           String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  expenses       Expense[]
 
+  @@index([userId, status])
+  @@index([eventId])
   @@map("cash_advances")
 }
 

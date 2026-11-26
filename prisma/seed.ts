@@ -385,6 +385,23 @@ async function seedDemo() {
   const lightsThread = await db.channel.create({ data: { type: "VENDOR_THREAD", eventId: wedding.id, vendorId: roshni.id, name: "Roshni Lights · Aditi & Karan", members: { create: [{ userId: priya.id }, { userId: roshniUser.id }] } } });
   await db.message.create({ data: { channelId: lightsThread.id, senderId: priya.id, body: "Can you add 4 uplighters at the entrance?" } });
 
+  // Cash advances (D57): Priya carries cash for the wedding; Ramesh's office advance is closed; one waits for a host.
+  const bill = async (name: string, uploadedById: string) =>
+    (await db.file.create({ data: { ...(await demoMedia("drapes", "photo")), filename: name, uploadedById, purpose: "DOCUMENT", status: "READY", processedAt: new Date() } })).id;
+  const priyaCash = await db.cashAdvance.create({
+    data: { userId: priya.id, eventId: wedding.id, amount: 10000, purpose: "Flowers, tea and autos for the Sangeet", status: "GIVEN", method: "CASH", givenOn: day(-1), givenById: founder.id, requestedById: founder.id, approvedById: founder.id, approvedAt: new Date() },
+  });
+  await db.expense.create({ data: { eventId: wedding.id, categoryId: await expCat("Miscellaneous"), description: "Marigold strings from the flower market", amount: 1850, spentOn: day(-1), paidVia: "CASH_ADVANCE", cashAdvanceId: priyaCash.id, receiptFileId: await bill("flower-market-bill.jpg", priya.id), status: "APPROVED", submittedById: priya.id, decidedById: founder.id, decidedAt: new Date() } });
+  const teaExp = await db.expense.create({ data: { eventId: wedding.id, categoryId: await expCat("Transport"), description: "Autos for the crew to Rambagh", amount: 640, spentOn: day(0), paidVia: "CASH_ADVANCE", cashAdvanceId: priyaCash.id, receiptFileId: await bill("auto-receipts.jpg", priya.id), submittedById: priya.id } });
+  await db.approvalRequest.create({ data: { type: "EXPENSE", entityId: teaExp.id, eventId: wedding.id, amount: 640, summary: "Priya Sharma · Autos for the crew to Rambagh · Aditi & Karan", requestedById: priya.id } });
+  const rameshOld = await db.cashAdvance.create({
+    data: { userId: ramesh.id, amount: 3000, purpose: "Office supplies and site tea", status: "GIVEN", method: "UPI", reference: "UPI-482113", givenOn: day(-14), givenById: kavita.id, requestedById: kavita.id, approvedById: founder.id, approvedAt: new Date() },
+  });
+  await db.expense.create({ data: { categoryId: await expCat("Miscellaneous"), description: "Gaffer tape, cable ties and markers", amount: 2200, spentOn: day(-13), paidVia: "CASH_ADVANCE", cashAdvanceId: rameshOld.id, receiptFileId: await bill("hardware-bill.jpg", ramesh.id), status: "APPROVED", submittedById: ramesh.id, decidedById: cofounder.id, decidedAt: new Date() } });
+  await db.cashAdvance.update({ where: { id: rameshOld.id }, data: { status: "CLOSED", returnedAmount: 800, settledAt: new Date(), closedById: kavita.id } });
+  const rameshNew = await db.cashAdvance.create({ data: { userId: ramesh.id, eventId: wedding.id, amount: 5000, purpose: "Generator diesel and tea on the wedding night", requestedById: kavita.id } });
+  await db.approvalRequest.create({ data: { type: "CASH_ADVANCE", entityId: rameshNew.id, eventId: wedding.id, amount: 5000, summary: "Cash advance for Ramesh Kumar: Generator diesel and tea on the wedding night · Aditi & Karan", requestedById: kavita.id } });
+
   // ── Booking 2: Kabir's 1st birthday, today ──
   const bday = await db.event.create({
     data: {

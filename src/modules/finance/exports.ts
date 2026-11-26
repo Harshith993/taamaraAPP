@@ -6,6 +6,7 @@
  *   expenses    expenses: date, booking, kind, what, who, paid by, amount, status
  *   crew-pay    per booking and crew member: agreed, approved extras/deductions, total, paid
  *   sales       client GST invoices issued (and cancelled) in the range: the sales register for GSTR-1
+ *   advances    cash advances given to managers and supervisors (D57): given, spent, returned, left
  *   pnl         monthly P&L for the months the range touches (pnl.ts), plus each booking's figures
  *
  * Dates are a range of calendar days in India time. Every export is written to the audit log.
@@ -20,9 +21,9 @@ import type { Actor } from "@/modules/identity/actor";
 import { assertCan } from "@/modules/identity/policy";
 import { monthlyPnl } from "./pnl";
 
-export const EXPORT_KINDS = ["pnl", "sales", "purchases", "payments", "expenses", "crew-pay"] as const;
+export const EXPORT_KINDS = ["pnl", "sales", "purchases", "payments", "expenses", "crew-pay", "advances"] as const;
 export type ExportKind = (typeof EXPORT_KINDS)[number];
-export const EXPORT_LABELS: Record<ExportKind, string> = { pnl: "Monthly profit and loss", sales: "Sales register (client GST invoices)", purchases: "Purchase register (vendor invoices)", payments: "Payments in and out", expenses: "Expenses", "crew-pay": "Crew pay by booking" };
+export const EXPORT_LABELS: Record<ExportKind, string> = { pnl: "Monthly profit and loss", sales: "Sales register (client GST invoices)", purchases: "Purchase register (vendor invoices)", payments: "Payments in and out", expenses: "Expenses", "crew-pay": "Crew pay by booking", advances: "Cash advances" };
 
 const ymd = /^\d{4}-\d{2}-\d{2}$/;
 const day = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "");
@@ -184,7 +185,36 @@ export async function buildExport(db: Db, actor: Actor, kind: string, from: stri
     ]);
     const list = await db.expense.findMany({ where: { spentOn: { gte: start, lte: end } }, orderBy: { spentOn: "asc" }, include: { category: { select: { name: true } }, event: { select: { code: true, name: true } } } });
     const people = await db.user.findMany({ where: { id: { in: list.map((e) => e.submittedById).filter((x): x is string => Boolean(x)) } }, select: { id: true, name: true } });
-    for (const e of list) ws.addRow({ date: day(e.spentOn), booking: e.event ? `${e.event.code} ${e.event.name}` : "Company", kind: e.category.name, what: e.description, who: people.find((p) => p.id === e.submittedById)?.name ?? "", via: e.paidVia === "OWN_POCKET" ? "Own pocket" : "Company", amount: toNumber(e.amount), status: e.status, receipt: e.receiptFileId ? "Yes" : "No" });
+    for (const e of list) ws.addRow({ date: day(e.spentOn), booking: e.event ? `${e.event.code} ${e.event.name}` : "Company", kind: e.category.name, what: e.description, who: people.find((p) => p.id === e.submittedById)?.name ?? "", via: e.paidVia === "OWN_POCKET" ? "Own pocket" : e.paidVia === "CASH_ADVANCE" ? "Cash advance" : "Company", amount: toNumber(e.amount), status: e.status, receipt: e.receiptFileId ? "Yes" : "No" });
+    rows = list.length;
+  } else if (kind === "advances") {
+    const ws = sheet(wb, "Cash advances", [
+      { header: "Given on", key: "givenOn", width: 12 },
+      { header: "Holder", key: "holder", width: 22 },
+      { header: "Booking", key: "booking", width: 30 },
+      { header: "For", key: "purpose", width: 32 },
+      { header: "How", key: "method", width: 8 },
+      { header: "Reference", key: "reference", width: 16 },
+      { header: "Given", key: "amount", width: 12, money: true },
+      { header: "Spent (approved)", key: "spent", width: 13, money: true },
+      { header: "Spent (waiting)", key: "waiting", width: 13, money: true },
+      { header: "Returned", key: "returned", width: 12, money: true },
+      { header: "Left / shortfall", key: "left", width: 13, money: true },
+      { header: "Status", key: "status", width: 12 },
+      { header: "Closed on", key: "closedOn", width: 12 },
+      { header: "Note", key: "note", width: 30 },
+    ]);
+    const list = await db.cashAdvance.findMany({
+      where: { status: { in: ["GIVEN", "CLOSED", "VOIDED"] }, givenOn: { gte: start, lte: end } },
+      orderBy: { givenOn: "asc" },
+      include: { user: { select: { name: true } }, event: { select: { code: true, name: true } }, expenses: { where: { status: { not: "REJECTED" } }, select: { amount: true, status: true } } },
+    });
+    for (const a of list) {
+      const spent = a.expenses.filter((e) => e.status !== "SUBMITTED").reduce((s, e) => s + toNumber(e.amount), 0);
+      const waiting = a.expenses.filter((e) => e.status === "SUBMITTED").reduce((s, e) => s + toNumber(e.amount), 0);
+      const left = a.status === "VOIDED" ? 0 : toNumber(a.amount) - spent - waiting - toNumber(a.returnedAmount);
+      ws.addRow({ givenOn: day(a.givenOn), holder: a.user.name, booking: a.event ? `${a.event.code} ${a.event.name}` : "Company", purpose: a.purpose, method: a.method, reference: a.reference ?? "", amount: toNumber(a.amount), spent, waiting, returned: toNumber(a.returnedAmount), left, status: a.status, closedOn: day(a.settledAt), note: a.closeNote ?? a.voidReason ?? "" });
+    }
     rows = list.length;
   } else {
     const ws = sheet(wb, "Crew pay", [

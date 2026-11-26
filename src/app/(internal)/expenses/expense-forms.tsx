@@ -7,9 +7,18 @@ import { DocumentUpload } from "@/components/document-upload";
 import { Button, Field, Notice, SelectField } from "@/components/ui";
 import type { ActionResult } from "@/lib/errors";
 
-export function ExpenseForm({ bookings, categories, allowNoBooking, today }: { bookings: { id: string; name: string }[]; categories: { id: string; name: string }[]; allowNoBooking: boolean; today: string }) {
+interface AdvanceOption {
+  id: string;
+  label: string;
+  eventId: string | null;
+  left: number;
+}
+
+export function ExpenseForm({ bookings, categories, allowNoBooking, today, advances = [], startAdvance = null }: { bookings: { id: string; name: string }[]; categories: { id: string; name: string }[]; allowNoBooking: boolean; today: string; advances?: AdvanceOption[]; startAdvance?: string | null }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(Boolean(startAdvance));
+  const [paidVia, setPaidVia] = useState(startAdvance ? `ADV:${startAdvance}` : "OWN_POCKET");
+  const advance = paidVia.startsWith("ADV:") ? advances.find((a) => a.id === paidVia.slice(4)) : undefined;
   const [fileId, setFileId] = useState<string | null>(null);
   const [result, setResult] = useState<ActionResult | null>(null);
   const [pending, start] = useTransition();
@@ -32,7 +41,8 @@ export function ExpenseForm({ bookings, categories, allowNoBooking, today }: { b
         const f = new FormData(e.currentTarget);
         const get = (k: string) => String(f.get(k) ?? "");
         start(async () => {
-          const r = await submitExpenseAction({ eventId: get("eventId"), categoryId: get("categoryId"), description: get("description"), amount: get("amount"), spentOn: get("spentOn"), paidVia: get("paidVia") as "OWN_POCKET", receiptFileId: fileId ?? "" });
+          const via = get("paidVia");
+          const r = await submitExpenseAction({ eventId: get("eventId"), categoryId: get("categoryId"), description: get("description"), amount: get("amount"), spentOn: get("spentOn"), paidVia: via.startsWith("ADV:") ? "CASH_ADVANCE" : (via as "OWN_POCKET"), cashAdvanceId: via.startsWith("ADV:") ? via.slice(4) : "", receiptFileId: fileId ?? "" });
           setResult(r);
           if (r.ok) {
             setOpen(false);
@@ -45,16 +55,19 @@ export function ExpenseForm({ bookings, categories, allowNoBooking, today }: { b
       <h3 className="label-mono text-[12.5px]">Record an expense</h3>
       {result && !result.ok && <Notice tone="error">{result.error}</Notice>}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <SelectField label="Booking" name="eventId" error={fe.eventId} options={[...(allowNoBooking ? [{ value: "", label: "Company (no booking)" }] : [{ value: "", label: "Pick a booking…" }]), ...bookings.map((b) => ({ value: b.id, label: b.name }))]} />
+        <SelectField label="Booking" name="eventId" key={advance?.eventId ?? "any"} defaultValue={advance?.eventId ?? ""} error={fe.eventId} options={[...(allowNoBooking ? [{ value: "", label: "Company (no booking)" }] : [{ value: "", label: "Pick a booking…" }]), ...bookings.map((b) => ({ value: b.id, label: b.name }))]} />
         <SelectField label="For" name="categoryId" error={fe.categoryId} options={[{ value: "", label: "Pick…" }, ...categories.map((c) => ({ value: c.id, label: c.name }))]} />
-        <Field label="Amount ₹" name="amount" inputMode="decimal" error={fe.amount} />
+        <Field label="Amount ₹" name="amount" inputMode="decimal" error={fe.amount} hint={advance ? `Up to ₹${advance.left} from this advance` : undefined} />
         <Field className="sm:col-span-2" label="What was bought" name="description" placeholder="Tea and snacks for the crew" error={fe.description} />
         <Field label="Date" name="spentOn" type="date" max={today} defaultValue={today} error={fe.spentOn} />
         <SelectField
           label="Paid by"
           name="paidVia"
-          defaultValue="OWN_POCKET"
+          value={paidVia}
+          onChange={(e) => setPaidVia(e.target.value)}
+          error={fe.cashAdvanceId}
           options={[
+            ...advances.map((a) => ({ value: `ADV:${a.id}`, label: a.label })),
             { value: "OWN_POCKET", label: "Me, please repay" },
             { value: "COMPANY", label: "The company (card, account)" },
           ]}

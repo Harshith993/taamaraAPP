@@ -8,6 +8,9 @@
  *
  *  - Every expense needs its bill or receipt (photo or PDF), whatever the amount (D53; replaced the
  *    ₹500 limit of D34).
+ *  - Spending from a cash advance (D57) is recorded here too, paid via CASH_ADVANCE: only by the holder,
+ *    while the advance is handed over, on its booking (if it has one), and never more than is left.
+ *    Those are never "repaid"; the advance is closed instead.
  *  - Expenses on a booking count towards its costs once approved.
  *  - Approved and repaid expenses are never deleted (database trigger).
  */
@@ -23,6 +26,7 @@ import type { Actor } from "@/modules/identity/actor";
 import { assertCan, assertEventAccess, can, eventWhere } from "@/modules/identity/policy";
 import { assertBookingOpen } from "@/modules/events/lock";
 import { notify, ownerUserIds } from "@/modules/notifications/notify";
+import { advanceBalance, lockAdvance } from "./advances";
 
 export const expenseSchema = z.object({
   eventId: z.union([z.literal(""), z.string().uuid()]).optional(),
@@ -30,7 +34,9 @@ export const expenseSchema = z.object({
   description: z.string().trim().min(3, "Say what was bought, e.g. Tea and snacks for the crew.").max(200),
   amount: z.coerce.number({ message: "Enter the amount." }).positive("The amount must be more than ₹0.").max(1_000_000, "That is too large for one expense."),
   spentOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick the date."),
-  paidVia: z.enum(["COMPANY", "OWN_POCKET"]).default("OWN_POCKET"),
+  paidVia: z.enum(["COMPANY", "OWN_POCKET", "CASH_ADVANCE"]).default("OWN_POCKET"),
+  /** With paidVia CASH_ADVANCE: the advance the cash came from (advances.ts). */
+  cashAdvanceId: z.union([z.literal(""), z.string().uuid()]).optional(),
   receiptFileId: z.union([z.literal(""), z.string().uuid()]).optional(),
 });
 export type ExpenseInput = z.input<typeof expenseSchema>;
@@ -50,6 +56,18 @@ export async function submitExpense(db: Db, actor: Actor, input: ExpenseInput, m
       const f = await tx.file.findFirst({ where: { id: v.receiptFileId, uploadedById: actor.userId, purpose: "DOCUMENT", status: "READY" }, select: { _count: { select: { expenseReceipts: true } } } });
       if (!f || f._count.expenseReceipts) throw new ValidationError("Attach the receipt and wait for it to finish uploading.", { receiptFileId: "Attach the receipt." });
     }
+    let advanceNote = "";
+    if (v.paidVia === "CASH_ADVANCE") {
+      if (!v.cashAdvanceId) throw new ValidationError("Pick the cash advance it was paid from.", { cashAdvanceId: "Pick the advance." });
+      await lockAdvance(tx, v.cashAdvanceId);
+      const adv = await tx.cashAdvance.findUnique({ where: { id: v.cashAdvanceId }, select: { id: true, userId: true, status: true, eventId: true, purpose: true, event: { select: { name: true } } } });
+      if (!adv || adv.userId !== actor.userId) throw new ValidationError("Pick one of your own cash advances.", { cashAdvanceId: "Pick your advance." });
+      if (adv.status !== "GIVEN") throw new ConflictError("That advance isn't open for spending.");
+      if (adv.eventId && adv.eventId !== (v.eventId || null)) throw new ValidationError(`That advance is for ${adv.event?.name ?? "another booking"}.`, { eventId: `Pick ${adv.event?.name ?? "its booking"}.` });
+      const b = await advanceBalance(tx, adv.id);
+      if (v.amount > b.left + 0.005) throw new ValidationError(`Only ${formatINR(b.left, { decimals: true })} is left on that advance. Record the rest as paid by you.`, { amount: `At most ${formatINR(b.left, { decimals: true })}.` });
+      advanceNote = ` from advance "${adv.purpose}"`;
+    } else if (v.cashAdvanceId) throw new ValidationError("Choose 'Cash advance' to spend from an advance.", { cashAdvanceId: "Not used." });
     const event = v.eventId ? await tx.event.findUniqueOrThrow({ where: { id: v.eventId }, select: { name: true } }) : null;
     const exp = await tx.expense.create({
       data: {
@@ -59,6 +77,7 @@ export async function submitExpense(db: Db, actor: Actor, input: ExpenseInput, m
         amount: v.amount,
         spentOn: new Date(`${v.spentOn}T00:00:00Z`),
         paidVia: v.paidVia,
+        cashAdvanceId: v.paidVia === "CASH_ADVANCE" ? v.cashAdvanceId : null,
         receiptFileId: v.receiptFileId || null,
         submittedById: actor.userId,
       },
@@ -66,7 +85,7 @@ export async function submitExpense(db: Db, actor: Actor, input: ExpenseInput, m
     const summary = `${actor.name} · ${v.description}${event ? ` · ${event.name}` : ""}`;
     await tx.approvalRequest.create({ data: { type: "EXPENSE", entityId: exp.id, eventId: v.eventId || null, amount: v.amount, summary, requestedById: actor.userId } });
     await notify(tx, await ownerUserIds(tx), { type: "approval.requested", title: `Expense to approve: ${formatINR(v.amount)}`, body: summary, link: "/approvals", entityType: "expense", entityId: exp.id }, { exceptUserId: actor.userId });
-    await recordAudit(tx, actor, { action: "create", entityType: "expense", entityId: exp.id, summary: `Expense ${formatINR(v.amount)}: ${summary} (${v.paidVia === "OWN_POCKET" ? "own pocket" : "company"})`, financial: true }, meta);
+    await recordAudit(tx, actor, { action: "create", entityType: "expense", entityId: exp.id, summary: `Expense ${formatINR(v.amount)}: ${summary} (${v.paidVia === "OWN_POCKET" ? "own pocket" : v.paidVia === "CASH_ADVANCE" ? `cash advance${advanceNote}` : "company"})`, financial: true }, meta);
     return { id: exp.id };
   });
 }

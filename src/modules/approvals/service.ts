@@ -12,6 +12,7 @@ import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
 import { formatINR, toNumber } from "@/lib/format";
 import { recordAudit, type RequestMeta } from "@/modules/audit/audit";
 import { MEDIA_SELECT, mediaView } from "@/modules/files/media";
+import { decideAdvance } from "@/modules/finance/advances";
 import { decideBudget } from "@/modules/finance/budgets";
 import type { Actor } from "@/modules/identity/actor";
 import { assertCan } from "@/modules/identity/policy";
@@ -141,6 +142,12 @@ export async function listPendingApprovals(db: Db, actor: Actor) {
           receipt: e.receiptFile ? mediaView(actor.userId, e.receiptFile, { original: true }) : null,
         };
       }
+      if (r.type === "CASH_ADVANCE") {
+        const a = await db.cashAdvance.findUnique({ where: { id: r.entityId }, include: { user: { select: { name: true } }, event: { select: { id: true, name: true } } } });
+        if (!a) return { ...base, kind: "missing" as const };
+        const holding = await db.cashAdvance.aggregate({ where: { userId: a.userId, status: "GIVEN" }, _sum: { amount: true }, _count: true });
+        return { ...base, kind: "advance" as const, selfPrepared: a.requestedById === actor.userId, event: a.event, holder: a.user.name, purpose: a.purpose, method: a.method, alreadyHolding: toNumber(holding._sum.amount), openAdvances: holding._count };
+      }
       return { ...base, kind: "missing" as const };
     }),
   );
@@ -221,6 +228,12 @@ export async function decideApproval(db: Db, actor: Actor, approvalId: string, d
       }
       await tx.expense.update({ where: { id: e.id }, data: { status: decision === "APPROVE" ? "APPROVED" : "REJECTED", decidedById: actor.userId, decidedAt: now, decisionNote: note ?? null } });
       auditSummary = `${decision === "APPROVE" ? "Approved" : "Rejected"} expense ${formatINR(e.amount)}: ${e.description}`;
+    } else if (req.type === "CASH_ADVANCE") {
+      const a = await tx.cashAdvance.findUnique({ where: { id: req.entityId }, select: { requestedById: true } });
+      if (decision === "APPROVE" && a?.requestedById === actor.userId && (await otherActiveOwners(tx, actor.userId)) > 0) {
+        throw new ConflictError("You prepared this advance, so the other host needs to approve it.");
+      }
+      auditSummary = await decideAdvance(tx, actor, req.entityId, decision === "APPROVE", now);
     } else {
       throw new ValidationError("This kind of approval is not handled yet.");
     }
@@ -233,7 +246,7 @@ export async function decideApproval(db: Db, actor: Actor, approvalId: string, d
           type: `approval.${decision.toLowerCase()}`,
           title: `${decision === "APPROVE" ? "Approved" : decision === "REVISE" ? "Sent back" : "Not approved"}: ${req.summary}`,
           body: note,
-          link: req.type === "PAYMENT" ? "/money" : req.type === "EXPENSE" ? "/expenses" : req.type === "BUDGET" && req.eventId ? `/bookings/${req.eventId}?tab=money` : req.eventId ? `/bookings/${req.eventId}?tab=${req.type === "QUOTATION" ? "vendors" : "crew"}` : null,
+          link: req.type === "PAYMENT" ? "/money" : req.type === "CASH_ADVANCE" ? "/advances" : req.type === "EXPENSE" ? "/expenses" : req.type === "BUDGET" && req.eventId ? `/bookings/${req.eventId}?tab=money` : req.eventId ? `/bookings/${req.eventId}?tab=${req.type === "QUOTATION" ? "vendors" : "crew"}` : null,
           entityType: req.type.toLowerCase(),
           entityId: req.entityId,
         },
