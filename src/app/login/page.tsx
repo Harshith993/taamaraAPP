@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Sign in" };
 
 const FEATURES: { icon: typeof Sparkles; tint: Tint; title: string; text: string }[] = [
   { icon: CalendarHeart, tint: "pink", title: "Every booking", text: "Functions, run sheets and the team — one page per celebration." },
-  { icon: UsersRound, tint: "sky", title: "Vendors and crew", text: "Quotes, work orders, shifts and check-ins, straight from their phones." },
+  { icon: UsersRound, tint: "sky", title: "Vendors and crew", text: "Quotes, work orders, shifts and proof, straight from their phones." },
   { icon: Camera, tint: "yellow", title: "Proof from the venue", text: "Photos and videos of the work, approved before anyone is paid." },
   { icon: Wallet, tint: "green", title: "Money that settles", text: "Payments, GST and margins, closed booking by booking." },
 ];

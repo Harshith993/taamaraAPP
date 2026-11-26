@@ -239,8 +239,8 @@ export async function requestAdjustment(db: Db, actor: Actor, input: z.input<typ
   return db.$transaction(async (tx) => {
     const a = await tx.crewAssignment.findUnique({ where: { id: v.assignmentId }, include: { worker: { select: { name: true } }, event: { select: { name: true } } } });
     if (!a) throw new NotFoundError("That crew booking");
-    // The people running the booking: anyone who marks attendance or hires crew on it.
-    const permission = actor.grants.has("crew.assign") ? "crew.assign" : "attendance.mark";
+    // The people running the booking: anyone who hires crew on it or runs its event day.
+    const permission = actor.grants.has("crew.assign") ? "crew.assign" : "eventDay.run";
     assertCan(actor, permission, "You can't ask for crew extras.");
     await assertEventAccess(tx, actor, a.eventId, permission);
     if (!["CONFIRMED", "COMPLETED"].includes(a.status)) throw new ConflictError("Extras are for crew who are on the booking.");

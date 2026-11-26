@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CheckInButton, RespondButtons } from "@/components/crew-controls";
+import { RespondButtons } from "@/components/crew-controls";
 import { WaitingAnnouncements } from "@/components/messages";
 import { PortalShell } from "@/components/portal-shell";
 import { TaskButtons } from "@/components/task-controls";
@@ -10,7 +10,6 @@ import { ButtonLink, EmptyState, MovingArrow, Notice, Panel, Tag } from "@/compo
 import { db } from "@/lib/db";
 import { firstName, formatDate, formatINR, formatTime, toNumber } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
-import { attendanceWindow } from "@/modules/crew/service";
 import { can, crewAssignmentWhere, taskWhere } from "@/modules/identity/policy";
 import { homePathFor, requireActor } from "@/modules/identity/session";
 import { taskActions } from "@/modules/tasks/service";
@@ -29,7 +28,6 @@ export default async function CrewHome() {
   if (actor.accountType !== "LABOUR") redirect(homePathFor(actor));
   const now = new Date();
   const seesPay = can(actor, "crew.pay.view");
-  const selfCheckIn = can(actor, "attendance.mark");
   const mine = crewAssignmentWhere(actor);
 
   const [offers, shifts, tasks, assignments] = await Promise.all([
@@ -80,7 +78,9 @@ export default async function CrewHome() {
         select: { role: true, user: { select: { name: true, phoneNumber: true } } },
       })
     : [];
-  const window = next ? attendanceWindow(next.reportAt, now) : null;
+  // India date of a moment, to say "Today" on a shift that reports today.
+  const istDay = (d: Date) => new Date(d.getTime() + 330 * 60_000).toISOString().slice(0, 10);
+  const isToday = next ? istDay(next.reportAt) === istDay(now) : false;
   const venue = next?.function?.venue;
 
   return (
@@ -124,7 +124,7 @@ export default async function CrewHome() {
             <div aria-hidden className="rainbow h-1.5" />
             <div className="flex flex-col gap-2.5 p-4">
               <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-pastel-violet px-2.5 py-0.5 text-[12px] font-semibold text-[#5b21b6]">
-                <Sparkles aria-hidden className="size-3.5 animate-twinkle" /> {window === "open" ? "Today" : "Your next shift"}
+                <Sparkles aria-hidden className="size-3.5 animate-twinkle" /> {isToday ? "Today" : "Your next shift"}
               </span>
               <span className="text-[17px] leading-tight font-bold">
                 {next.assignment.event.name}
@@ -151,7 +151,6 @@ export default async function CrewHome() {
                   </a>
                 )}
               </span>
-              {selfCheckIn && next.attendance === "PENDING" && window === "open" && <CheckInButton shiftId={next.id} />}
               {can(actor, "proof.upload") && (
                 <ButtonLink href={`/crew/proof?a=${next.assignment.id}`} variant="look" className="min-h-[58px] w-full text-[15px]">
                   <Camera aria-hidden className="size-5" /> Add proof of work
@@ -177,19 +176,6 @@ export default async function CrewHome() {
                     ))}
                 </span>
               )}
-            </div>
-            <div
-              className={`flex min-h-[40px] items-center px-4 text-[13px] font-semibold ${
-                next.attendance === "PRESENT" ? "bg-pastel-green text-[#166534]" : next.attendance === "LATE" ? "bg-pastel-yellow text-[#854d0e]" : next.attendance === "ABSENT" ? "bg-pastel-rose text-[#be123c]" : "bg-ground text-ink-quiet"
-              }`}
-            >
-              {next.attendance === "PRESENT" || next.attendance === "LATE"
-                ? `Checked in${next.checkInAt ? ` at ${formatTime(next.checkInAt)}` : ""}${next.attendance === "LATE" ? " · late" : ""}`
-                : next.attendance === "ABSENT"
-                  ? "Marked absent — call your supervisor"
-                  : selfCheckIn
-                    ? "Not checked in yet"
-                    : "Your supervisor marks you in at the venue"}
             </div>
           </section>
         ) : (

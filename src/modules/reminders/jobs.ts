@@ -38,7 +38,7 @@ export async function shiftReminders(db: Db, now: Date) {
   const from = new Date(startOfIndiaDay(day).getTime() + DAY);
   const to = new Date(from.getTime() + DAY);
   const shifts = await db.crewShift.findMany({
-    where: { reportAt: { gte: from, lt: to }, attendance: "PENDING", assignment: { status: "CONFIRMED", worker: { userId: { not: null } } } },
+    where: { reportAt: { gte: from, lt: to }, assignment: { status: "CONFIRMED", worker: { userId: { not: null } } } },
     include: { assignment: { select: { duty: true, event: { select: { name: true } }, worker: { select: { userId: true } } } }, function: { select: { name: true, venueText: true, venue: { select: { name: true } } } } },
   });
   let n = 0;

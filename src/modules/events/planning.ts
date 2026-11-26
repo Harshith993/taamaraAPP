@@ -4,7 +4,7 @@
  *  - Details and functions: bookings.edit (managers on their bookings, owners on all).
  *  - Team (managers and supervisors): bookings.assignTeam (owners).
  *  - Cancelling: bookings.cancel (owners), with a reason; everyone booked is told.
- *  - Run sheet: schedule.edit. Ticking items off on the day: schedule.edit or attendance.mark
+ *  - Run sheet: schedule.edit. Ticking items off on the day: schedule.edit or eventDay.run
  *    (the supervisor running the day).
  *  - Requirements: requirements.edit. A requirement linked to a vendor's job is what that vendor
  *    sees under "What's needed".
@@ -243,7 +243,7 @@ export async function setScheduleDone(db: Db, actor: Actor, itemId: string, done
   return db.$transaction(async (tx) => {
     const item = await tx.scheduleItem.findUnique({ where: { id: itemId }, select: { id: true, eventId: true } });
     if (!item) throw new NotFoundError("That run sheet item");
-    const permission: PermissionKey = can(actor, "schedule.edit") ? "schedule.edit" : "attendance.mark";
+    const permission: PermissionKey = can(actor, "schedule.edit") ? "schedule.edit" : "eventDay.run";
     await assertOn(tx, actor, item.eventId, permission, "You can't tick off the run sheet.");
     await tx.scheduleItem.update({ where: { id: item.id }, data: { done } });
   });

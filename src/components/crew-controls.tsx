@@ -1,66 +1,12 @@
 "use client";
 
-/** Buttons and forms for crew: attendance, hiring, taking off, accepting, checking in. */
+/** Buttons and forms for crew: hiring, taking off, accepting. */
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { assignCrewAction, markAttendanceAction, removeCrewAction, respondToBookingAction, selfCheckInAction } from "@/app/actions/crew";
+import { assignCrewAction, removeCrewAction, respondToBookingAction } from "@/app/actions/crew";
 import { Button, Field, Notice, SelectField } from "@/components/ui";
 import type { ActionResult } from "@/lib/errors";
 
-type Mark = "PRESENT" | "LATE" | "ABSENT" | "PENDING";
-
-const MARKS: { key: Exclude<Mark, "PENDING">; label: string; on: string; onNight: string }[] = [
-  { key: "PRESENT", label: "Present", on: "bg-ok text-ink border-ok", onNight: "bg-ok text-ink border-ok" },
-  { key: "LATE", label: "Late", on: "bg-look text-ink border-look", onNight: "bg-look text-ink border-look" },
-  { key: "ABSENT", label: "Absent", on: "bg-now text-[#FFF6EE] border-now", onNight: "bg-now text-[#FFF6EE] border-now" },
-];
-
-/** Present / Late / Absent for one shift. Tapping the marked one again clears it. */
-export function AttendanceButtons({ shiftId, current, disabledReason, night = false, name }: { shiftId: string; current: Mark; disabledReason?: string | null; night?: boolean; name: string }) {
-  const [pending, start] = useTransition();
-  const [shown, setShown] = useState<Mark>(current);
-  const [error, setError] = useState<string | null>(null);
-  const set = (m: Mark) =>
-    start(async () => {
-      const next = m === shown ? "PENDING" : m;
-      const before = shown;
-      setShown(next);
-      const r = await markAttendanceAction(shiftId, next);
-      if (!r.ok) {
-        setShown(before);
-        setError(r.error);
-      } else setError(null);
-    });
-  return (
-    <div className="flex flex-col gap-1">
-      <div role="group" aria-label={`Attendance for ${name}`} className="grid grid-cols-3 gap-1">
-        {MARKS.map((m) => {
-          const on = shown === m.key;
-          return (
-            <button
-              key={m.key}
-              type="button"
-              aria-pressed={on}
-              disabled={pending || Boolean(disabledReason)}
-              onClick={() => set(m.key)}
-              className={`min-h-11 rounded-full border px-2 text-[13px] font-semibold transition disabled:opacity-50 ${
-                on ? (night ? m.onNight : m.on) : night ? "border-night-rule text-night-text" : "border-line text-ink"
-              }`}
-            >
-              {m.label}
-            </button>
-          );
-        })}
-      </div>
-      {disabledReason && <span className={`text-[12px] ${night ? "text-[#CDB8C4]" : "text-ink-quiet"}`}>{disabledReason}</span>}
-      {error && (
-        <span role="alert" className="text-[12.5px] font-semibold text-now">
-          {error}
-        </span>
-      )}
-    </div>
-  );
-}
 
 interface WorkerOption {
   id: string;
@@ -266,28 +212,3 @@ export function RespondButtons({ assignmentId }: { assignmentId: string }) {
   );
 }
 
-/** "I'm here": self check-in with the phone's location (when the owners allow it). */
-export function CheckInButton({ shiftId }: { shiftId: string }) {
-  const router = useRouter();
-  const [result, setResult] = useState<ActionResult | null>(null);
-  const [pending, start] = useTransition();
-  const checkIn = () =>
-    start(async () => {
-      const pos =
-        "geolocation" in navigator
-          ? await new Promise<GeolocationPosition | null>((resolve) => navigator.geolocation.getCurrentPosition(resolve, () => resolve(null), { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 }))
-          : null;
-      const r = await selfCheckInAction(shiftId, pos ? Math.round(pos.coords.latitude * 1e6) / 1e6 : undefined, pos ? Math.round(pos.coords.longitude * 1e6) / 1e6 : undefined);
-      setResult(r);
-      if (r.ok) router.refresh();
-    });
-  if (result?.ok) return <Notice tone="ok">{result.message}</Notice>;
-  return (
-    <div className="flex flex-col gap-2">
-      <Button type="button" className="min-h-[58px] w-full text-[14px]" disabled={pending} onClick={checkIn}>
-        {pending ? "Checking in…" : "I'm here"}
-      </Button>
-      {result && !result.ok && <Notice tone="error">{result.error}</Notice>}
-    </div>
-  );
-}

@@ -75,8 +75,6 @@ export default async function WorkerProfile({ params }: { params: Promise<{ id: 
                     <span className="text-[12.5px] text-ink-quiet">
                       {a.duty}
                       {a.event.startDate ? ` · ${formatCalendarDate(a.event.startDate, { day: "numeric", month: "short", year: "numeric" })}` : ""}
-                      {a.present ? ` · present ${a.present}` : ""}
-                      {a.absent ? ` · absent ${a.absent}` : ""}
                       {a.declineReason ? ` · ${a.declineReason}` : ""}
                     </span>
                   </span>

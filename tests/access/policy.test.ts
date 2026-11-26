@@ -190,15 +190,16 @@ describe("actor loading", () => {
     await testDb.userRole.delete({ where: { userId_roleId: { userId: s.users.vendorUser.id, roleId: ownerRole.id } } });
   });
 
-  it("company switches hide crew pay and self check-in", () => {
+  it("company switches hide crew pay; crew never run the event day", () => {
     const rows = Object.entries(DEFAULT_ROLE_GRANTS.LABOUR).map(([permission, scope]) => ({ permission, scope: scope! }));
-    const on = computeGrants({ isOwner: false, accountType: "LABOUR", rolePermissions: rows, switches: { ...DEFAULT_SWITCHES, crewCanSeePay: true, crewSelfCheckIn: true } });
-    const off = computeGrants({ isOwner: false, accountType: "LABOUR", rolePermissions: rows, switches: { ...DEFAULT_SWITCHES, crewCanSeePay: false, crewSelfCheckIn: false } });
+    const on = computeGrants({ isOwner: false, accountType: "LABOUR", rolePermissions: rows, switches: { ...DEFAULT_SWITCHES, crewCanSeePay: true } });
+    const off = computeGrants({ isOwner: false, accountType: "LABOUR", rolePermissions: rows, switches: { ...DEFAULT_SWITCHES, crewCanSeePay: false } });
     expect(on.has("crew.pay.view")).toBe(true);
-    expect(on.has("attendance.mark")).toBe(true);
     expect(off.has("crew.pay.view")).toBe(false);
     expect(off.has("payments.status")).toBe(false);
-    expect(off.has("attendance.mark")).toBe(false);
+    // Stored rows can't hand crew the event day either (internal accounts only).
+    const sneaky = computeGrants({ isOwner: false, accountType: "LABOUR", rolePermissions: [...rows, { permission: "eventDay.run", scope: "OWN" }], switches: DEFAULT_SWITCHES });
+    expect(sneaky.has("eventDay.run")).toBe(false);
   });
 
   it("ignores stored grants that the catalogue does not allow", () => {

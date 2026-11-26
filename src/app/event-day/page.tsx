@@ -5,12 +5,10 @@ import { signOutAction } from "@/app/actions/auth";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { LotusBadge, PetalStripe } from "@/components/brand";
 import { DoneToggle } from "@/app/(internal)/bookings/[id]/planning-controls";
-import { AttendanceButtons } from "@/components/crew-controls";
 import { NotificationBell } from "@/components/notifications";
 import { db } from "@/lib/db";
 import { formatCalendarDate, formatTime } from "@/lib/format";
 import { formatPhone } from "@/lib/phone";
-import { attendanceWindow } from "@/modules/crew/service";
 import { getEventDay } from "@/modules/events/event-day";
 import { can } from "@/modules/identity/policy";
 import { homePathFor, requireActor } from "@/modules/identity/session";
@@ -34,11 +32,10 @@ function inWords(min: number) {
 export default async function EventDayPage({ searchParams }: { searchParams: Promise<{ date?: string }> }) {
   const actor = await requireActor();
   if (actor.accountType !== "INTERNAL") redirect(homePathFor(actor));
-  if (!can(actor, "bookings.view")) redirect("/home?denied=1");
+  if (!can(actor, "eventDay.run")) redirect("/home?denied=1");
   const sp = await searchParams;
   const data = await getEventDay(db, actor, sp.date);
   const now = new Date();
-  const canMark = can(actor, "attendance.mark");
   const dayLabel = formatCalendarDate(new Date(`${data.day}T00:00:00Z`), { weekday: "long", day: "numeric", month: "long" });
 
   return (
@@ -83,7 +80,7 @@ export default async function EventDayPage({ searchParams }: { searchParams: Pro
         {data.bookings.map((b) => {
           const next = b.schedule.find((s) => s.startsAt > now);
           const current = [...b.schedule].reverse().find((s) => s.startsAt <= now && (s.endsAt ?? s.startsAt) >= new Date(now.getTime() - 30 * 60_000));
-          const arrived = b.crew.filter((c) => c.attendance === "PRESENT" || c.attendance === "LATE").length;
+          const confirmed = b.crew.filter((c) => c.answered).length;
           const fn = b.functions[0];
           return (
             <section key={b.id} aria-label={b.name} className="flex flex-col gap-4">
@@ -119,9 +116,9 @@ export default async function EventDayPage({ searchParams }: { searchParams: Pro
                   <dd className="text-[15px] font-bold">{next ? `${next.title} ${inWords(minutesUntil(next.startsAt, now))}` : "None left"}</dd>
                 </div>
                 <div className="rounded-xl border-2 border-night-rule bg-night-panel px-3 py-2">
-                  <dt className="font-mono text-[11px] font-semibold tracking-[0.08em] text-[#CDB8C4] uppercase">Crew in</dt>
+                  <dt className="font-mono text-[11px] font-semibold tracking-[0.08em] text-[#CDB8C4] uppercase">Crew confirmed</dt>
                   <dd className="font-condensed text-[34px] leading-none">
-                    {arrived}
+                    {confirmed}
                     <span className="text-[20px] text-[#CDB8C4]"> / {b.crew.length}</span>
                   </dd>
                 </div>
@@ -159,7 +156,7 @@ export default async function EventDayPage({ searchParams }: { searchParams: Pro
                                   {s.location ? ` · ${s.location}` : ""}
                                 </span>
                               </span>
-                              {b.onTeam && (can(actor, "schedule.edit") || canMark) ? <DoneToggle itemId={s.id} done={s.done} night /> : <span />}
+                              {b.onTeam && (can(actor, "schedule.edit") || can(actor, "eventDay.run")) ? <DoneToggle itemId={s.id} done={s.done} night /> : <span />}
                             </li>
                           );
                         })}
@@ -195,37 +192,28 @@ export default async function EventDayPage({ searchParams }: { searchParams: Pro
                 <div className="flex flex-col gap-4">
                   <div className="overflow-hidden rounded-2xl border-2 border-night-rule bg-night-panel">
                     <h2 className="flex items-center justify-between border-b-2 border-night-rule px-3.5 py-2 font-mono text-[12px] font-semibold tracking-[0.08em] uppercase">
-                      <span>Crew check-in</span>
+                      <span>Crew today</span>
                       <span>
-                        {arrived} of {b.crew.length} in
+                        {confirmed} of {b.crew.length} confirmed
                       </span>
                     </h2>
                     <ul>
                       {b.crew.map((c) => {
-                        const window = attendanceWindow(c.reportAt, now);
-                        const late = c.attendance === "PENDING" && now.getTime() > c.reportAt.getTime() + 15 * 60_000;
                         return (
-                          <li key={c.shiftId} className="grid grid-cols-1 gap-2 border-b border-night-rule px-3.5 py-3 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_250px] sm:items-center">
+                          <li key={c.shiftId} className="flex flex-col gap-2 border-b border-night-rule px-3.5 py-3 last:border-b-0">
                             <span className="flex flex-col leading-tight">
                               <span className="flex flex-wrap items-center gap-2 text-[15.5px] font-semibold">
                                 {c.name}
                                 {!c.answered && <span className="bg-look px-1.5 font-mono text-[10.5px] text-ink uppercase">Not answered</span>}
-                                {late && <span className="bg-now px-1.5 font-mono text-[10.5px] text-[#FFF6EE] uppercase">Late</span>}
                               </span>
                               <span className="text-[13px] text-[#CDB8C4]">
                                 {c.duty} · report <span className="font-mono">{formatTime(c.reportAt)}</span>
                                 {c.location ? ` · ${c.location}` : ""}
-                                {c.checkInAt ? ` · in ${formatTime(c.checkInAt)}${c.selfCheckIn ? " (self)" : ""}` : ""}
                               </span>
                               <a href={`tel:${c.phone}`} className="mt-0.5 font-mono text-[12.5px] font-semibold text-night-plum">
                                 {formatPhone(c.phone)}
                               </a>
                             </span>
-                            {canMark && b.onTeam ? (
-                              <AttendanceButtons shiftId={c.shiftId} name={c.name} current={c.attendance} night disabledReason={window === "early" ? `Opens at ${formatTime(new Date(c.reportAt.getTime() - 6 * 3600_000))}` : window === "closed" && !actor.isOwner ? "Shift over" : null} />
-                            ) : (
-                              <span className="font-mono text-[12px] font-semibold uppercase">{c.attendance}</span>
-                            )}
                           </li>
                         );
                       })}

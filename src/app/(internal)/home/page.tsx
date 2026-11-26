@@ -69,7 +69,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
     can(actor, "finance.company") && { href: "/money", icon: <IndianRupee className="size-5" aria-hidden />, tint: "green" as const, title: "Money", text: toPay ? "Approved payments to send out." : "Billing, payments and the monthly P&L.", count: toPay },
     { href: "/messages", icon: <MessageCircle className="size-5" aria-hidden />, tint: "sky" as const, title: "Messages", text: unread ? "New messages from the team, vendors and crew." : "Team chats, vendor threads and announcements.", count: unread },
     can(actor, "bookings.view") && { href: "/calendar", icon: <CalendarDays className="size-5" aria-hidden />, tint: "pink" as const, title: "Calendar", text: nextFn ? `Next: ${nextFn.name} — ${nextFn.event}, ${formatDate(nextFn.startsAt, { weekday: "short", day: "numeric", month: "short" })}.` : "Every function this month at a glance." },
-    can(actor, "attendance.mark") && { href: "/event-day", icon: <MoonStar className="size-5" aria-hidden />, tint: "orange" as const, title: "Event day", text: "Night mode for the venue: cues, crew and proof." },
+    can(actor, "eventDay.run") && { href: "/event-day", icon: <MoonStar className="size-5" aria-hidden />, tint: "orange" as const, title: "Event day", text: "Night mode for the venue: cues, crew and proof." },
   ].filter(Boolean) as Parameters<typeof FeatureCard>[0][];
   const roleNames = actor.isOwner ? actor.hostTitle! : actor.roles.map((r) => ROLES[r].name).join(", ");
 

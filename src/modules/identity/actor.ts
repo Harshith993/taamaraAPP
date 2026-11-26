@@ -17,7 +17,6 @@ import {
 
 export interface CompanySwitches {
   crewCanSeePay: boolean;
-  crewSelfCheckIn: boolean;
   proofFromGallery: boolean;
   maxVideoSeconds: number;
   finalVendorPaymentNeedsProof: boolean;
@@ -27,7 +26,6 @@ export interface CompanySwitches {
 
 export const DEFAULT_SWITCHES: CompanySwitches = {
   crewCanSeePay: true,
-  crewSelfCheckIn: false,
   proofFromGallery: true,
   maxVideoSeconds: 120,
   finalVendorPaymentNeedsProof: true,
@@ -57,7 +55,10 @@ export interface Actor {
 
 export function readSwitches(settings: unknown): CompanySwitches {
   const s = (settings && typeof settings === "object" ? settings : {}) as Partial<CompanySwitches>;
-  return { ...DEFAULT_SWITCHES, ...s };
+  // Only known switches: retired ones (e.g. crew self check-in, removed by D52) stay stored but unused.
+  const out = { ...DEFAULT_SWITCHES };
+  for (const k of Object.keys(DEFAULT_SWITCHES) as (keyof CompanySwitches)[]) if (s[k] !== undefined) (out as Record<string, unknown>)[k] = s[k];
+  return out;
 }
 
 /** Builds the grant map from role rows, company switches and the account type. Pure, so it is easy to test. */
@@ -89,7 +90,6 @@ export function computeGrants(input: {
       grants.delete("crew.pay.view");
       grants.delete("payments.status");
     }
-    if (!input.switches.crewSelfCheckIn) grants.delete("attendance.mark");
   }
   return grants;
 }

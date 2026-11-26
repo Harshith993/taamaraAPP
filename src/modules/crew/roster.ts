@@ -82,7 +82,7 @@ export async function getWorker(db: Db, actor: Actor, workerId: string) {
     where: { workerId, event: eventWhere(actor) },
     orderBy: { createdAt: "desc" },
     take: 50,
-    select: { id: true, duty: true, status: true, agreedPay: true, declineReason: true, event: { select: { id: true, name: true, startDate: true } }, shifts: { select: { attendance: true } } },
+    select: { id: true, duty: true, status: true, agreedPay: true, declineReason: true, event: { select: { id: true, name: true, startDate: true } } },
   });
   return {
     id: w.id,
@@ -104,8 +104,6 @@ export async function getWorker(db: Db, actor: Actor, workerId: string) {
       pay: seesPay ? toNumber(a.agreedPay) : null,
       declineReason: a.declineReason,
       event: a.event,
-      present: a.shifts.filter((s) => s.attendance === "PRESENT" || s.attendance === "LATE").length,
-      absent: a.shifts.filter((s) => s.attendance === "ABSENT").length,
     })),
   };
 }

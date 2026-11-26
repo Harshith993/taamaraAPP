@@ -109,6 +109,7 @@ export async function getBookingCrew(db: Db, actor: Actor, eventId: string) {
       worker: { select: { name: true, phone: true, skills: { select: { skill: { select: { name: true } } } } } },
       shifts: { orderBy: { reportAt: "asc" }, include: { function: { select: { name: true } } } },
       adjustments: seesPay ? { select: { type: true, amount: true, state: true } } : false,
+      _count: { select: { payments: { where: { status: { not: "VOIDED" } } } } },
     },
   });
   return rows.map((r) => {
@@ -122,9 +123,11 @@ export async function getBookingCrew(db: Db, actor: Actor, eventId: string) {
       duty: r.duty,
       status: r.status,
       declineReason: r.declineReason,
-      shifts: r.shifts.map((s) => ({ id: s.id, function: s.function?.name ?? null, reportAt: s.reportAt, attendance: s.attendance, location: s.location, checkInAt: s.checkInAt, selfCheckIn: s.method === "SELF_GPS" })),
+      shifts: r.shifts.map((s) => ({ id: s.id, function: s.function?.name ?? null, reportAt: s.reportAt, location: s.location })),
       pay: seesPay ? toNumber(r.agreedPay) + approvedExtras : null,
       pendingExtras: seesPay ? adjustments.filter((a) => a.state === "PENDING").length : 0,
+      /** Paid (or a payment is on its way): they can no longer be taken off. */
+      hasPayments: r._count.payments > 0,
     };
   });
 }

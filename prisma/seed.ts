@@ -62,7 +62,7 @@ async function seedReference() {
       tagline: "events & beyond",
       state: "Rajasthan",
       stateCode: "08",
-      settings: { crewCanSeePay: true, crewSelfCheckIn: false, proofFromGallery: true, maxVideoSeconds: 120, finalVendorPaymentNeedsProof: true },
+      settings: { crewCanSeePay: true, proofFromGallery: true, maxVideoSeconds: 120, finalVendorPaymentNeedsProof: true },
     },
     update: {},
   });

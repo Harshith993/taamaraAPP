@@ -138,8 +138,6 @@ const CASES: Case[] = [
     },
     run: (a, w) => crew.respondToBooking(testDb, a, w.caId, true),
   },
-  { name: "markAttendance", deny: ["otherManager", "accountant", "vendor", "crew"], allow: ["manager", "supervisor"], run: (a, w) => crew.markAttendance(testDb, a, w.shiftId, "PRESENT") },
-  { name: "selfCheckIn", deny: ["owner", "manager", "otherManager", "accountant", "supervisor", "vendor"], ownerExcluded: true, run: (a, w) => crew.selfCheckIn(testDb, a, w.shiftId, {}) },
   { name: "crewForBooking", deny: ["otherManager", ...staffOnly], run: (a, w) => crew.crewForBooking(testDb, a, w.eventId) },
   { name: "saveWorker", deny: ["accountant", ...staffOnly], run: (a) => roster.saveWorker(testDb, a, { name: "EA Worker", phone: `98${String(Math.floor(Math.random() * 1e8)).padStart(8, "0")}`, skillIds: [ids.skill] }) },
   { name: "getWorker", deny: ["vendor"], run: (a) => roster.getWorker(testDb, a, workerId) },

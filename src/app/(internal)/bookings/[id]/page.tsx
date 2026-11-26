@@ -31,9 +31,9 @@ import { requirePermission } from "@/modules/identity/session";
 import { listProof } from "@/modules/proof/service";
 import { invitableVendors } from "@/modules/vendors/jobs";
 import { ProofGrid } from "@/components/proof-grid";
-import { AddCrewForm, AttendanceButtons, RemoveCrew } from "@/components/crew-controls";
+import { AddCrewForm, RemoveCrew } from "@/components/crew-controls";
 import { AddTaskForm, TaskButtons } from "@/components/task-controls";
-import { attendanceWindow, crewForBooking } from "@/modules/crew/service";
+import { crewForBooking } from "@/modules/crew/service";
 import { assignableForBooking, taskActions } from "@/modules/tasks/service";
 import { getRequirements, teamCandidates } from "@/modules/events/planning";
 import { listDocuments } from "@/modules/documents/service";
@@ -389,7 +389,7 @@ async function Schedule({ actor, eventId }: { actor: Actor; eventId: string }) {
   ]);
   const staff = actor.accountType === "INTERNAL";
   const edits = staff && can(actor, "schedule.edit") && (actor.grants.get("schedule.edit") === "ALL" || onBooking);
-  const ticks = staff && (edits || (can(actor, "attendance.mark") && onBooking));
+  const ticks = staff && (edits || (can(actor, "eventDay.run") && onBooking));
   const fnOptions = functions.map((f) => ({ id: f.id, name: f.name, date: f.date.toISOString().slice(0, 10) }));
   const add = edits ? <ScheduleEditor eventId={eventId} functions={fnOptions} defaultDate={fnOptions[0]?.date ?? ""} /> : null;
   if (!items.length)
@@ -745,7 +745,7 @@ async function Crew({ actor, eventId }: { actor: Actor; eventId: string }) {
   ]);
   const seesPay = can(actor, "crew.pay.view");
   const canAssign = staff && can(actor, "crew.assign") && (actor.grants.get("crew.assign") === "ALL" || onBooking);
-  const canMark = staff && can(actor, "attendance.mark") && (actor.grants.get("attendance.mark") === "ALL" || onBooking);
+  const runsDay = staff && can(actor, "eventDay.run") && (actor.grants.get("eventDay.run") === "ALL" || onBooking);
   const [workers, functions] = canAssign
     ? await Promise.all([
         crewForBooking(db, actor, eventId),
@@ -778,7 +778,6 @@ async function Crew({ actor, eventId }: { actor: Actor; eventId: string }) {
         </Panel>
       </div>
     );
-  const now = new Date();
   const waiting = active.filter((r) => r.status === "ASSIGNED").length;
   return (
     <div className="flex flex-col gap-3">
@@ -804,28 +803,14 @@ async function Crew({ actor, eventId }: { actor: Actor; eventId: string }) {
               </span>
               <ul className="flex flex-col gap-2">
                 {r.shifts.map((s) => {
-                  const window = attendanceWindow(s.reportAt, now);
                   return (
-                    <li key={s.id} className="grid grid-cols-1 items-center gap-1.5 sm:grid-cols-[minmax(0,1fr)_260px]">
+                    <li key={s.id}>
                       <span className="text-[13px]">
                         <strong>{s.function ?? "Shift"}</strong> ·{" "}
                         {formatDate(s.reportAt, { weekday: "short", day: "numeric" })}{" "}
                         <span className="font-mono">{formatTime(s.reportAt)}</span>
                         {s.location ? ` · ${s.location}` : ""}
-                        {s.checkInAt ? (
-                          <span className="text-ink-quiet"> · in at {formatTime(s.checkInAt)}{s.selfCheckIn ? " (self)" : ""}</span>
-                        ) : null}
                       </span>
-                      {canMark ? (
-                        <AttendanceButtons
-                          shiftId={s.id}
-                          name={r.name}
-                          current={s.attendance}
-                          disabledReason={window === "early" ? "Opens on the day" : window === "closed" && !actor.isOwner ? "Shift over" : null}
-                        />
-                      ) : (
-                        <Tag tone={s.attendance === "PRESENT" ? "ok" : s.attendance === "LATE" ? "look" : s.attendance === "ABSENT" ? "now" : "quiet"}>{s.attendance}</Tag>
-                      )}
                     </li>
                   );
                 })}
@@ -841,8 +826,8 @@ async function Crew({ actor, eventId }: { actor: Actor; eventId: string }) {
                     ) : null}
                   </span>
                 )}
-                {canAssign && r.shifts.every((s) => s.attendance === "PENDING") && <RemoveCrew assignmentId={r.id} name={r.name} />}
-                {(canAssign || canMark) && r.status === "CONFIRMED" && <AdjustmentForm assignmentId={r.id} name={r.name} />}
+                {canAssign && !r.hasPayments && <RemoveCrew assignmentId={r.id} name={r.name} />}
+                {(canAssign || runsDay) && r.status === "CONFIRMED" && <AdjustmentForm assignmentId={r.id} name={r.name} />}
               </span>
             </li>
           ))}
@@ -1161,7 +1146,7 @@ async function Money({ actor, eventId }: { actor: Actor; eventId: string }) {
                 <thead>
                   <tr className="label-mono border-b border-line text-left text-[11px] text-ink-quiet">
                     <th scope="col" className="px-3.5 py-2 font-semibold">Crew</th>
-                    <th scope="col" className="px-3 py-2 font-semibold">Worked</th>
+                    <th scope="col" className="px-3 py-2 font-semibold">Shifts</th>
                     <th scope="col" className="px-3 py-2 text-right font-semibold">Agreed</th>
                     <th scope="col" className="px-3 py-2 text-right font-semibold">Extras</th>
                     <th scope="col" className="px-3 py-2 text-right font-semibold">Total</th>
@@ -1183,7 +1168,7 @@ async function Money({ actor, eventId }: { actor: Actor; eventId: string }) {
                         ))}
                       </td>
                       <td className="px-3 py-2.5 font-mono">
-                        {c.worked}/{c.shifts}
+                        {c.shifts}
                       </td>
                       <td className="px-3 py-2.5 text-right font-mono">{formatINR(c.agreed)}</td>
                       <td className="px-3 py-2.5 text-right font-mono">{c.extras ? formatINR(c.extras) : "—"}</td>

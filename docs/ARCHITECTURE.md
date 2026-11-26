@@ -17,7 +17,7 @@ You run an event management company (weddings, pre-wedding shoots, cocktail part
 | Owner | Founder and co-founder (equal, full access) | See everything, approve quotes and payments, control who can do what |
 | Event Manager | Runs the bookings assigned to them | Plans functions, books vendors, builds the crew, sets schedules and tasks, records expenses. Never sees client billing or margin. |
 | Accountant | Handles the books | Client billing, vendor invoices, payments, GST records, exports for your outside accountant |
-| Supervisor | On site at the venue | Runs the event day: run sheet, crew attendance, task sign-off, proof photos |
+| Supervisor | On site at the venue | Runs the event day: run sheet, crew, task sign-off, proof photos |
 | Vendor | Caterers, decorators, photographers, DJs, tent houses… | Get requirements, submit quotes, accept work, upload invoices, upload **photos and videos of completed work**, track payments |
 | Labour | Your own crew, paid per event | See assigned events, reporting time and place, duties; mark tasks done; upload **photos and videos of completed work** |
 
@@ -27,7 +27,7 @@ You run an event management company (weddings, pre-wedding shoots, cocktail part
 
 1. **Booking:** an event is created as *Tentative* with its client and one or more **functions** (for example Haldi, Sangeet and Wedding, or just a single cocktail party).
 2. **Planning:** requirements are listed per function, vendors are asked for quotes, an owner approves a quote, and a work order goes to the vendor. The crew is assigned and the budget is set.
-3. **Event day(s):** the supervisor runs the schedule, vendors report on time, crew attendance is marked, and vendors and crew upload photos and videos of finished work, which the supervisor or manager approves.
+3. **Event day(s):** the supervisor runs the schedule, vendors and crew report on time (no attendance is kept, D52), and vendors and crew upload photos and videos of finished work, which the supervisor or manager approves.
 4. **Closure:** vendors upload invoices, crew pay is confirmed, and the client's balance is collected.
 5. **Settlement:** everyone is paid, the booking's profit and loss is final, and its records are locked.
 
@@ -251,7 +251,7 @@ Permissions are checked in three layers, all **on the server**. Hiding a button 
 | Crew directory | All | View | View | View | — | Own |
 | Register and edit crew | Yes | Yes | — | ⚙ Add | — | Own |
 | Assign crew to bookings and shifts | All | Assigned | — | — | — | — |
-| Mark attendance | All | Assigned | — | Assigned | — | ⚙ Own |
+| Run the event day (was "Mark attendance"; D52) | All | Assigned | — | Assigned | — | — |
 | Per-event pay rates | All | ⚙ Assigned | All | — | — | ⚙ Own |
 | **Money** | | | | | | |
 | Company revenue, expenses, P&L | Yes | — | Yes | — | — | — |
@@ -282,7 +282,7 @@ Notes on the matrix:
 
 - "Submit quotations and invoices" by an owner or the accountant means entering a document on a vendor's behalf, for vendors who send it on paper.
 - "Delete" applies only to records with no money attached. A booking with payments is cancelled, and payments are voided with a reason (G5).
-- Labour "Own" for attendance means self check-in, which depends on open question 4. Labour "Own" for pay depends on open question 5.
+- Attendance and crew self check-in were removed (D52). Labour "Own" for pay depends on open question 5.
 
 **Hard rules (built into the server's responses, not just hidden on screen):**
 
@@ -362,7 +362,7 @@ About 46 tables in 11 modules. Key fields are listed below; the full Prisma sche
 | `WorkerUnavailability` | dates and reason |
 | `CrewAssignment` | event, worker, duty, **agreed pay for the event**, status (ASSIGNED / CONFIRMED / DECLINED / COMPLETED / NO_SHOW) |
 | `CrewPayAdjustment` | assignment, type (EXTRA / DEDUCTION), amount, reason, approved by |
-| `CrewShift` | assignment, function, date, reporting time, location, attendance (PENDING / PRESENT / ABSENT / LATE), check-in time, marked by |
+| `CrewShift` | assignment, function, date, reporting time, location (old attendance columns kept but unused since D52) |
 
 ### Tasks
 

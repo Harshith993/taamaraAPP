@@ -1,7 +1,6 @@
 /**
  * Company switches the owners control (stored in company_profile.settings). They answer the open
- * questions in ARCHITECTURE.md §3 without a code change: crew pay visibility (Q5), crew self check-in
- * (Q4), proof from the gallery and the video limit (Q10), and proof before a vendor's final payment.
+ * questions in ARCHITECTURE.md §3 without a code change: crew pay visibility (Q5), proof from the gallery and the video limit (Q10), and proof before a vendor's final payment.
  * Every change takes effect on the next page load (the actor is read fresh on each request).
  */
 import { z } from "zod";
@@ -13,7 +12,6 @@ import { assertCan } from "@/modules/identity/policy";
 
 export const switchesSchema = z.object({
   crewCanSeePay: z.boolean(),
-  crewSelfCheckIn: z.boolean(),
   proofFromGallery: z.boolean(),
   maxVideoSeconds: z.coerce.number().int().min(15, "At least 15 seconds.").max(300, "At most 5 minutes."),
   finalVendorPaymentNeedsProof: z.boolean(),
@@ -22,7 +20,6 @@ export const switchesSchema = z.object({
 
 export const SWITCH_LABELS: Record<keyof CompanySwitches, { label: string; help: string }> = {
   crewCanSeePay: { label: "Crew see their own pay", help: "The agreed amount, approved extras and what has been paid, per event." },
-  crewSelfCheckIn: { label: "Crew check themselves in", help: "Crew tap “I'm here” on arrival and their location is recorded. Supervisors can always mark attendance too." },
   proofFromGallery: { label: "Proof can come from the gallery", help: "When off, vendors and crew must use the camera, so photos are taken on the spot." },
   maxVideoSeconds: { label: "Longest proof video (seconds)", help: "Longer videos are refused on the phone and on the server." },
   finalVendorPaymentNeedsProof: { label: "Vendor's final payment needs approved proof", help: "Hosts are warned before paying a vendor whose work has no approved photo or video." },

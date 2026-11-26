@@ -1,5 +1,5 @@
 /**
- * Crew on a booking: hiring, the crew member's answer, and attendance on the day.
+ * Crew on a booking: hiring and the crew member's answer.
  *
  *   ASSIGNED ──crew accepts──▶ CONFIRMED ──(event done)──▶ COMPLETED
  *       └──crew declines──▶ DECLINED            team takes them off ──▶ CANCELLED
@@ -7,9 +7,8 @@
  *  - Managers (crew.assign) put crew on bookings they run, with an agreed pay for the event (A3) and
  *    one shift per function. Unavailable days are refused; double bookings are allowed with a warning.
  *  - Crew accept or decline from their phone.
- *  - Attendance: the supervisor or manager marks present / late / absent (open question 4). When the
- *    owners switch on self check-in, crew tap "I'm here" and their location is recorded.
- *    Marking opens 6 hours before the reporting time and closes 18 hours after it.
+ *  - No attendance (D52, 26 Nov): nobody marks crew present, late or absent, and pay never depends on it.
+ *    Old attendance values stay in crew_shifts but are no longer read or written.
  */
 import { z } from "zod";
 import { inSequence, type Db, type DbTx } from "@/lib/db";
@@ -22,10 +21,8 @@ import { assertCan, assertEventAccess, can, crewAssignmentWhere } from "@/module
 import { bookingTeamUserIds, notify } from "@/modules/notifications/notify";
 
 const IST = "+05:30";
-const HOUR = 3600_000;
-export const LATE_AFTER_MINUTES = 15;
 
-async function assertStaffOn(tx: DbTx, actor: Actor, eventId: string, permission: "crew.assign" | "attendance.mark", message: string) {
+async function assertStaffOn(tx: DbTx, actor: Actor, eventId: string, permission: "crew.assign", message: string) {
   if (actor.accountType !== "INTERNAL") throw new ForbiddenError(message);
   assertCan(actor, permission, message);
   await assertEventAccess(tx, actor, eventId, permission);
@@ -113,11 +110,11 @@ export async function removeCrew(db: Db, actor: Actor, assignmentId: string, rea
   const why = reason.trim();
   if (!why) throw new ValidationError("Write a short reason.", { reason: "A reason is needed." });
   return db.$transaction(async (tx) => {
-    const a = await tx.crewAssignment.findUnique({ where: { id: assignmentId }, include: { worker: { select: { name: true, userId: true } }, event: { select: { name: true } }, shifts: { select: { attendance: true } }, _count: { select: { payments: true } } } });
+    const a = await tx.crewAssignment.findUnique({ where: { id: assignmentId }, include: { worker: { select: { name: true, userId: true } }, event: { select: { name: true } }, _count: { select: { payments: true } } } });
     if (!a) throw new NotFoundError("That crew booking");
     await assertStaffOn(tx, actor, a.eventId, "crew.assign", "You can't change crew on this booking.");
     if (["CANCELLED", "DECLINED", "COMPLETED"].includes(a.status)) throw new ConflictError("This crew booking is already closed.");
-    if (a.shifts.some((s) => s.attendance !== "PENDING") || a._count.payments) throw new ConflictError(`${a.worker.name} has already worked or been paid on this booking.`);
+    if (a._count.payments) throw new ConflictError(`${a.worker.name} has already been paid on this booking.`);
     await tx.crewAssignment.update({ where: { id: a.id }, data: { status: "CANCELLED", declineReason: why } });
     await notify(tx, [a.worker.userId], { type: "crew.removed", title: `Not needed: ${a.event.name}`, body: why, link: "/crew", entityType: "crew_assignment", entityId: a.id });
     await recordAudit(tx, actor, { action: "cancel", entityType: "crew_assignment", entityId: a.id, summary: `Took ${a.worker.name} off ${a.event.name} · ${why}` }, meta);
@@ -144,80 +141,6 @@ export async function respondToBooking(db: Db, actor: Actor, assignmentId: strin
       entityId: a.id,
     });
     await recordAudit(tx, actor, { action: accept ? "accept" : "decline", entityType: "crew_assignment", entityId: a.id, summary: `${a.worker.name} ${accept ? "accepted" : "declined"} ${a.event.name}${why ? ` · ${why}` : ""}` }, meta);
-  });
-}
-
-// ───────────────────────────── Attendance ─────────────────────────────
-
-export type WindowState = "early" | "open" | "closed";
-
-export function attendanceWindow(reportAt: Date, now = new Date()): WindowState {
-  const t = now.getTime();
-  if (t < reportAt.getTime() - 6 * HOUR) return "early";
-  if (t > reportAt.getTime() + 18 * HOUR) return "closed";
-  return "open";
-}
-
-function onTimeStatus(reportAt: Date, at: Date): "PRESENT" | "LATE" {
-  return at.getTime() > reportAt.getTime() + LATE_AFTER_MINUTES * 60_000 ? "LATE" : "PRESENT";
-}
-
-export const markSchema = z.object({ status: z.enum(["PRESENT", "LATE", "ABSENT", "PENDING"]) });
-
-/** The supervisor or manager marks one shift. PENDING undoes a mistake. */
-export async function markAttendance(db: Db, actor: Actor, shiftId: string, status: z.input<typeof markSchema>["status"], meta: RequestMeta = {}, now = new Date()) {
-  const v = parseInput(markSchema, { status });
-  return db.$transaction(async (tx) => {
-    const shift = await tx.crewShift.findUnique({ where: { id: shiftId }, include: { assignment: { select: { eventId: true, status: true, worker: { select: { name: true } }, event: { select: { name: true } } } } } });
-    if (!shift) throw new NotFoundError("That shift");
-    await assertStaffOn(tx, actor, shift.assignment.eventId, "attendance.mark", "You can't mark attendance on this booking.");
-    if (!["ASSIGNED", "CONFIRMED", "COMPLETED", "NO_SHOW"].includes(shift.assignment.status)) throw new ConflictError(`${shift.assignment.worker.name} is not on this booking any more.`);
-    const window = attendanceWindow(shift.reportAt, now);
-    if (window === "early") throw new ConflictError(`Attendance opens on the day (from ${formatTime(new Date(shift.reportAt.getTime() - 6 * HOUR))}).`);
-    if (window === "closed" && !actor.isOwner) throw new ConflictError("This shift is over. Ask a host to correct its attendance.");
-    const arrived = v.status === "PRESENT" || v.status === "LATE";
-    await tx.crewShift.update({
-      where: { id: shift.id },
-      data: {
-        attendance: v.status,
-        method: v.status === "PENDING" ? null : "SUPERVISOR",
-        checkInAt: arrived ? (shift.checkInAt ?? now) : null,
-        markedById: v.status === "PENDING" ? null : actor.userId,
-      },
-    });
-    await recordAudit(tx, actor, { action: "attendance", entityType: "crew_shift", entityId: shift.id, summary: `${shift.assignment.worker.name}: ${v.status.toLowerCase()} (${shift.assignment.event.name})` }, meta);
-    return { status: v.status };
-  });
-}
-
-export const checkInSchema = z.object({ latitude: z.number().min(-90).max(90).optional(), longitude: z.number().min(-180).max(180).optional() });
-
-/** The crew member taps "I'm here" (only when the owners have switched on self check-in). */
-export async function selfCheckIn(db: Db, actor: Actor, shiftId: string, input: z.input<typeof checkInSchema> = {}, meta: RequestMeta = {}, now = new Date()) {
-  const v = parseInput(checkInSchema, input);
-  return db.$transaction(async (tx) => {
-    if (actor.accountType !== "LABOUR") throw new ForbiddenError("Only crew check themselves in.");
-    assertCan(actor, "attendance.mark", "Your supervisor marks attendance. Find them when you arrive.");
-    const shift = await tx.crewShift.findFirst({ where: { id: shiftId, assignment: crewAssignmentWhere(actor) }, include: { assignment: { select: { status: true, eventId: true, worker: { select: { name: true } }, event: { select: { name: true } } } } } });
-    if (!shift) throw new NotFoundError("That shift");
-    if (shift.assignment.status !== "CONFIRMED") throw new ConflictError(shift.assignment.status === "ASSIGNED" ? "Accept the booking first." : "This booking is closed.");
-    if (shift.attendance !== "PENDING") throw new ConflictError("You are already checked in.");
-    const window = attendanceWindow(shift.reportAt, now);
-    if (window !== "open") throw new ConflictError(window === "early" ? "Check-in opens on the day." : "This shift is over.");
-    const status = onTimeStatus(shift.reportAt, now);
-    await tx.crewShift.update({ where: { id: shift.id }, data: { attendance: status, method: "SELF_GPS", checkInAt: now, latitude: v.latitude ?? null, longitude: v.longitude ?? null } });
-    if (status === "LATE") {
-      await notify(tx, await bookingTeamUserIds(tx, shift.assignment.eventId, ["SUPERVISOR", "MANAGER"]), {
-        type: "crew.late",
-        title: `${shift.assignment.worker.name} checked in late`,
-        body: `${formatTime(now)} (report time ${formatTime(shift.reportAt)})`,
-        link: "/event-day",
-        entityType: "crew_shift",
-        entityId: shift.id,
-      });
-    }
-    await recordAudit(tx, actor, { action: "check-in", entityType: "crew_shift", entityId: shift.id, summary: `${shift.assignment.worker.name} checked in ${status === "LATE" ? "late" : "on time"} (${shift.assignment.event.name})` }, meta);
-    return { status };
   });
 }
 

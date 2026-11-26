@@ -1,7 +1,7 @@
 // Browser check: crew from hiring to the event day.
 //   manager hires Arjun for the shoot (double-booking warning) → Arjun accepts on his phone →
 //   manager adds a task that needs a photo → Arjun sends the photo and marks it done → manager signs
-//   it off → event day in night mode: attendance for today's birthday → owner settings.
+//   it off → event day in night mode for today's birthday (no attendance, D52) → owner settings.
 // Usage: node tests/e2e/crew-day.cjs <screenshot-dir>
 const { mkdtempSync, writeFileSync } = require("node:fs");
 const os = require("node:os");
@@ -67,6 +67,7 @@ const { BASE, PHONE, IPAD, launch, checker, query } = require("./lib.cjs");
       const { ctx, page } = await signIn("priya@demo.taamara.in");
       await page.goto(`${bookingUrl}?tab=crew`);
       check("manager sees Arjun confirmed", /Confirmed/.test(await page.locator("li").filter({ hasText: "Arjun Prajapat" }).first().textContent()));
+      check("the Crew tab has no attendance marking", (await page.getByRole("button", { name: /^(Present|Late|Absent)$/ }).count()) === 0);
       await page.goto(`${bookingUrl}?tab=tasks`);
       await page.getByRole("button", { name: "+ Add a task" }).click();
       await page.fill('input[name="title"]', taskTitle);
@@ -96,6 +97,7 @@ const { BASE, PHONE, IPAD, launch, checker, query } = require("./lib.cjs");
       await again.getByRole("button", { name: "Done" }).click();
       await page.waitForFunction((t) => [...document.querySelectorAll("li")].some((li) => li.textContent.includes(t) && li.textContent.includes("BEING CHECKED")), taskTitle, { timeout: 10000 });
       check("crew marks the task done after sending a photo", true);
+      check("crew Today has no check-in", (await page.getByRole("button", { name: "I'm here" }).count()) === 0 && !/supervisor marks you in|Checked in/.test(await page.textContent("main")));
       await page.screenshot({ path: `${out}/42-crew-today.png`, fullPage: true });
       await ctx.close();
     }
@@ -111,7 +113,7 @@ const { BASE, PHONE, IPAD, launch, checker, query } = require("./lib.cjs");
       await ctx.close();
     }
 
-    // 6. Event day for today's birthday (Aman runs it): night mode, attendance
+    // 6. Event day for today's birthday (Aman runs it): night mode, crew list without attendance
     {
       const { ctx, page } = await signIn("aman@demo.taamara.in", IPAD);
       await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Event day" }).click();
@@ -120,13 +122,8 @@ const { BASE, PHONE, IPAD, launch, checker, query } = require("./lib.cjs");
       check("event day shows today's booking, crew and vendors", /Kabir's 1st Birthday/.test(body) && /Vikas Jangid/.test(body) && /Gulmohar Decor/.test(body));
       const bg = await page.evaluate(() => getComputedStyle(document.querySelector("main").parentElement).backgroundColor);
       check("event day is in night mode", bg === "rgb(18, 10, 16)", bg);
-      const vikas = page.getByRole("group", { name: "Attendance for Vikas Jangid" });
-      await vikas.getByRole("button", { name: "Late" }).click();
-      await page.waitForTimeout(1200);
-      const marked = await query(`SELECT s.attendance FROM crew_shifts s JOIN crew_assignments a ON a.id = s."assignmentId" JOIN workers w ON w.id = a."workerId" JOIN events e ON e.id = a."eventId" WHERE w.name = 'Vikas Jangid' AND e.name = 'Kabir''s 1st Birthday'`);
-      check("marking attendance saves", marked[0]?.attendance === "LATE", marked[0]?.attendance);
-      await vikas.getByRole("button", { name: "Present" }).click();
-      await page.waitForTimeout(1200);
+      check("event day has no attendance buttons", (await page.getByRole("group", { name: /^Attendance for/ }).count()) === 0 && (await page.getByRole("button", { name: /^(Present|Late|Absent)$/ }).count()) === 0);
+      check("event day lists crew with who has confirmed", /Crew today/.test(body) && /confirmed/.test(body));
       await page.screenshot({ path: `${out}/43-event-day-ipad.png`, fullPage: true });
       await page.setViewportSize(PHONE);
       await page.screenshot({ path: `${out}/44-event-day-phone.png`, fullPage: true });
@@ -147,6 +144,7 @@ const { BASE, PHONE, IPAD, launch, checker, query } = require("./lib.cjs");
       const { ctx, page } = await signIn("98000 00001");
       await page.getByRole("link", { name: "Settings" }).click();
       await page.waitForURL(/\/settings/);
+      check("settings has no crew self check-in switch", !/check themselves in/i.test(await page.textContent("main")));
       const box = page.getByRole("switch").first();
       const was = await box.isChecked();
       await box.setChecked(!was);

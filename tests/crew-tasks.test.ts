@@ -1,6 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadActor, type Actor } from "@/modules/identity/actor";
-import { assignCrew, attendanceWindow, crewForBooking, markAttendance, removeCrew, respondToBooking, selfCheckIn } from "@/modules/crew/service";
+import { can } from "@/modules/identity/policy";
+import * as crewService from "@/modules/crew/service";
+import { assignCrew, crewForBooking, removeCrew, respondToBooking } from "@/modules/crew/service";
 import { addProof } from "@/modules/proof/service";
 import { getSwitches, updateSwitches } from "@/modules/settings/service";
 import { assignableForBooking, createTask, moveTask, reviewTask, taskActions } from "@/modules/tasks/service";
@@ -106,59 +108,34 @@ describe("the crew member's answer", () => {
   });
 });
 
-describe("attendance", () => {
-  it("opens 6 hours before reporting and closes 18 hours after", () => {
-    const report = new Date("2026-11-20T17:30:00+05:30");
-    expect(attendanceWindow(report, new Date("2026-11-20T10:00:00+05:30"))).toBe("early");
-    expect(attendanceWindow(report, new Date("2026-11-20T12:00:00+05:30"))).toBe("open");
-    expect(attendanceWindow(report, new Date("2026-11-21T12:00:00+05:30"))).toBe("closed");
+describe("no attendance (D52)", () => {
+  it("has no attendance actions and no self check-in switch", async () => {
+    expect("markAttendance" in crewService).toBe(false);
+    expect("selfCheckIn" in crewService).toBe(false);
+    expect("crewSelfCheckIn" in (await getSwitches(testDb))).toBe(false);
+    expect(can(crew, "eventDay.run")).toBe(false);
+    expect(can(supervisor, "eventDay.run")).toBe(true);
   });
 
-  it("the supervisor marks present, late or absent, and can undo", async () => {
+  it("crew can be paid and taken off without anyone marking them present", async () => {
     const shift = await testDb.crewShift.findFirstOrThrow({ where: { assignment: { eventId, workerId } } });
-    const onTheDay = new Date(shift.reportAt.getTime() + 5 * 60_000);
-    await expect(markAttendance(testDb, supervisor, shift.id, "PRESENT", {}, new Date(shift.reportAt.getTime() - 8 * 3600_000))).rejects.toThrow(/opens on the day/);
-    await markAttendance(testDb, supervisor, shift.id, "LATE", {}, onTheDay);
-    let s = await testDb.crewShift.findUniqueOrThrow({ where: { id: shift.id } });
-    expect(s.attendance).toBe("LATE");
-    expect(s.method).toBe("SUPERVISOR");
-    expect(s.markedById).toBe(supervisor.userId);
-    expect(s.checkInAt?.getTime()).toBe(onTheDay.getTime());
-    await markAttendance(testDb, supervisor, shift.id, "PENDING", {}, onTheDay);
-    s = await testDb.crewShift.findUniqueOrThrow({ where: { id: shift.id } });
-    expect(s.attendance).toBe("PENDING");
-    expect(s.checkInAt).toBeNull();
-    await expect(markAttendance(testDb, otherManager, shift.id, "PRESENT", {}, onTheDay)).rejects.toThrow(/access/);
-    await expect(markAttendance(testDb, accountant, shift.id, "PRESENT", {}, onTheDay)).rejects.toThrow(/can't mark attendance/);
-  });
-
-  it("crew check themselves in only when the owners allow it", async () => {
-    const shift = await testDb.crewShift.findFirstOrThrow({ where: { assignment: { eventId, workerId } } });
-    await expect(selfCheckIn(testDb, crew, shift.id)).rejects.toThrow(/supervisor marks attendance/);
-    const before = await getSwitches(testDb);
-    await updateSwitches(testDb, owner, { ...before, crewSelfCheckIn: true });
-    try {
-      const allowed = await actorOf({ id: crew.userId });
-      const late = new Date(shift.reportAt.getTime() + 40 * 60_000);
-      const r = await selfCheckIn(testDb, allowed, shift.id, { latitude: 26.9, longitude: 75.8 }, {}, late);
-      expect(r.status).toBe("LATE");
-      const s = await testDb.crewShift.findUniqueOrThrow({ where: { id: shift.id } });
-      expect(s.method).toBe("SELF_GPS");
-      expect(Number(s.latitude)).toBeCloseTo(26.9);
-      expect(await testDb.notification.count({ where: { userId: supervisor.userId, type: "crew.late" } })).toBe(1);
-      await expect(selfCheckIn(testDb, allowed, shift.id, {}, {}, late)).rejects.toThrow(/already checked in/);
-      await expect(removeCrew(testDb, manager, shift.assignmentId, "no")).rejects.toThrow(/already worked/);
-    } finally {
-      await updateSwitches(testDb, owner, before);
-    }
+    expect(shift.attendance).toBe("PENDING");
+    // Old attendance rows don't block taking someone off; only a payment does.
+    const extra = await makeWorker("CT Extra");
+    const r = await assignCrew(testDb, manager, { eventId, workerId: extra.id, duty: "Helper", agreedPay: 500, shifts: [{ functionId: fnId, reportTime: "18:00" }] });
+    await testDb.crewShift.updateMany({ where: { assignmentId: r.id }, data: { attendance: "PRESENT" } });
+    await removeCrew(testDb, manager, r.id, "Not needed after all");
+    expect((await testDb.crewAssignment.findUniqueOrThrow({ where: { id: r.id } })).status).toBe("CANCELLED");
   });
 
   it("only owners change the switches, and every change is in the audit log", async () => {
     const before = await getSwitches(testDb);
     await expect(updateSwitches(testDb, manager, before)).rejects.toThrow(/Only hosts/);
     await expect(updateSwitches(testDb, owner, { ...before, maxVideoSeconds: 5 })).rejects.toThrow(/At least 15/);
-    const log = await testDb.auditLog.findFirst({ where: { entityType: "company_settings", summary: { contains: "Crew check themselves in" } }, orderBy: { createdAt: "desc" } });
-    expect(log?.summary).toMatch(/to off/);
+    await updateSwitches(testDb, owner, { ...before, proofFromGallery: !before.proofFromGallery });
+    await updateSwitches(testDb, owner, before);
+    const log = await testDb.auditLog.findFirst({ where: { entityType: "company_settings", summary: { contains: "Proof can come from the gallery" } }, orderBy: { createdAt: "desc" } });
+    expect(log?.summary).toMatch(/to (on|off)/);
   });
 });
 

@@ -15,7 +15,7 @@ export default async function InternalLayout({ children }: { children: React.Rea
   // Only pages that exist and that this person may open appear in the menu.
   const items: NavItem[] = [{ href: "/home", label: "Home" }];
   if (can(actor, "bookings.view")) items.push({ href: "/bookings", label: "Bookings" }, { href: "/calendar", label: "Calendar" });
-  if (can(actor, "attendance.mark")) items.push({ href: "/event-day", label: "Event day" });
+  if (can(actor, "eventDay.run")) items.push({ href: "/event-day", label: "Event day" });
   if (can(actor, "vendors.view")) items.push({ href: "/vendors", label: "Vendors" });
   if (can(actor, "crew.view")) items.push({ href: "/roster", label: "Crew" });
   if (can(actor, "proof.view")) items.push({ href: "/proof", label: "Proof", badge: await proofToCheckCount(db, actor) });

@@ -54,7 +54,7 @@ export async function bookingLedger(db: Db, actor: Actor, eventId: string) {
             worker: { select: { name: true } },
             adjustments: { orderBy: { createdAt: "asc" }, select: { id: true, type: true, amount: true, reason: true, state: true } },
             payments: { select: { amount: true, status: true } },
-            shifts: { select: { attendance: true } },
+            _count: { select: { shifts: true } },
           },
         })
       : [],
@@ -107,8 +107,7 @@ export async function bookingLedger(db: Db, actor: Actor, eventId: string) {
       paid,
       waiting,
       left: round2(total - paid - waiting),
-      worked: a.shifts.filter((s) => s.attendance === "PRESENT" || s.attendance === "LATE").length,
-      shifts: a.shifts.length,
+      shifts: a._count.shifts,
       adjustments: a.adjustments.map((x) => ({ ...x, amount: toNumber(x.amount) })),
     };
   });

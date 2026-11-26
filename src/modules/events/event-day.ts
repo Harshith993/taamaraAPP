@@ -52,7 +52,7 @@ export async function getEventDay(db: Db, actor: Actor, requested?: string) {
         })
       : [],
     db.crewShift.findMany({
-      where: { assignment: { eventId: { in: eventIds }, status: { in: ["ASSIGNED", "CONFIRMED", "COMPLETED", "NO_SHOW"] } }, OR: [{ functionId: { in: fnIds } }, { date: new Date(`${day}T00:00:00Z`) }] },
+      where: { assignment: { eventId: { in: eventIds }, status: { in: ["ASSIGNED", "CONFIRMED", "COMPLETED"] } }, OR: [{ functionId: { in: fnIds } }, { date: new Date(`${day}T00:00:00Z`) }] },
       orderBy: [{ reportAt: "asc" }],
       include: { assignment: { select: { eventId: true, status: true, duty: true, worker: { select: { name: true, phone: true } } } }, function: { select: { name: true } } },
     }),
@@ -93,9 +93,6 @@ export async function getEventDay(db: Db, actor: Actor, requested?: string) {
         function: s.function?.name ?? null,
         reportAt: s.reportAt,
         location: s.location,
-        attendance: s.attendance,
-        checkInAt: s.checkInAt,
-        selfCheckIn: s.method === "SELF_GPS",
       })),
       vendors: vendors
         .filter((v) => v.eventId === id)
