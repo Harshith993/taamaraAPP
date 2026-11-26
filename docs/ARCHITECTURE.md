@@ -96,14 +96,14 @@ WhatsApp Business notifications · online client payments (UPI links) · owned-i
 ### Still open (answer any time before the phase noted)
 
 1. ✅ **Answered:** the company and the app are **Taamara Taamara** (events & beyond). The colours come from the company logo; see `docs/design/DESIGN-LANGUAGE.md`.
-2. **Client billing:** should the app generate GST tax invoices to clients, or does your accountant raise them while the app only records client payments? Do you deduct TDS on vendor payments? *(Phase 7)*
-3. **Accountant:** an employee, or your outside accountant logging in? *(Phase 5)*
-4. **Attendance:** does the supervisor mark it, or does the crew check in on their phone at the venue (with location)? *(Phase 6)*
-5. **Should crew see their pay** and payment status for each event? *(Phase 6)*
-6. **Cash advances:** do managers or supervisors carry company cash for on-site spending? *(Phase 7)*
-7. **Equipment:** do you own decor, furniture, lights or sound that moves between events? *(Phase 6)*
-8. **Scale:** events per month, the busiest single day, and roughly how many vendors, crew and managers? *(Phase 4)*
-9. **Launch timing:** pilot on a few small events during the season, or switch over after it? *(Phase 10)*
+2. ✅ **Answered (26 Nov):** the accountant raises client GST invoices; the app records charges and receipts (D55). *Still open:* do you deduct TDS on vendor payments? Was: **Client billing:** should the app generate GST tax invoices to clients, or does your accountant raise them while the app only records client payments? Do you deduct TDS on vendor payments? *(Phase 7)*
+3. ✅ **Answered (26 Nov):** an outside accountant logs in (D56). Was: **Accountant:** an employee, or your outside accountant logging in? *(Phase 5)*
+4. ✅ **Answered (26 Nov):** no attendance needed (D52). Was: **Attendance:** does the supervisor mark it, or does the crew check in on their phone at the venue (with location)? *(Phase 6)*
+5. ✅ **Answered (26 Nov):** yes, switch on by default (D28). Was: **Should crew see their pay** and payment status for each event? *(Phase 6)*
+6. ✅ **Answered (26 Nov):** yes, managers and supervisors carry company cash (D57). Was: **Cash advances:** do managers or supervisors carry company cash for on-site spending? *(Phase 7)*
+7. ✅ **Answered (26 Nov):** yes, the company owns equipment (D58). Was: **Equipment:** do you own decor, furniture, lights or sound that moves between events? *(Phase 6)*
+8. ✅ **Answered (26 Nov):** 15–20 events a month, busiest day 12–15 hours with about 100 people (D59). Was: **Scale:** events per month, the busiest single day, and roughly how many vendors, crew and managers? *(Phase 4)*
+9. ✅ **Answered (26 Nov):** pilot a few small events first (D60). Was: **Launch timing:** pilot on a few small events during the season, or switch over after it? *(Phase 10)*
 10. ✅ **Answered:** defaults approved. Proof can come from the camera or the gallery, videos can be up to 2 minutes, and a vendor's final payment needs approved proof.
 
 ---
