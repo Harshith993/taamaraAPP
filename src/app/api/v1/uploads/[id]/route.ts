@@ -1,4 +1,5 @@
 /** One upload: how much has arrived (GET), the next piece (PUT), or throw it away (DELETE). */
+import { checkRate } from "@/lib/rate-limit";
 import { apiActor, apiError, assertSameOrigin, NO_STORE } from "@/lib/http";
 import { db } from "@/lib/db";
 import { ValidationError } from "@/lib/errors";
@@ -46,6 +47,7 @@ export async function PUT(request: Request, { params }: Ctx) {
   try {
     assertSameOrigin(request);
     const actor = await apiActor();
+    checkRate(actor.userId, "upload.piece");
     const offset = Number(request.headers.get("upload-offset") ?? NaN);
     const data = await readCapped(request);
     const r = await appendChunk(db, actor, (await params).id, offset, data);

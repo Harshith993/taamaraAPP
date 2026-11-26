@@ -140,6 +140,12 @@ export async function uploadFile(
       await recover();
       continue;
     }
+    // Too many pieces in a minute: wait as long as the server says, then carry on.
+    if (res.status === 429) {
+      report(true);
+      await sleep(Math.min(60, Number(res.headers.get("retry-after")) || 5) * 1000);
+      continue;
+    }
     const body = await readError(res);
     if (res.status === 409 && typeof body.received === "number") {
       sent = body.received;

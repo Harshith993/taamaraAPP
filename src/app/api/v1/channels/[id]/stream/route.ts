@@ -3,6 +3,7 @@
  * changed"; the screen then reloads the thread through the normal, permission-checked page.
  * A comment line every 25 s keeps proxies from closing the connection.
  */
+import { checkRate } from "@/lib/rate-limit";
 import { subscribe } from "@/lib/bus";
 import { db } from "@/lib/db";
 import { apiActor, apiError } from "@/lib/http";
@@ -13,6 +14,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const actor = await apiActor();
+    checkRate(actor.userId, "channel.stream");
     const { id } = await params;
     if (!(await canListen(db, actor, id))) return Response.json({ error: "That conversation was not found." }, { status: 404 });
     const encoder = new TextEncoder();

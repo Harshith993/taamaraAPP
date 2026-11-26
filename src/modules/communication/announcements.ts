@@ -11,6 +11,7 @@
  * Senders (and owners) see how many confirmed and who hasn't yet. Recipients are notified when it
  * is sent; announcements waiting for their "Got it" show on their home screen.
  */
+import { checkRate } from "@/lib/rate-limit";
 import { z } from "zod";
 import type { Prisma } from "@/generated/prisma/client";
 import type { Db, DbTx } from "@/lib/db";
@@ -89,6 +90,7 @@ function linkFor(accountType: string) {
 export async function sendAnnouncement(db: Db, actor: Actor, input: AnnouncementInput, meta: RequestMeta = {}) {
   const v = parseInput(announcementSchema, input);
   if (actor.accountType !== "INTERNAL") throw new ForbiddenError("Only the team sends announcements.");
+  checkRate(actor.userId, "announcement.send");
   const scope = assertCan(actor, "announcements.send", "You can't send announcements.");
   const companyWide = COMPANY_WIDE.includes(v.audience);
   if (companyWide && scope !== "ALL") throw new ForbiddenError("Only hosts send announcements to everyone.");

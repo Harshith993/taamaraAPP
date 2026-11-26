@@ -1,6 +1,7 @@
 /** Small helpers for the JSON API under /api/v1: who is asking, and errors as JSON. */
 import "server-only";
 import { AppError, ForbiddenError, UnauthorizedError, ValidationError } from "@/lib/errors";
+import { RateLimitError } from "@/lib/rate-limit";
 import type { Actor } from "@/modules/identity/actor";
 import { getActor } from "@/modules/identity/session";
 
@@ -27,6 +28,7 @@ export function assertSameOrigin(request: Request): void {
 }
 
 export function apiError(err: unknown, extra: Record<string, unknown> = {}): Response {
+  if (err instanceof RateLimitError) return Response.json({ error: err.message, ...extra }, { status: 429, headers: { "Retry-After": String(err.retryAfterSeconds) } });
   if (err instanceof ValidationError) return Response.json({ error: err.message, fieldErrors: err.fieldErrors, ...extra }, { status: 400 });
   if (err instanceof AppError) return Response.json({ error: err.message, ...extra }, { status: err.status });
   console.error(err);

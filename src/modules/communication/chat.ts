@@ -16,6 +16,7 @@
  * Notifications: someone gets one notification when a conversation has something new for them,
  * not one per message; the next comes after they have read it.
  */
+import { checkRate } from "@/lib/rate-limit";
 import { z } from "zod";
 import type { Prisma } from "@/generated/prisma/client";
 import { publish } from "@/lib/bus";
@@ -214,6 +215,7 @@ export const messageSchema = z.object({
 export async function postMessage(db: Db, actor: Actor, channelId: string, input: z.input<typeof messageSchema>) {
   const v = parseInput(messageSchema, input);
   if (!v.body && !v.fileId) throw new ValidationError("Write a message or attach a file.", { body: "Write a message." });
+  checkRate(actor.userId, "message.post");
   const result = await db.$transaction(async (tx) => {
     const ch = await assertChannelAccess(tx, actor, channelId);
     if (v.fileId) {

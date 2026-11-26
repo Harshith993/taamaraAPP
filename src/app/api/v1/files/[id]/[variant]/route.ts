@@ -2,6 +2,7 @@
  * Serves a stored file through a signed, expiring link made for the signed-in person
  * (src/modules/files/links.ts). Supports byte ranges, which phones need to play video.
  */
+import { checkRate } from "@/lib/rate-limit";
 import { Readable } from "node:stream";
 import { db } from "@/lib/db";
 import { apiActor, apiError } from "@/lib/http";
@@ -40,6 +41,7 @@ async function serve(request: Request, { params }: Ctx, withBody: boolean): Prom
     const { id, variant } = await params;
     const url = new URL(request.url);
     const actor = await apiActor();
+    checkRate(actor.userId, "file.get");
     const check = checkFileLink(actor.userId, id, variant, url.searchParams.get("e"), url.searchParams.get("s"));
     if (check === "expired") return Response.json({ error: "This link has expired. Refresh the page." }, { status: 410 });
     if (check !== "ok") return Response.json({ error: "Not found." }, { status: 404 });

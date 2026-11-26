@@ -1,4 +1,5 @@
 /** Start an upload. See src/modules/files/uploads.ts for the whole protocol. */
+import { checkRate } from "@/lib/rate-limit";
 import { apiActor, apiError, assertSameOrigin, NO_STORE } from "@/lib/http";
 import { db } from "@/lib/db";
 import { ValidationError } from "@/lib/errors";
@@ -8,6 +9,7 @@ export async function POST(request: Request) {
   try {
     assertSameOrigin(request);
     const actor = await apiActor();
+    checkRate(actor.userId, "upload.start");
     if (!request.headers.get("content-type")?.startsWith("application/json")) throw new ValidationError("Send JSON.");
     const body = await request.json().catch(() => {
       throw new ValidationError("Send JSON.");
