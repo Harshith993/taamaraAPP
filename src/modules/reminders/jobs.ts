@@ -2,13 +2,12 @@
  * Reminders (Phase 8), run every few minutes in-process (background.ts), like media processing.
  * Each one notifies at most once for the same thing, so running often is safe:
  *
- *   shift.tomorrow     crew with a confirmed shift tomorrow (India time): once per shift,
- *                      sent from 08:00 the day before
- *   task.overdue       the person a task is assigned to, once per task per day, from 09:00
- *   approvals.waiting  each owner, once a day from 09:00, when approvals have waited 12 hours or more
+ *   shift.tomorrow     crew with a confirmed shift tomorrow (India time): once per shift, the day before
+ *   task.overdue       the person a task is assigned to, once per task per day (India time)
+ *   approvals.waiting  each owner, once a day, when approvals have waited 12 hours or more
  *   crew.unanswered    crew who haven't answered a booking offer for a day, once per offer
  *
- * Quiet hours: nothing is sent between 21:00 and 08:00 India time.
+ * No quiet hours (D54, 26 Nov): events run late, so reminders go out at any time of day or night.
  */
 import type { Db } from "@/lib/db";
 import { formatTime } from "@/lib/format";
@@ -33,8 +32,7 @@ async function already(db: Db, userId: string, type: string, entityId: string, s
 }
 
 export async function shiftReminders(db: Db, now: Date) {
-  const { day, hour } = indiaClock(now);
-  if (hour < 8 || hour >= 21) return 0;
+  const { day } = indiaClock(now);
   const from = new Date(startOfIndiaDay(day).getTime() + DAY);
   const to = new Date(from.getTime() + DAY);
   const shifts = await db.crewShift.findMany({
@@ -52,8 +50,7 @@ export async function shiftReminders(db: Db, now: Date) {
 }
 
 export async function overdueTaskReminders(db: Db, now: Date) {
-  const { day, hour } = indiaClock(now);
-  if (hour < 9 || hour >= 21) return 0;
+  const { day } = indiaClock(now);
   const since = startOfIndiaDay(day);
   const tasks = await db.task.findMany({
     where: { dueAt: { lt: now }, status: { notIn: ["COMPLETED", "CANCELLED", "UNDER_REVIEW"] }, assigneeId: { not: null }, assignee: { status: "ACTIVE" } },
@@ -70,8 +67,7 @@ export async function overdueTaskReminders(db: Db, now: Date) {
 }
 
 export async function approvalDigest(db: Db, now: Date) {
-  const { day, hour } = indiaClock(now);
-  if (hour < 9 || hour >= 21) return 0;
+  const { day } = indiaClock(now);
   const waiting = await db.approvalRequest.count({ where: { state: "PENDING", createdAt: { lt: new Date(now.getTime() - 12 * 3600_000) } } });
   if (!waiting) return 0;
   let n = 0;
@@ -84,8 +80,6 @@ export async function approvalDigest(db: Db, now: Date) {
 }
 
 export async function unansweredCrewOffers(db: Db, now: Date) {
-  const { hour } = indiaClock(now);
-  if (hour < 8 || hour >= 21) return 0;
   const offers = await db.crewAssignment.findMany({
     where: { status: "ASSIGNED", createdAt: { lt: new Date(now.getTime() - DAY) }, worker: { userId: { not: null } }, event: { status: { notIn: ["CANCELLED", "COMPLETED", "SETTLED"] } } },
     select: { id: true, duty: true, event: { select: { name: true } }, worker: { select: { userId: true } } },

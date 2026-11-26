@@ -5,7 +5,7 @@ import { approvalDigest, indiaClock, overdueTaskReminders, shiftReminders, unans
 import { makeEvent, makeUser, makeWorker, testDb } from "./support/factories";
 
 const HOUR = 3600_000;
-// 10:30 India time today (05:00 UTC), so reminders are inside their sending hours.
+// 10:30 India time today (05:00 UTC).
 const today = indiaClock(new Date()).day;
 const now = new Date(Date.parse(`${today}T05:00:00Z`));
 const night = new Date(Date.parse(`${today}T17:00:00Z`)); // 22:30 in India
@@ -40,11 +40,13 @@ afterEach(() => setDrivers([inAppDriver]));
 afterAll(() => testDb.$disconnect());
 
 describe("reminders", () => {
-  it("stay quiet at night", async () => {
-    expect(await shiftReminders(testDb, night)).toBe(0);
-    expect(await overdueTaskReminders(testDb, night)).toBe(0);
-    expect(await approvalDigest(testDb, night)).toBe(0);
-    expect(await unansweredCrewOffers(testDb, night)).toBe(0);
+  it("go out at any hour, even late at night (no quiet hours, D54)", async () => {
+    // Each runs at 22:30 India time; later runs the same day don't repeat them (checked below).
+    expect(await shiftReminders(testDb, night)).toBeGreaterThan(0);
+    expect(await overdueTaskReminders(testDb, night)).toBeGreaterThan(0);
+    expect(await approvalDigest(testDb, night)).toBeGreaterThan(0);
+    expect(await unansweredCrewOffers(testDb, night)).toBeGreaterThan(0);
+    expect(indiaClock(night).hour).toBe(22);
   });
 
   it("tell crew about tomorrow's shift, once", async () => {
