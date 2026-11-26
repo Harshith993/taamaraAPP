@@ -475,6 +475,24 @@ async function seedDemo() {
   await db.clientCharge.create({ data: { eventId: diwali.id, clientId: infotech.id, description: "Corporate Diwali night", amount: 640000, gstRate: 18, createdById: founder.id } });
   await db.payment.create({ data: { direction: "IN", eventId: diwali.id, partyType: "CLIENT", clientId: infotech.id, amount: 400000, method: "BANK", paidOn: day(-18), status: "PAID", requestedById: kavita.id, approvedById: founder.id, approvedAt: new Date(), paidById: kavita.id } });
 
+  // Equipment register (D58): the company's own kit, booked out to bookings, with a clash and a damage report
+  const item = (name: string, category: string, quantityOwned: number, location: string, condition: "GOOD" | "WORN" | "NEEDS_REPAIR" = "GOOD", notes?: string) =>
+    db.inventoryItem.create({ data: { name, category, quantityOwned, location, condition, notes, createdById: founder.id } });
+  const chairs = await item("Gold chiavari chairs", "FURNITURE", 120, "Godown, bay 2", "GOOD", "White seat pads in the blue trunk.");
+  const urlis = await item("Brass urli bowls", "DECOR", 12, "Godown, rack A");
+  await item("Marigold arch frame", "DECOR", 2, "Godown, back wall", "WORN", "One hinge is loose; tie with wire.");
+  await item("Fairy-light curtains (3 m)", "LIGHTING", 30, "Godown, rack C");
+  const pars = await item("LED PAR uplighters", "LIGHTING", 24, "Godown, rack C");
+  await item("Bluetooth speakers (pair)", "SOUND", 4, "Office cupboard", "NEEDS_REPAIR", "One pair crackles at full volume.");
+  await db.inventoryAllocation.createMany({
+    data: [
+      { itemId: chairs.id, eventId: wedding.id, quantity: 100, fromDate: day(1), toDate: day(6), notes: "Sangeet and reception seating", createdById: priya.id },
+      { itemId: chairs.id, eventId: shoot.id, quantity: 30, fromDate: day(2), toDate: day(2), notes: "Props for the shoot", createdById: priya.id },
+      { itemId: urlis.id, eventId: bday.id, quantity: 6, fromDate: day(0), toDate: day(0), status: "OUT", outAt: new Date(), outById: aman.id, outNote: "Packed in two cartons", createdById: aman.id },
+      { itemId: pars.id, eventId: engagement.id, quantity: 10, fromDate: day(-12), toDate: day(-11), status: "RETURNED" as const, outAt: new Date(Date.now() - 12 * 86400_000), outById: aman.id, returnedAt: new Date(Date.now() - 11 * 86400_000), returnedById: aman.id, quantityReturned: 9, quantityDamaged: 1, quantityMissing: 0, returnNote: "One lens cracked when the stand fell", createdById: aman.id },
+    ],
+  });
+
   // Announcement, notifications and an audit trail so the screens are not empty
   await db.announcement.create({ data: { audience: "BOOKING_CREW", eventId: wedding.id, title: "Sangeet: report at gate 2", body: "Crew please report at gate 2 behind the parking by 17:30. Wear the black T-shirt.", needsAck: true, createdById: ramesh.id } });
   await db.notification.createMany({

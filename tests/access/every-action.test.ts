@@ -20,6 +20,7 @@ import * as chat from "@/modules/communication/chat";
 import * as roster from "@/modules/crew/roster";
 import * as crew from "@/modules/crew/service";
 import * as docs from "@/modules/documents/service";
+import * as equipment from "@/modules/equipment/service";
 import * as planning from "@/modules/events/planning";
 import * as events from "@/modules/events/service";
 import * as workspace from "@/modules/events/workspace";
@@ -408,6 +409,59 @@ const CASES: Case[] = [
   { name: "listRoles", deny: ownerOnly, run: (a) => roles.listRoles(testDb, a) },
   { name: "updateRoleGrants", deny: ownerOnly, run: async (a) => roles.updateRoleGrants(testDb, a, "SUPERVISOR", (await roles.listRoles(testDb, A.owner)).find((r) => r.key === "SUPERVISOR")!.grants) },
   { name: "updateSwitches", deny: ownerOnly, run: async (a) => settings.updateSwitches(testDb, a, await settings.getSwitches(testDb)) },
+  // ── Equipment (D58)
+  { name: "saveEquipmentItem", deny: ["accountant", "supervisor", ...staffOnly], allow: ["manager", "otherManager"], run: (a) => equipment.saveEquipmentItem(testDb, a, { name: "EA Lantern", category: "LIGHTING", quantity: 10 }) },
+  { name: "listEquipment", deny: ["accountant", "supervisor", ...staffOnly], allow: ["manager", "otherManager"], run: (a) => equipment.listEquipment(testDb, a) },
+  { name: "equipmentReport", deny: ["accountant", "supervisor", ...staffOnly], allow: ["manager", "otherManager"], run: (a) => equipment.equipmentReport(testDb, a) },
+  {
+    name: "equipmentAvailability",
+    deny: notTeam,
+    allow: ["manager", "supervisor"],
+    setup: async () => ({ item: (await testDb.inventoryItem.create({ data: { name: "EA Chair", category: "FURNITURE", quantityOwned: 5 } })).id }),
+    run: (a, w) => equipment.equipmentAvailability(testDb, a, w.eventId, day(10), day(10)),
+  },
+  {
+    name: "bookEquipment",
+    deny: notTeam,
+    allow: ["manager", "supervisor"],
+    setup: async () => ({ item: (await testDb.inventoryItem.create({ data: { name: "EA Chair", category: "FURNITURE", quantityOwned: 5 } })).id }),
+    run: (a, w, x) => equipment.bookEquipment(testDb, a, { eventId: w.eventId, itemId: x.item, quantity: 2, from: day(10), to: day(10) }),
+  },
+  {
+    name: "bookingEquipment",
+    deny: ["otherManager", "accountant", ...staffOnly],
+    allow: ["manager", "supervisor"],
+    setup: async (w) => {
+      const item = await testDb.inventoryItem.create({ data: { name: "EA Chair", category: "FURNITURE", quantityOwned: 5 } });
+      await testDb.inventoryAllocation.create({ data: { itemId: item.id, eventId: w.eventId, quantity: 1, fromDate: new Date(`${day(10)}T00:00:00Z`), toDate: new Date(`${day(10)}T00:00:00Z`) } });
+      return {};
+    },
+    run: (a, w) => equipment.bookingEquipment(testDb, a, w.eventId),
+  },
+  ...(["cancelEquipmentBooking", "checkOutEquipment", "checkInEquipment"] as const).map((name) => ({
+    name,
+    deny: notTeam,
+    allow: ["manager", "supervisor"] as Role[],
+    setup: async (w: World) => {
+      const item = await testDb.inventoryItem.create({ data: { name: "EA Chair", category: "FURNITURE", quantityOwned: 5 } });
+      const al = await testDb.inventoryAllocation.create({ data: { itemId: item.id, eventId: w.eventId, quantity: 1, status: name === "checkInEquipment" ? "OUT" : "RESERVED", fromDate: new Date(`${day(10)}T00:00:00Z`), toDate: new Date(`${day(10)}T00:00:00Z`) } });
+      return { al: al.id };
+    },
+    run: (a: Actor, _w: World, x: Record<string, string>) =>
+      name === "cancelEquipmentBooking" ? equipment.cancelEquipmentBooking(testDb, a, x.al, "Not needed") : name === "checkOutEquipment" ? equipment.checkOutEquipment(testDb, a, x.al) : equipment.checkInEquipment(testDb, a, x.al, { good: 1 }),
+  })),
+  {
+    name: "resolveEquipmentIssue",
+    deny: ["accountant", "supervisor", ...staffOnly],
+    allow: ["manager", "otherManager"],
+    setup: async (w) => {
+      const item = await testDb.inventoryItem.create({ data: { name: "EA Chair", category: "FURNITURE", quantityOwned: 5 } });
+      const al = await testDb.inventoryAllocation.create({ data: { itemId: item.id, eventId: w.eventId, quantity: 1, status: "RETURNED", quantityReturned: 0, quantityMissing: 1, returnNote: "lost" } });
+      return { al: al.id };
+    },
+    run: (a, _w, x) => equipment.resolveEquipmentIssue(testDb, a, x.al, "Found"),
+  },
+
   // ── Cash advances (D57)
   { name: "giveAdvance", deny: money, allow: ["accountant"], run: (a) => advances.giveAdvance(testDb, a, { holderId: managerId, amount: 500, purpose: "Tea on site" }) },
   {
@@ -462,6 +516,7 @@ const EXEMPT: Record<string, string> = {
   listInvoices: "filtered list",
   invoicesToCheckCount: "filtered count",
   listExpenses: "filtered list",
+  equipmentBookings: "filtered list (bookings the person can book equipment out to)",
   listAdvances: "filtered list (cashAdvanceWhere; tests/advances.test.ts)",
   spendableAdvances: "the holder's own advances only",
   decideAdvance: "runs inside decideApproval, which is tested here",

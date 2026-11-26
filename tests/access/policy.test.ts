@@ -218,7 +218,7 @@ describe("the outside accountant (D56)", () => {
   it("covers money only: no chats, crew personal details, proof, documents or run sheets", async () => {
     const a = s.actors.accountant;
     for (const p of ["finance.company", "finance.billing", "payments.prepare", "payments.markPaid", "payments.recordIn", "reports.finance", "vendors.bank", "crew.pay.view", "expenses.record", "audit.viewFinancial"] as const) expect(can(a, p), p).toBe(true);
-    for (const p of ["chat.booking", "chat.direct", "announcements.send", "crew.view", "proof.view", "documents.view", "documents.upload", "schedule.view", "requirements.view", "eventDay.run", "approvals.decide", "admin.users"] as const) expect(can(a, p), p).toBe(false);
+    for (const p of ["chat.booking", "chat.direct", "announcements.send", "crew.view", "equipment.view", "equipment.book", "proof.view", "documents.view", "documents.upload", "schedule.view", "requirements.view", "eventDay.run", "approvals.decide", "admin.users"] as const) expect(can(a, p), p).toBe(false);
     const { getBookingCrew } = await import("@/modules/events/workspace");
     expect(await getBookingCrew(testDb, a, s.events.e1.id)).toEqual([]);
   });

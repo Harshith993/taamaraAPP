@@ -82,6 +82,11 @@ export const PERMISSIONS = [
   { key: "crew.assign", group: "Crew", label: "Assign crew to bookings and shifts", scopes: ALL_OR_ASSIGNED, accountTypes: INTERNAL },
   { key: "crew.pay.view", group: "Crew", label: "See per-event pay", scopes: ALL_SCOPES, accountTypes: STAFF_AND_CREW, financial: true },
 
+  // Equipment (D58)
+  { key: "equipment.view", group: "Equipment", label: "See the equipment register", scopes: ONLY_ALL, accountTypes: INTERNAL },
+  { key: "equipment.manage", group: "Equipment", label: "Add and edit equipment, settle missing or damaged items", scopes: ONLY_ALL, accountTypes: INTERNAL },
+  { key: "equipment.book", group: "Equipment", label: "Book equipment out to bookings and check it out and in", scopes: ALL_OR_ASSIGNED, accountTypes: INTERNAL },
+
   // Money
   { key: "finance.company", group: "Money", label: "See company revenue, expenses and P&L", scopes: ONLY_ALL, accountTypes: INTERNAL, financial: true },
   { key: "finance.billing", group: "Money", label: "See client billing and margin", scopes: ONLY_ALL, accountTypes: INTERNAL, financial: true },
@@ -183,6 +188,9 @@ export const DEFAULT_ROLE_GRANTS: Record<Exclude<RoleKey, "OWNER">, Grants> = {
     "crew.assign": "ASSIGNED",
     "eventDay.run": "ASSIGNED",
     "crew.pay.view": "ASSIGNED",
+    "equipment.view": "ALL",
+    "equipment.manage": "ALL",
+    "equipment.book": "ASSIGNED",
     "finance.budget": "ASSIGNED",
     "expenses.record": "ASSIGNED",
     "payments.status": "ASSIGNED",
@@ -233,6 +241,7 @@ export const DEFAULT_ROLE_GRANTS: Record<Exclude<RoleKey, "OWNER">, Grants> = {
     "crew.view": "ALL",
     "crew.create": "ALL",
     "eventDay.run": "ASSIGNED",
+    "equipment.book": "ASSIGNED",
     "expenses.record": "ASSIGNED",
     "documents.view": "ASSIGNED",
     "documents.upload": "ASSIGNED",

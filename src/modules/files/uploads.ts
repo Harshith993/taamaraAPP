@@ -73,7 +73,7 @@ export function maxBytesFor(purpose: FilePurpose, declaredType: string): number 
 
 function mayUpload(actor: Actor, purpose: FilePurpose): boolean {
   if (purpose === "PROOF") return can(actor, "proof.upload");
-  return can(actor, "documents.upload") || can(actor, "quotes.submit") || can(actor, "expenses.record");
+  return can(actor, "documents.upload") || can(actor, "quotes.submit") || can(actor, "expenses.record") || can(actor, "equipment.manage");
 }
 
 /** A file name safe to store and show: no folders, no control characters, the real extension. */
@@ -302,6 +302,7 @@ export async function cleanupAbandonedUploads(db: DbTx, now = new Date()) {
       vendorInvoices: { none: {} },
       messageAttachments: { none: {} },
       expenseReceipts: { none: {} },
+      equipmentPhotos: { none: {} },
     },
     select: { id: true, storageKey: true, thumbnailKey: true, playableKey: true },
     take: 200,

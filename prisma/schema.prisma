@@ -333,8 +333,16 @@ enum AnnouncementAudience {
 
 enum InventoryCondition {
   GOOD
+  WORN
   NEEDS_REPAIR
   RETIRED
+}
+
+enum AllocationStatus {
+  RESERVED
+  OUT
+  RETURNED
+  CANCELLED
 }
 
 // ─────────────────────── Company, identity & access ───────────────────────
@@ -1469,7 +1477,7 @@ model CashAdvance {
   voidReason     String?
   note           String?
   createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  updatedAt      DateTime          @default(now()) @updatedAt
   expenses       Expense[]
 
   @@index([userId, status])
@@ -1511,39 +1519,61 @@ model DocumentSequence {
 
 // ───────────────────────────── Inventory ─────────────────────────────
 
+/// The company's own decor, furniture, lights and sound that move between events (D58).
 model InventoryItem {
   id            String                @id @default(uuid())
   name          String
   sku           String?               @unique
+  /// One of DECOR, FURNITURE, LIGHTING, SOUND, OTHER (src/modules/equipment/service.ts).
   category      String?
   unit          String                @default("pcs")
   quantityOwned Int                   @default(0)
   location      String?
   condition     InventoryCondition    @default(GOOD)
   photoFileId   String?
+  photoFile     File?                 @relation(fields: [photoFileId], references: [id], onDelete: SetNull)
   notes         String?
+  createdById   String?
   createdAt     DateTime              @default(now())
   updatedAt     DateTime              @updatedAt
   allocations   InventoryAllocation[]
 
+  @@index([name])
   @@map("inventory_items")
 }
 
+/// Equipment booked out to a booking for its dates: reserved → checked out → checked back in.
 model InventoryAllocation {
-  id               String        @id @default(uuid())
+  id               String           @id @default(uuid())
   itemId           String
-  item             InventoryItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  item             InventoryItem    @relation(fields: [itemId], references: [id], onDelete: Restrict)
   eventId          String
-  event            Event         @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  event            Event            @relation(fields: [eventId], references: [id], onDelete: Restrict)
   quantity         Int
+  fromDate         DateTime?        @db.Date
+  toDate           DateTime?        @db.Date
+  status           AllocationStatus @default(RESERVED)
   outAt            DateTime?
+  outById          String?
+  outNote          String?
   returnedAt       DateTime?
+  returnedById     String?
   quantityReturned Int?
   quantityDamaged  Int?
+  quantityMissing  Int?
+  returnNote       String?
+  /// A missing or damaged report a host or manager has dealt with (found, repaired, written off).
+  resolvedAt       DateTime?
+  resolvedById     String?
+  resolution       String?
+  cancelReason     String?
   notes            String?
-  createdAt        DateTime      @default(now())
+  createdById      String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @default(now()) @updatedAt
 
   @@index([eventId])
+  @@index([itemId, status])
   @@map("inventory_allocations")
 }
 
@@ -1578,6 +1608,7 @@ model File {
   vendorInvoices     VendorInvoice[]
   messageAttachments MessageAttachment[]
   expenseReceipts    Expense[]
+  equipmentPhotos    InventoryItem[]
 
   @@index([status, createdAt])
   @@map("files")

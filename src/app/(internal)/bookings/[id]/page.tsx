@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { MessageCircle, MessagesSquare, Camera, CheckSquare, Clock3, FileText, IndianRupee, LayoutDashboard, ListChecks, Store, UsersRound } from "lucide-react";
+import { Armchair, MessageCircle, MessagesSquare, Camera, CheckSquare, Clock3, FileText, IndianRupee, LayoutDashboard, ListChecks, Store, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ButtonLink, EmptyState, Notice, Panel, Tag } from "@/components/ui";
@@ -50,6 +50,8 @@ import { DocumentList } from "@/components/document-list";
 import { AddDocumentForm } from "@/components/document-controls";
 import { CancelBooking, DetailsEditor, DoneToggle, FunctionEditor, RequirementEditor, ScheduleEditor, TeamEditor } from "./planning-controls";
 import { InviteVendorForm, VendorRowActions } from "./vendor-controls";
+import { BookEquipmentForm, CancelEquipmentBooking, CheckInEquipment, CheckOutEquipment } from "@/components/equipment-controls";
+import { bookingEquipment, categoryLabel, equipmentAvailability } from "@/modules/equipment/service";
 
 export const metadata: Metadata = { title: "Booking" };
 
@@ -59,6 +61,7 @@ const TABS = [
   { key: "needs", label: "Needs", icon: ListChecks },
   { key: "vendors", label: "Vendors", icon: Store },
   { key: "crew", label: "Crew", icon: UsersRound },
+  { key: "equipment", label: "Equipment", icon: Armchair },
   { key: "tasks", label: "Tasks", icon: CheckSquare },
   { key: "proof", label: "Proof", icon: Camera },
   { key: "docs", label: "Docs", icon: FileText },
@@ -77,6 +80,8 @@ function tabVisible(actor: Actor, key: TabKey): boolean {
       return seesCrewList(actor);
     case "proof":
       return can(actor, "proof.view");
+    case "equipment":
+      return actor.accountType === "INTERNAL" && (can(actor, "equipment.book") || can(actor, "equipment.view"));
     case "docs":
       return can(actor, "documents.view");
     case "money":
@@ -219,6 +224,7 @@ export default async function BookingPage({
       {tab === "needs" && <Needs actor={actor} eventId={id} />}
       {tab === "vendors" && <Vendors actor={actor} eventId={id} />}
       {tab === "crew" && <Crew actor={actor} eventId={id} />}
+      {tab === "equipment" && <Equipment actor={actor} eventId={id} />}
       {tab === "tasks" && <Tasks actor={actor} eventId={id} />}
       {tab === "proof" && <Proof actor={actor} eventId={id} />}
       {tab === "docs" && <Docs actor={actor} eventId={id} />}
@@ -1430,5 +1436,73 @@ function BudgetPanel({ eventId, budget }: { eventId: string; budget: NonNullable
         </div>
       )}
     </Panel>
+  );
+}
+
+const EQUIPMENT_STATUS = { RESERVED: { tone: "plum", words: "Booked" }, OUT: { tone: "look", words: "Out" }, RETURNED: { tone: "ok", words: "Back" }, CANCELLED: { tone: "quiet", words: "Cancelled" } } as const;
+
+/** The booking's equipment (D58): book items out for its dates, check them out and back in. */
+async function Equipment({ actor, eventId }: { actor: Actor; eventId: string }) {
+  const onBooking = await isOnBooking(actor, eventId);
+  const books = can(actor, "equipment.book") && (actor.grants.get("equipment.book") === "ALL" || onBooking);
+  const event = await db.event.findUniqueOrThrow({ where: { id: eventId }, select: { startDate: true, endDate: true, status: true } });
+  const ymd = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : todayInIndia());
+  const from = ymd(event.startDate);
+  const to = ymd(event.endDate ?? event.startDate);
+  const open = !["CANCELLED", "SETTLED", "COMPLETED"].includes(event.status);
+  const [rows, items] = await Promise.all([bookingEquipment(db, actor, eventId), books && open ? equipmentAvailability(db, actor, eventId, from, to) : Promise.resolve([])]);
+  const clashes = rows.filter((r) => r.short > 0);
+  return (
+    <div className="flex flex-col gap-3">
+      {books && open && <BookEquipmentForm eventId={eventId} items={items} from={from} to={to} />}
+      {clashes.length > 0 && (
+        <Notice tone="error">
+          Clash: {clashes.map((c) => `${c.item.name} (${c.short} short)`).join(", ")}. The same items are booked for another event on overlapping dates. Hire extra, swap items or change the dates.
+        </Notice>
+      )}
+      <Panel title={`Equipment · ${rows.length}`} action={can(actor, "equipment.view") ? <Link href="/equipment" className="label-mono inline-flex min-h-11 items-center px-2 text-[12px]">Register →</Link> : undefined}>
+        {rows.length === 0 ? (
+          <EmptyState title="No equipment booked">Company decor, furniture, lights and sound booked for this event appear here.</EmptyState>
+        ) : (
+          <ul>
+            {rows.map((r) => (
+              <li key={r.id} aria-label={`Equipment: ${r.item.name}`} className="grid grid-cols-1 gap-2 border-b border-rule-soft px-3.5 py-3 last:border-b-0 lg:grid-cols-[56px_minmax(0,1fr)_auto] lg:items-center">
+                {r.item.photo?.thumbUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={r.item.photo.thumbUrl} alt="" className="hidden size-14 rounded-xl object-cover lg:block" />
+                ) : (
+                  <span aria-hidden className="hidden size-14 place-items-center rounded-xl bg-pastel-orange text-[#c2410c] lg:grid">
+                    <Armchair className="size-6" />
+                  </span>
+                )}
+                <span className="flex min-w-0 flex-col leading-tight">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="font-bold">
+                      {r.quantity} × {r.item.name}
+                    </span>
+                    <Tag tone={EQUIPMENT_STATUS[r.status].tone}>{EQUIPMENT_STATUS[r.status].words}</Tag>
+                    {r.short > 0 && <Tag tone="now">Clash · {r.short} short</Tag>}
+                    {r.missing > 0 && <Tag tone="now">{r.missing} missing</Tag>}
+                    {r.damaged > 0 && <Tag tone="look">{r.damaged} damaged</Tag>}
+                  </span>
+                  <span className="text-[12.5px] text-ink-quiet">
+                    {categoryLabel(r.item.category)} · {r.from ? formatDate(r.from, { timeZone: "UTC", day: "numeric", month: "short" }) : "?"} to {r.to ? formatDate(r.to, { timeZone: "UTC", day: "numeric", month: "short" }) : "?"}
+                    {r.notes ? ` · ${r.notes}` : ""}
+                  </span>
+                  {r.outNote && <span className="text-[12.5px]">Out: {r.outNote}</span>}
+                  {r.returnNote && <span className="text-[12.5px]">Back: {r.returnNote}</span>}
+                  {r.resolution && <span className="text-[12.5px] text-ok-text">Settled: {r.resolution}</span>}
+                </span>
+                <span className="flex flex-wrap items-start gap-2">
+                  {books && r.status === "RESERVED" && <CheckOutEquipment id={r.id} />}
+                  {books && r.status === "RESERVED" && <CancelEquipmentBooking id={r.id} />}
+                  {books && r.status === "OUT" && <CheckInEquipment id={r.id} quantity={r.quantity} />}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
+    </div>
   );
 }
