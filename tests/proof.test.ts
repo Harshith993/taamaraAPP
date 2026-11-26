@@ -114,9 +114,8 @@ describe("seeing proof", () => {
     expect(team.length).toBe(6);
     expect(team.filter((p) => p.canReview).length).toBe(5); // not their own upload
     expect(await listProof(testDb, otherManager, { eventId })).toEqual([]);
-    const forAccountant = await listProof(testDb, accountant, { eventId });
-    expect(forAccountant.length).toBe(6);
-    expect(forAccountant.some((p) => p.canReview)).toBe(false);
+    // The outside accountant sees no proof photos (D56).
+    expect(await listProof(testDb, accountant, { eventId })).toEqual([]);
     expect(await proofToCheckCount(testDb, supervisor)).toBeGreaterThanOrEqual(5);
   });
 
@@ -125,9 +124,12 @@ describe("seeing proof", () => {
     expect(forManager.distanceFromVenue).toBeLessThan(50);
     expect(forManager.location).not.toBeNull();
     expect(forManager.media.originalUrl).toMatch(/\/original\?/);
-    const forAccountant = (await listProof(testDb, accountant, { target: { kind: "vendorJob", id: acceptedJob } })).find((p) => p.kind === "PHOTO")!;
-    expect(forAccountant.location).toBeNull();
-    expect(forAccountant.media.originalUrl).toBeNull();
+    // Someone who may see proof but not review it (e.g. the accountant, if a host gives proof back on
+    // the Roles page) gets neither the exact spot nor the original file.
+    const viewer: Actor = { ...accountant, grants: new Map([...accountant.grants, ["proof.view", "ALL"]]) };
+    const forViewer = (await listProof(testDb, viewer, { target: { kind: "vendorJob", id: acceptedJob } })).find((p) => p.kind === "PHOTO")!;
+    expect(forViewer.location).toBeNull();
+    expect(forViewer.media.originalUrl).toBeNull();
     expect(metresBetween({ latitude: 26.9124, longitude: 75.7873 }, { latitude: 26.9214, longitude: 75.7873 })).toBeGreaterThan(990);
   });
 });

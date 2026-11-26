@@ -53,7 +53,8 @@ describe("booking documents", () => {
     expect(await titles(owner)).toHaveLength(5);
     expect(await titles(manager)).toEqual(["Mandap design", "Run of show notes", "Venue layout", "Venue permissions"]);
     expect(await titles(supervisor)).toEqual(["Mandap design", "Run of show notes", "Venue layout", "Venue permissions"]);
-    expect(await titles(accountant)).toEqual(["Mandap design", "Venue layout", "Venue permissions"]);
+    // The outside accountant has no booking documents (D56).
+    expect(await titles(accountant)).toEqual([]);
     expect(await titles(vendor)).toEqual(["Mandap design"]);
     expect(await titles(otherVendor)).toEqual([]);
     expect(await titles(crew)).toEqual(["Venue layout"]);

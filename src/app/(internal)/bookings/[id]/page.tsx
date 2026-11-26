@@ -20,6 +20,7 @@ import {
 } from "@/modules/events/labels";
 import {
   getBookingCrew,
+  seesCrewList,
   getBookingHeader,
   getBookingMoney,
   getBookingSchedule,
@@ -65,6 +66,26 @@ const TABS = [
 ] as const;
 type TabKey = (typeof TABS)[number]["key"];
 
+/** Tabs follow permissions, so the outside accountant (D56) sees the booking's money, not its operations. */
+function tabVisible(actor: Actor, key: TabKey): boolean {
+  switch (key) {
+    case "schedule":
+      return can(actor, "schedule.view");
+    case "needs":
+      return can(actor, "requirements.view");
+    case "crew":
+      return seesCrewList(actor);
+    case "proof":
+      return can(actor, "proof.view");
+    case "docs":
+      return can(actor, "documents.view");
+    case "money":
+      return can(actor, "finance.budget") || can(actor, "finance.billing");
+    default:
+      return true;
+  }
+}
+
 export default async function BookingPage({
   params,
   searchParams,
@@ -75,7 +96,7 @@ export default async function BookingPage({
   const actor = await requirePermission("bookings.view");
   const { id } = await params;
   const sp = await searchParams;
-  const tab: TabKey = (TABS.find((t) => t.key === sp.tab)?.key ??
+  const tab: TabKey = (TABS.find((t) => t.key === sp.tab && tabVisible(actor, t.key))?.key ??
     "overview") as TabKey;
 
   let header;
@@ -179,7 +200,7 @@ export default async function BookingPage({
         aria-label="Booking sections"
         className="flex w-fit max-w-full flex-wrap gap-1 rounded-[22px] border border-line bg-ground p-1 text-[13.5px] font-medium"
       >
-        {TABS.filter((t) => (t.key === "money" ? can(actor, "finance.budget") || can(actor, "finance.billing") : t.key === "docs" ? can(actor, "documents.view") : true)).map((t) => (
+        {TABS.filter((t) => tabVisible(actor, t.key)).map((t) => (
           <Link
             key={t.key}
             href={`/bookings/${id}?tab=${t.key}`}

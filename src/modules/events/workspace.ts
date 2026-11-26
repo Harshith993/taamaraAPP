@@ -100,7 +100,13 @@ export async function getBookingVendors(db: Db, actor: Actor, eventId: string) {
   }));
 }
 
+/** Staff who work with crew (not the outside accountant, D56: crew phones are personal details). */
+export function seesCrewList(actor: Actor) {
+  return actor.accountType !== "INTERNAL" || can(actor, "crew.view") || can(actor, "crew.assign") || can(actor, "eventDay.run");
+}
+
 export async function getBookingCrew(db: Db, actor: Actor, eventId: string) {
+  if (!seesCrewList(actor)) return [];
   const seesPay = can(actor, "crew.pay.view");
   const rows = await db.crewAssignment.findMany({
     where: { AND: [{ eventId }, crewAssignmentWhere(actor)] },

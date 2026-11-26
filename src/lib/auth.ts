@@ -13,6 +13,7 @@ import { APIError } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { phoneNumber } from "better-auth/plugins/phone-number";
 import { db } from "@/lib/db";
+import { recordAudit } from "@/modules/audit/audit";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -60,6 +61,8 @@ export const auth = betterAuth({
         },
         after: async (session) => {
           await db.user.update({ where: { id: session.userId }, data: { lastLoginAt: new Date() } });
+          // Every sign-in is in the audit log (D56: an outside accountant logs in).
+          await recordAudit(db, { userId: session.userId }, { action: "sign-in", entityType: "user", entityId: session.userId, summary: "Signed in" }, { ipAddress: session.ipAddress ?? null, userAgent: session.userAgent ?? null });
         },
       },
     },

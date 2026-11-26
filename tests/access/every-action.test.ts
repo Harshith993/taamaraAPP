@@ -65,7 +65,7 @@ async function world() {
   const q = await testDb.quotation.create({ data: { assignmentId: job.id, vendorId, version: 1, status: "APPROVED", subtotal: 10000, taxAmount: 1800, total: 11800 } });
   const wo = await testDb.workOrder.create({ data: { number: `WO-EA-${Math.random().toString(36).slice(2, 9)}`, assignmentId: job.id, quotationId: q.id, amount: 11800, status: "ACKNOWLEDGED" } });
   const invFile = await testDb.file.create({ data: { storageKey: `test/ea-${Math.random()}.pdf`, filename: "i.pdf", mimeType: "application/pdf", sizeBytes: 10, status: "READY" } });
-  const invoice = await testDb.vendorInvoice.create({ data: { vendorId, workOrderId: wo.id, invoiceNumber: `EA/${Math.random().toString(36).slice(2, 6)}`, invoiceDate: new Date(), taxableAmount: 10000, gstAmount: 1800, total: 11800, status: "SUBMITTED", fileId: invFile.id } });
+  const invoice = await testDb.vendorInvoice.create({ data: { vendorId, workOrderId: wo.id, invoiceNumber: `EA/${crypto.randomUUID()}`, invoiceDate: new Date(), taxableAmount: 10000, gstAmount: 1800, total: 11800, status: "SUBMITTED", fileId: invFile.id } });
   const ca = await testDb.crewAssignment.create({ data: { eventId: ev.id, workerId, duty: "Setup", agreedPay: 900, status: "CONFIRMED" } });
   const shift = await testDb.crewShift.create({ data: { assignmentId: ca.id, functionId: fn.id, date: new Date(`${day(0)}T00:00:00Z`), reportAt: new Date(Date.now() + 3600_000) } });
   const task = await testDb.task.create({ data: { eventId: ev.id, title: "EA task", status: "ASSIGNED", assigneeId: crewUserId, createdById: managerId } });
@@ -244,7 +244,7 @@ const CASES: Case[] = [
   },
 
   // ── Documents
-  { name: "addDocument", deny: ["otherManager"], allow: ["manager", "accountant"], run: async (a, w) => docs.addDocument(testDb, a, { eventId: w.eventId, title: "Floor plan", kind: "PLAN", visibility: "BOOKING_TEAM", fileId: await fileFor(a) }) },
+  { name: "addDocument", deny: ["otherManager", "accountant"], allow: ["manager"], run: async (a, w) => docs.addDocument(testDb, a, { eventId: w.eventId, title: "Floor plan", kind: "PLAN", visibility: "BOOKING_TEAM", fileId: await fileFor(a) }) },
   {
     name: "removeDocument",
     deny: ["otherManager", "vendor", "crew"],
