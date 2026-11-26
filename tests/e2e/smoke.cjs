@@ -52,7 +52,7 @@ const NEW_PHONE = `98${String(Date.now()).slice(-8)}`;
     const body = await page.textContent("main");
     check("owner sees all 4 upcoming bookings", /4 upcoming bookings/.test(body), (body.match(/\d+ upcoming bookings?[^·]*/) || [""])[0]);
     check("owner sees client billing", /received ₹/.test(body));
-    check("owner sees approvals", /Approvals waiting · 3/.test(body));
+    check("owner sees approvals (3 + an advance and its spend, D57)", /Approvals waiting · 5/.test(body));
     check("owner has Team in menu", (await page.locator('nav[aria-label="Main"] a', { hasText: "Team" }).count()) === 1);
     await page.screenshot({ path: `${OUT}/02-owner-home.png`, fullPage: true });
     await page.goto(`${BASE}/team`);
