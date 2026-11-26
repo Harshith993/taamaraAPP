@@ -96,7 +96,7 @@ WhatsApp Business notifications · online client payments (UPI links) · owned-i
 ### Still open (answer any time before the phase noted)
 
 1. ✅ **Answered:** the company and the app are **Taamara Taamara** (events & beyond). The colours come from the company logo; see `docs/design/DESIGN-LANGUAGE.md`.
-2. ✅ **Answered (26 Nov):** the accountant raises client GST invoices; the app records charges and receipts (D55). *Still open:* do you deduct TDS on vendor payments? Was: **Client billing:** should the app generate GST tax invoices to clients, or does your accountant raise them while the app only records client payments? Do you deduct TDS on vendor payments? *(Phase 7)*
+2. ✅ **Answered (26 Nov):** the accountant raises client GST invoices; the app records charges and receipts (D55). TDS on vendor payments: not deducted (D63); TDS that clients keep back on receipts stays (D39). Was: **Client billing:** should the app generate GST tax invoices to clients, or does your accountant raise them while the app only records client payments? Do you deduct TDS on vendor payments? *(Phase 7)*
 3. ✅ **Answered (26 Nov):** an outside accountant logs in (D56). Was: **Accountant:** an employee, or your outside accountant logging in? *(Phase 5)*
 4. ✅ **Answered (26 Nov):** no attendance needed (D52). Was: **Attendance:** does the supervisor mark it, or does the crew check in on their phone at the venue (with location)? *(Phase 6)*
 5. ✅ **Answered (26 Nov):** yes, switch on by default (D28). Was: **Should crew see their pay** and payment status for each event? *(Phase 6)*

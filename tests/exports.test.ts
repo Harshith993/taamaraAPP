@@ -29,12 +29,13 @@ describe("exports", () => {
     expect(mine).toHaveLength(1);
     expect(mine[0][2]).toBe("08ABCPR5678L1Z9");
     expect(mine[0][5]).toBe(1800);
-    expect(mine[0][7]).toBe(11800);
+    expect(ws.getRow(1).values).not.toContain("TDS"); // no TDS on vendor payments (D63)
+    expect(mine[0][6]).toBe(11800);
     expect(await testDb.auditLog.count({ where: { action: "export", entityId: "purchases", actorId: accountant.userId } })).toBe(1);
   });
 
   it("every kind builds; managers can't export; bad ranges are refused", async () => {
-    for (const k of ["payments", "expenses", "crew-pay"]) expect((await buildExport(testDb, owner, k, "2026-01-01", today)).buffer.length).toBeGreaterThan(1000);
+    for (const k of ["payments", "expenses", "crew-pay", "advances"]) expect((await buildExport(testDb, owner, k, "2026-01-01", today)).buffer.length).toBeGreaterThan(1000);
     await expect(buildExport(testDb, manager, "payments", today, today)).rejects.toThrow(/Only hosts and the accountant/);
     await expect(buildExport(testDb, owner, "payments", today, "2020-01-01")).rejects.toThrow(/date range/);
     await expect(buildExport(testDb, owner, "salaries", today, today)).rejects.toThrow(/Unknown/);

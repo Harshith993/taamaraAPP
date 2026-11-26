@@ -122,7 +122,6 @@ export async function buildExport(db: Db, actor: Actor, kind: string, from: stri
       { header: "Invoice no.", key: "number", width: 16 },
       { header: "Taxable", key: "taxable", width: 14, money: true },
       { header: "GST", key: "gst", width: 12, money: true },
-      { header: "TDS", key: "tds", width: 10, money: true },
       { header: "Total", key: "total", width: 14, money: true },
       { header: "Status", key: "status", width: 12 },
       { header: "Work order", key: "wo", width: 14 },
@@ -133,7 +132,7 @@ export async function buildExport(db: Db, actor: Actor, kind: string, from: stri
       orderBy: [{ invoiceDate: "asc" }, { invoiceNumber: "asc" }],
       include: { vendor: { select: { companyName: true, gstin: true } }, workOrder: { select: { number: true, assignment: { select: { event: { select: { code: true, name: true } } } } } } },
     });
-    for (const i of list) ws.addRow({ date: day(i.invoiceDate), vendor: i.vendor.companyName, gstin: i.vendor.gstin ?? "", number: i.invoiceNumber, taxable: toNumber(i.taxableAmount), gst: toNumber(i.gstAmount), tds: toNumber(i.tdsAmount), total: toNumber(i.total), status: i.status, wo: i.workOrder?.number ?? "", booking: i.workOrder ? `${i.workOrder.assignment.event.code} ${i.workOrder.assignment.event.name}` : "" });
+    for (const i of list) ws.addRow({ date: day(i.invoiceDate), vendor: i.vendor.companyName, gstin: i.vendor.gstin ?? "", number: i.invoiceNumber, taxable: toNumber(i.taxableAmount), gst: toNumber(i.gstAmount), total: toNumber(i.total), status: i.status, wo: i.workOrder?.number ?? "", booking: i.workOrder ? `${i.workOrder.assignment.event.code} ${i.workOrder.assignment.event.name}` : "" });
     rows = list.length;
   } else if (kind === "payments") {
     const ws = sheet(wb, "Payments", [
