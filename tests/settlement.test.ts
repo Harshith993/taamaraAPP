@@ -7,7 +7,7 @@ import { addCharge, markPaid, preparePayment, recordReceipt, removeCharge, reque
 import { financialYearOf, fyMonths, monthlyPnl, monthsBetween } from "@/modules/finance/pnl";
 import { reopenBooking, settleBooking, settlementView } from "@/modules/finance/settlement";
 import { loadActor, type Actor } from "@/modules/identity/actor";
-import { makeEvent, makeUser, makeVendor, makeWorker, testDb } from "./support/factories";
+import { makeEvent, makeReceipt, makeUser, makeVendor, makeWorker, testDb } from "./support/factories";
 
 const actorOf = async (u: { id: string }) => (await loadActor(testDb, u.id))!;
 let owner: Actor, owner2: Actor, accountant: Actor, manager: Actor;
@@ -89,7 +89,7 @@ describe("the settlement checklist", () => {
 
   it("waits for crew extras, and for expenses to be approved and repaid", async () => {
     await requestAdjustment(testDb, manager, { assignmentId: crewId, type: "EXTRA", amount: 200, reason: "Stayed till 2 am" });
-    const exp = (await submitExpense(testDb, manager, { eventId, categoryId: tea, description: "Tea for the crew", amount: 240, spentOn: DAY })).id;
+    const exp = (await submitExpense(testDb, manager, { eventId, categoryId: tea, description: "Tea for the crew", amount: 240, spentOn: DAY, receiptFileId: await makeReceipt(manager.userId) })).id;
     expect(await blocking()).toEqual(["crew", "expenses"]);
     await approve((await testDb.crewPayAdjustment.findFirstOrThrow({ where: { assignmentId: crewId } })).id);
     await approve(exp);
@@ -168,7 +168,7 @@ describe("monthly P&L", () => {
   });
 
   it("puts a booking in the month of its first day, and cash by payment date", async () => {
-    const office = await submitExpense(testDb, owner, { categoryId: tea, description: "Office tea", amount: 300, spentOn: "2025-02-03", paidVia: "COMPANY" });
+    const office = await submitExpense(testDb, owner, { categoryId: tea, description: "Office tea", amount: 300, spentOn: "2025-02-03", paidVia: "COMPANY", receiptFileId: await makeReceipt(owner.userId) });
     await decideApproval(testDb, owner2, (await testDb.approvalRequest.findFirstOrThrow({ where: { entityId: office.id } })).id, "APPROVE", undefined);
     const p = await monthlyPnl(testDb, accountant, { from: "2025-01", to: "2025-03" });
     expect(p.months.map((m) => m.month)).toEqual(["2025-01", "2025-02", "2025-03"]);

@@ -7,7 +7,7 @@ import { DocumentUpload } from "@/components/document-upload";
 import { Button, Field, Notice, SelectField } from "@/components/ui";
 import type { ActionResult } from "@/lib/errors";
 
-export function ExpenseForm({ bookings, categories, allowNoBooking, today, threshold }: { bookings: { id: string; name: string }[]; categories: { id: string; name: string }[]; allowNoBooking: boolean; today: string; threshold: number }) {
+export function ExpenseForm({ bookings, categories, allowNoBooking, today }: { bookings: { id: string; name: string }[]; categories: { id: string; name: string }[]; allowNoBooking: boolean; today: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [fileId, setFileId] = useState<string | null>(null);
@@ -60,7 +60,7 @@ export function ExpenseForm({ bookings, categories, allowNoBooking, today, thres
           ]}
         />
       </div>
-      <DocumentUpload label={`Bill or receipt (needed above ₹${threshold})`} onChange={setFileId} error={fe.receiptFileId} />
+      <DocumentUpload label="Bill or receipt (needed for every expense)" onChange={setFileId} error={fe.receiptFileId} />
       <div className="flex gap-2">
         <Button type="submit" disabled={pending}>
           {pending ? "Sending…" : "Send for approval"}

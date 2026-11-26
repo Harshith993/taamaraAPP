@@ -24,7 +24,7 @@ const { BASE, PHONE, launch, checker, query } = require("./lib.cjs");
       await page.fill('input[name="description"]', what);
       await page.getByRole("button", { name: "Send for approval" }).click();
       await page.getByText(/Attach the bill/).first().waitFor({ timeout: 10000 });
-      check("a bill is needed above ₹500", true);
+      check("a bill is needed for every expense", true);
       await page.locator('input[type="file"]').setInputFiles(bill);
       await page.getByText("bill.jpg · attached").waitFor({ timeout: 20000 });
       await page.getByRole("button", { name: "Send for approval" }).click();

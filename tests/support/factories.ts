@@ -43,3 +43,8 @@ export async function makeUser(opts: { name?: string; roleKey?: string; accountT
 export async function makeFile(uploadedById?: string) {
   return testDb.file.create({ data: { storageKey: `test/${uniq()}.jpg`, filename: "x.jpg", mimeType: "image/jpeg", sizeBytes: 10, uploadedById, status: "READY" } });
 }
+
+/** A finished upload to attach as an expense's bill (every expense needs one, D53). */
+export async function makeReceipt(uploadedById: string) {
+  return (await testDb.file.create({ data: { storageKey: `document/test/${uniq()}/original`, filename: "bill.jpg", mimeType: "image/jpeg", sizeBytes: 10, purpose: "DOCUMENT", status: "READY", uploadedById } })).id;
+}

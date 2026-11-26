@@ -3,7 +3,7 @@ import Link from "next/link";
 import { EmptyState, Panel, Tag } from "@/components/ui";
 import { db } from "@/lib/db";
 import { formatCalendarDate, formatINR, todayAsDate, todayInIndia } from "@/lib/format";
-import { listExpenses, RECEIPT_REQUIRED_ABOVE } from "@/modules/finance/expenses";
+import { listExpenses } from "@/modules/finance/expenses";
 import { can, eventWhere } from "@/modules/identity/policy";
 import { requirePermission } from "@/modules/identity/session";
 import { ExpenseForm, RepayButton } from "./expense-forms";
@@ -42,10 +42,10 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
       <div>
         <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">Expenses</h1>
         <p className="mt-1 text-[15px] text-ink-quiet">
-          Small spends on a booking: tea, transport, last-minute buys. Attach the bill (needed above {formatINR(RECEIPT_REQUIRED_ABOVE)}); an owner approves; money from your own pocket is repaid.
+          Small spends on a booking: tea, transport, last-minute buys. Attach the bill for every expense, however small; a host approves; money from your own pocket is repaid.
         </p>
       </div>
-      <ExpenseForm bookings={bookings} categories={categories} allowNoBooking={actor.grants.get("expenses.record") === "ALL"} today={todayInIndia()} threshold={RECEIPT_REQUIRED_ABOVE} />
+      <ExpenseForm bookings={bookings} categories={categories} allowNoBooking={actor.grants.get("expenses.record") === "ALL"} today={todayInIndia()} />
       {repays && toRepay.length > 0 && (
         <p className="text-[14px] font-semibold text-plum">
           {toRepay.length} approved expense{toRepay.length === 1 ? "" : "s"} to repay: {formatINR(toRepay.reduce((s, e) => s + e.amount, 0))}

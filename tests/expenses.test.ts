@@ -37,17 +37,18 @@ afterAll(() => testDb.$disconnect());
 describe("expenses", () => {
   let supExpense: string;
 
-  it("the supervisor records one with a receipt; bigger ones need a receipt", async () => {
+  it("the supervisor records one with a receipt; every one needs a receipt, however small", async () => {
     await expect(submitExpense(testDb, supervisor, { eventId, categoryId: tea, description: "Generator diesel", amount: 2400, spentOn: today })).rejects.toThrow(/Attach the bill/);
     supExpense = (await submitExpense(testDb, supervisor, { eventId, categoryId: tea, description: "Generator diesel", amount: 2400, spentOn: today, receiptFileId: await receipt(supervisor) })).id;
-    await submitExpense(testDb, supervisor, { eventId, categoryId: tea, description: "Tea for the crew", amount: 240, spentOn: today });
+    await expect(submitExpense(testDb, supervisor, { eventId, categoryId: tea, description: "Tea for the crew", amount: 40, spentOn: today })).rejects.toThrow(/Every expense needs one/);
+    await submitExpense(testDb, supervisor, { eventId, categoryId: tea, description: "Tea for the crew", amount: 40, spentOn: today, receiptFileId: await receipt(supervisor) });
     expect(await testDb.notification.count({ where: { userId: owner.userId, type: "approval.requested", entityId: supExpense } })).toBe(1);
   });
 
   it("only for bookings the person is on; the company itself only with full access; never crew", async () => {
     await expect(submitExpense(testDb, otherManager, { eventId, categoryId: tea, description: "Snacks", amount: 100, spentOn: today })).rejects.toThrow(/access/);
     await expect(submitExpense(testDb, manager, { categoryId: tea, description: "Office tea", amount: 100, spentOn: today })).rejects.toThrow(/Pick the booking/);
-    await submitExpense(testDb, accountant, { categoryId: tea, description: "Office tea", amount: 100, spentOn: today });
+    await submitExpense(testDb, accountant, { categoryId: tea, description: "Office tea", amount: 100, spentOn: today, receiptFileId: await receipt(accountant) });
     await expect(submitExpense(testDb, crew, { eventId, categoryId: tea, description: "Snacks", amount: 100, spentOn: today })).rejects.toThrow(/Only the team/);
     await expect(submitExpense(testDb, supervisor, { eventId, categoryId: tea, description: "Snacks", amount: 100, spentOn: "2099-01-01" })).rejects.toThrow(/future/);
   });
@@ -70,7 +71,7 @@ describe("expenses", () => {
   });
 
   it("an owner can't approve their own; rejecting needs a reason", async () => {
-    const own = (await submitExpense(testDb, owner, { eventId, categoryId: tea, description: "Flowers for the stage", amount: 300, spentOn: today })).id;
+    const own = (await submitExpense(testDb, owner, { eventId, categoryId: tea, description: "Flowers for the stage", amount: 300, spentOn: today, receiptFileId: await receipt(owner) })).id;
     await expect(decideApproval(testDb, owner, (await pending(own)).id, "APPROVE", undefined)).rejects.toThrow(/other host/);
     await expect(decideApproval(testDb, coOwner, (await pending(own)).id, "REJECT", undefined)).rejects.toThrow(/reason/);
     await decideApproval(testDb, coOwner, (await pending(own)).id, "REJECT", "Use the florist's stock");

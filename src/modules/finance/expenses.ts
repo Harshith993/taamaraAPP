@@ -6,7 +6,8 @@
  *     ──▶ if someone paid from their own pocket, the accountant marks it repaid, which records the
  *         payment out in the books
  *
- *  - A receipt (photo or PDF) is required above ₹500 (D34).
+ *  - Every expense needs its bill or receipt (photo or PDF), whatever the amount (D53; replaced the
+ *    ₹500 limit of D34).
  *  - Expenses on a booking count towards its costs once approved.
  *  - Approved and repaid expenses are never deleted (database trigger).
  */
@@ -22,8 +23,6 @@ import type { Actor } from "@/modules/identity/actor";
 import { assertCan, assertEventAccess, can, eventWhere } from "@/modules/identity/policy";
 import { assertBookingOpen } from "@/modules/events/lock";
 import { notify, ownerUserIds } from "@/modules/notifications/notify";
-
-export const RECEIPT_REQUIRED_ABOVE = 500;
 
 export const expenseSchema = z.object({
   eventId: z.union([z.literal(""), z.string().uuid()]).optional(),
@@ -41,13 +40,13 @@ export async function submitExpense(db: Db, actor: Actor, input: ExpenseInput, m
   if (actor.accountType !== "INTERNAL") throw new ForbiddenError("Only the team records expenses.");
   const scope = assertCan(actor, "expenses.record", "You can't record expenses.");
   if (v.spentOn > todayInIndia()) throw new ValidationError("The date is in the future.", { spentOn: "Pick today or earlier." });
-  if (!v.receiptFileId && v.amount > RECEIPT_REQUIRED_ABOVE) throw new ValidationError(`Attach the bill or receipt (needed above ${formatINR(RECEIPT_REQUIRED_ABOVE)}).`, { receiptFileId: "Attach the receipt." });
   return db.$transaction(async (tx) => {
     if (v.eventId) await assertEventAccess(tx, actor, v.eventId, "expenses.record");
     else if (scope !== "ALL") throw new ValidationError("Pick the booking this was for.", { eventId: "Pick the booking." });
     await assertBookingOpen(tx, v.eventId);
     if (!(await tx.expenseCategory.count({ where: { id: v.categoryId } }))) throw new ValidationError("Pick what it was for.", { categoryId: "Pick what it was for." });
-    if (v.receiptFileId) {
+    if (!v.receiptFileId) throw new ValidationError("Attach the bill or receipt. Every expense needs one.", { receiptFileId: "Attach the bill or receipt." });
+    {
       const f = await tx.file.findFirst({ where: { id: v.receiptFileId, uploadedById: actor.userId, purpose: "DOCUMENT", status: "READY" }, select: { _count: { select: { expenseReceipts: true } } } });
       if (!f || f._count.expenseReceipts) throw new ValidationError("Attach the receipt and wait for it to finish uploading.", { receiptFileId: "Attach the receipt." });
     }

@@ -40,7 +40,7 @@ import * as tasks from "@/modules/tasks/service";
 import * as directory from "@/modules/vendors/directory";
 import * as vinv from "@/modules/vendors/invoices";
 import * as jobs from "@/modules/vendors/jobs";
-import { makeEvent, makeUser, makeVendor, makeWorker, testDb } from "../support/factories";
+import { makeEvent, makeReceipt, makeUser, makeVendor, makeWorker, testDb } from "../support/factories";
 
 type Role = "owner" | "manager" | "otherManager" | "accountant" | "supervisor" | "vendor" | "crew";
 const staffOnly: Role[] = ["vendor", "crew"];
@@ -295,7 +295,7 @@ const CASES: Case[] = [
     run: (a, _w, x) => approvals.decideApproval(testDb, a, x.r, "REJECT", "Not this week"),
   },
   { name: "listPendingApprovals", deny: ownerOnly, run: (a) => approvals.listPendingApprovals(testDb, a) },
-  { name: "submitExpense", deny: ["otherManager", "vendor", "crew"], allow: ["manager", "supervisor", "accountant"], run: (a, w) => expenses.submitExpense(testDb, a, { eventId: w.eventId, categoryId: ids.expenseCategory, description: "Tea for the crew", amount: 200, spentOn: day(0) }) },
+  { name: "submitExpense", deny: ["otherManager", "vendor", "crew"], allow: ["manager", "supervisor", "accountant"], run: async (a, w) => expenses.submitExpense(testDb, a, { eventId: w.eventId, categoryId: ids.expenseCategory, description: "Tea for the crew", amount: 200, spentOn: day(0), receiptFileId: await makeReceipt(a.userId) }) },
   {
     name: "markRepaid",
     deny: money,
