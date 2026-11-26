@@ -167,18 +167,30 @@ export async function processFile(db: DbTx, fileId: string): Promise<void> {
 
 // ───────────────────────────── Queue ─────────────────────────────
 
-let videoChain: Promise<unknown> = Promise.resolve();
+/**
+ * Videos are converted VIDEO_WORKERS at a time (default 1: the app stays quick on a small server;
+ * 2 suits a 4-CPU server, see docs/OPERATIONS.md). Photos are quick and go one at a time.
+ */
+const VIDEO_WORKERS = Math.max(1, Math.min(4, Number(process.env.VIDEO_WORKERS) || 1));
+const videoLanes: Promise<unknown>[] = Array.from({ length: VIDEO_WORKERS }, () => Promise.resolve());
+const laneLoad = new Array<number>(VIDEO_WORKERS).fill(0);
 let photoChain: Promise<unknown> = Promise.resolve();
 const queued = new Set<string>();
 
-/** Queues a file for processing and resolves when it is done. Videos go one at a time. */
+/** Queues a file for processing and resolves when it is done. */
 export function enqueueProcessing(db: DbTx, fileId: string, mimeType: string): Promise<void> {
   if (queued.has(fileId)) return Promise.resolve();
   queued.add(fileId);
   const job = () => processFile(db, fileId).finally(() => queued.delete(fileId));
   if (mimeType.startsWith("video/")) {
-    const next = videoChain.catch(() => undefined).then(job);
-    videoChain = next;
+    // The lane with the fewest videos waiting.
+    const lane = laneLoad.indexOf(Math.min(...laneLoad));
+    laneLoad[lane] += 1;
+    const next = videoLanes[lane]
+      .catch(() => undefined)
+      .then(job)
+      .finally(() => (laneLoad[lane] -= 1));
+    videoLanes[lane] = next;
     return next;
   }
   const next = photoChain.catch(() => undefined).then(job);
