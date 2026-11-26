@@ -1,7 +1,7 @@
 // Browser checks for bookings across roles. Needs the dev server on :3000 with the demo seed.
 const { chromium } = require("playwright");
 const { resetLoginLimits } = require("./lib.cjs");
-const BASE = "http://localhost:3000";
+const BASE = process.env.E2E_BASE_URL || "http://localhost:3000";
 const results = [];
 const check = (name, ok, detail = "") => results.push(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? `  (${detail})` : ""}`);
 

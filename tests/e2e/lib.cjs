@@ -9,7 +9,7 @@ const PASSWORD = "Taamara@2026";
 /** The login rate limit (8 sign-ins per 5 minutes per IP) trips when several scripts run back to back. Development database only. */
 async function resetLoginLimits() {
   const url = process.env.DATABASE_URL;
-  if (!url || !new URL(url).pathname.replace(/^\//, "").endsWith("_dev")) return;
+  if (!url || !/_(dev|restore)$/.test(new URL(url).pathname.replace(/^\//, ""))) return;
   const client = new Client({ connectionString: url });
   await client.connect();
   await client.query("DELETE FROM rate_limits");

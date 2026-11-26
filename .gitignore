@@ -29,3 +29,6 @@ next-env.d.ts
 .vercel
 npm-debug.log*
 /src/generated/
+
+# Backups made by scripts/backup.sh
+/backups/

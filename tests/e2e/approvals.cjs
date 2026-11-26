@@ -1,7 +1,7 @@
 // Browser check: owner approves a crew extra and the crew app shows the new pay. Needs dev server + demo seed.
 const { chromium } = require("playwright");
 const { resetLoginLimits } = require("./lib.cjs");
-const BASE = "http://localhost:3000";
+const BASE = process.env.E2E_BASE_URL || "http://localhost:3000";
 (async () => {
   const browser = await chromium.launch();
   const out = process.argv[2];
