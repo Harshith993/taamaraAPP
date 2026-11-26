@@ -88,7 +88,9 @@ const { BASE, PHONE, launch, checker, query } = require("./lib.cjs");
       check("the advance shows ₹3,200 left", /₹3,200 left/.test(await adv.textContent()));
       await adv.getByRole("button", { name: "Close", exact: true }).click();
       await adv.getByRole("button", { name: "Close the advance" }).click();
-      await page.getByText(/Closed: ₹1,800 spent, ₹3,200 returned/).waitFor({ timeout: 10000 });
+      await page.getByText(/Closed: ₹1,800 spent, ₹3,200 returned/).waitFor({ timeout: 10000 }).catch(async () => {
+        throw new Error(`closing didn't confirm: ${((await adv.textContent()) || "").replace(/\s+/g, " ").slice(-200)}`);
+      });
       const [row] = await query(`SELECT status, "returnedAmount"::float AS r FROM cash_advances WHERE purpose = $1`, [PURPOSE]);
       check("host closes the advance with the rest returned", row?.status === "CLOSED" && row.r === 3200, JSON.stringify(row));
       await page.screenshot({ path: `${out}/a2-advances-closed.png`, fullPage: true });
