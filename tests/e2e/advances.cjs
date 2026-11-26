@@ -17,6 +17,15 @@ const { BASE, PHONE, launch, checker, query } = require("./lib.cjs");
   writeFileSync(bill, await sharp({ create: { width: 900, height: 1400, channels: 3, background: "#FFFCF6" } }).jpeg().toBuffer());
   const PURPOSE = "Generator diesel and tea on the wedding night";
   const what = `Diesel for the generator ${Date.now() % 10000}`;
+  // Success messages sit in controls that go away when the page refreshes, so wait on the record.
+  const statusIs = async (want) => {
+    for (let i = 0; i < 60; i++) {
+      const [r] = await query(`SELECT status FROM cash_advances WHERE purpose = $1`, [PURPOSE]);
+      if (r?.status === want) return true;
+      await new Promise((ok) => setTimeout(ok, 250));
+    }
+    return false;
+  };
 
   try {
     // 1. Host: Money shows the cash each person holds; approves the waiting advance
@@ -44,7 +53,7 @@ const { BASE, PHONE, launch, checker, query } = require("./lib.cjs");
       const card = page.locator("li").filter({ hasText: PURPOSE }).first();
       await card.getByRole("button", { name: "Mark handed over" }).click();
       await card.getByRole("button", { name: "Handed over" }).click();
-      await page.getByText("Handed over.").waitFor({ timeout: 10000 });
+      await statusIs("GIVEN");
       const [row] = await query(`SELECT status FROM cash_advances WHERE purpose = $1`, [PURPOSE]);
       check("accountant marks the cash handed over", row?.status === "GIVEN", row?.status);
       await ctx.close();
@@ -88,9 +97,7 @@ const { BASE, PHONE, launch, checker, query } = require("./lib.cjs");
       check("the advance shows ₹3,200 left", /₹3,200 left/.test(await adv.textContent()));
       await adv.getByRole("button", { name: "Close", exact: true }).click();
       await adv.getByRole("button", { name: "Close the advance" }).click();
-      await page.getByText(/Closed: ₹1,800 spent, ₹3,200 returned/).waitFor({ timeout: 10000 }).catch(async () => {
-        throw new Error(`closing didn't confirm: ${((await adv.textContent()) || "").replace(/\s+/g, " ").slice(-200)}`);
-      });
+      await statusIs("CLOSED");
       const [row] = await query(`SELECT status, "returnedAmount"::float AS r FROM cash_advances WHERE purpose = $1`, [PURPOSE]);
       check("host closes the advance with the rest returned", row?.status === "CLOSED" && row.r === 3200, JSON.stringify(row));
       await page.screenshot({ path: `${out}/a2-advances-closed.png`, fullPage: true });
