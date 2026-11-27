@@ -17,7 +17,7 @@ export function Sidebar({ items, name, roleLabel }: { items: NavItem[]; name: st
   const pathname = usePathname();
   return (
     <aside className="sticky top-0 hidden h-dvh flex-col border-r border-line bg-[#fbfbfd] md:flex print:hidden" style={{ viewTransitionName: "site-sidebar" }}>
-      <Link href="/home" className="flex items-center gap-2.5 px-4 pt-[max(env(safe-area-inset-top),18px)] pb-4 text-ink no-underline lg:px-5">
+      <Link href="/home" className="flex items-center gap-2.5 px-4 pt-[max(env(safe-area-inset-top),18px)] pb-4 [@media(max-height:900px)]:pb-3 text-ink no-underline lg:px-5">
         <LotusBadge size={38} />
         <span className="hidden lg:block">
           <Wordmark />
@@ -28,7 +28,7 @@ export function Sidebar({ items, name, roleLabel }: { items: NavItem[]; name: st
           const list = items.filter((i) => i.group === g);
           if (!list.length) return null;
           return (
-            <div key={g} className="mt-3 first:mt-0">
+            <div key={g} className="mt-3 first:mt-0 [@media(max-height:900px)]:mt-2">
               <p className="mb-1 hidden px-3 text-[11.5px] font-semibold tracking-wide text-ink-quiet lg:block">{g}</p>
               <div className="mx-auto mb-1 h-px w-8 bg-line lg:hidden" aria-hidden />
               <ul className="flex flex-col gap-0.5">
@@ -41,7 +41,7 @@ export function Sidebar({ items, name, roleLabel }: { items: NavItem[]; name: st
                         href={item.href}
                         aria-current={active ? "page" : undefined}
                         title={item.label}
-                        className={`group relative flex min-h-10 items-center justify-center gap-2.5 rounded-xl px-3 text-[14px] font-medium no-underline transition-colors duration-150 lg:justify-start ${
+                        className={`group relative flex min-h-10 items-center [@media(max-height:900px)]:min-h-9 justify-center gap-2.5 rounded-xl px-3 text-[14px] font-medium no-underline transition-colors duration-150 lg:justify-start ${
                           active ? "bg-white text-ink shadow-[0_1px_2px_rgb(22_20_31/0.06),0_0_0_1px_var(--color-line)]" : "text-ink-quiet hover:bg-white/70 hover:text-ink"
                         }`}
                       >
@@ -60,7 +60,7 @@ export function Sidebar({ items, name, roleLabel }: { items: NavItem[]; name: st
           );
         })}
       </nav>
-      <div className="hidden items-center gap-2.5 border-t border-line px-4 py-3 lg:flex">
+      <div className="hidden items-center gap-2.5 border-t border-line px-4 py-3 lg:flex [@media(max-height:860px)]:lg:hidden">
         <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-full rainbow-soft text-[12.5px] font-bold text-ink ring-2 ring-white">
           {name
             .split(/\s+/)
