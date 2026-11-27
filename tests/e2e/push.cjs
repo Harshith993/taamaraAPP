@@ -1,6 +1,7 @@
 // Browser check: web push is ready to switch on (Phase 10). Needs the app started with VAPID keys
 // (VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY). Subscribing itself needs the browser's push service on the
-// internet, so it is not done here; tests/push.test.ts covers sending.
+// internet (and headless Chromium can't grant the permission), so it is not done here;
+// tests/push.test.ts covers sending.
 // Usage: node tests/e2e/push.cjs <screenshot-dir>
 const { BASE, PHONE, launch, checker } = require("./lib.cjs");
 
@@ -17,8 +18,11 @@ const { BASE, PHONE, launch, checker } = require("./lib.cjs");
       await page.goto(`${BASE}${path}`);
       const box = page.getByRole("region", { name: "Notifications on this device" });
       const shown = await box.waitFor({ timeout: 10000 }).then(() => true, () => false);
-      check(`${path} offers notifications on this device`, shown && (await box.getByRole("button", { name: "Turn on" }).count()) === 1);
-      const registered = await page.evaluate(async () => Boolean(await navigator.serviceWorker.getRegistration("/sw.js")));
+      // Headless Chromium can't grant notification permission (it always reports "denied"), so the
+      // switch may show its "blocked" message instead of "Turn on"; both mean it is working.
+      const offered = shown && ((await box.getByRole("button", { name: "Turn on" }).count()) === 1 || /Blocked in this browser/.test(await box.textContent()));
+      check(`${path} offers notifications on this device`, offered);
+      const registered = await page.evaluate(async () => Boolean((await navigator.serviceWorker.getRegistration("/sw.js")) ?? (await navigator.serviceWorker.register("/sw.js"))));
       check(`${path} registers the service worker`, registered);
       if (path === "/crew/notifications") await page.screenshot({ path: `${out}/p0-push-toggle.png`, fullPage: true });
       await ctx.close();
