@@ -22,7 +22,8 @@ mkdir -p "$FILES"
 tar -xzf "$SRC/files.tar.gz" -C "$FILES"
 
 fail=0
-for t in events payments client_invoices vendor_invoices expenses files messages audit_log users; do
+# Every table the backup counted (older backups count fewer).
+for t in $(grep '^rows\.' "$SRC/manifest.txt" | cut -d= -f1 | cut -d. -f2); do
   got=$(psql "$TARGET" -At -c "SELECT count(*) FROM $t")
   if [ "$got" != "$(want rows.$t)" ]; then echo "MISMATCH $t: backup $(want rows.$t), restored $got"; fail=1; else echo "ok   $t $got"; fi
 done

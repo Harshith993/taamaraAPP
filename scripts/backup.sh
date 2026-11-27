@@ -33,6 +33,9 @@ fi
       SELECT 'client_invoices', count(*) FROM client_invoices UNION ALL
       SELECT 'vendor_invoices', count(*) FROM vendor_invoices UNION ALL
       SELECT 'expenses', count(*) FROM expenses UNION ALL
+      SELECT 'cash_advances', count(*) FROM cash_advances UNION ALL
+      SELECT 'inventory_items', count(*) FROM inventory_items UNION ALL
+      SELECT 'inventory_allocations', count(*) FROM inventory_allocations UNION ALL
       SELECT 'files', count(*) FROM files UNION ALL
       SELECT 'messages', count(*) FROM messages UNION ALL
       SELECT 'audit_log', count(*) FROM audit_log UNION ALL
