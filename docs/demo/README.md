@@ -47,7 +47,7 @@ H.264 MP4.
 | `scripts/demo/vendor.cjs`, `host.cjs` | The two tours. Each step is a real click or keystroke; a missing control is logged and skipped rather than spoiling the take. |
 | `scripts/demo/prep.cjs` | Office steps done off camera between the vendor's scenes (invite to quote, approve, work order, sign-off) and switching on client invoices. |
 | `scripts/demo/media.cjs` | The "photos" taken on camera: a lit stage for proof, a paper invoice. |
-| `scripts/demo/stitch.cjs` | Joins the scenes (phones and iPads centred on the cream page in the laptop video), applies the per-video speed (host 1.15×, vendor 1.1×), adds chapters. |
+| `scripts/demo/stitch.cjs` | Joins the scenes (phones and iPads centred on the cream page in the laptop video), applies the per-video speed (host 1.25×, vendor 1.1×), adds chapters. |
 
 Automated browsers skip the opening intro, so the recorder sets `window.__ttForceIntro`; it signs
 people in off camera (except the sign-in scenes) and clears the login rate limit first.

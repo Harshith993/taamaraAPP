@@ -13,7 +13,7 @@ const HOST = "98000 00001";
 
 (async () => {
   const workDir = process.argv[2] || "/tmp/demo-host";
-  const demo = new Demo("For hosts", { workDir, frame: "desktop", speed: 1.15 });
+  const demo = new Demo("For hosts", { workDir, frame: "desktop", speed: 1.25 });
   const media = await makeMedia(path.join(workDir, "media"));
   await demo.open();
   await prep.clientInvoicesOn();
@@ -185,7 +185,7 @@ const HOST = "98000 00001";
       await d.click(btn(d, "Record", true), { after: 2500 });
       await d.caption("Payment recorded. Every item on the checklist is now done.", 2800);
     }
-    const settle = d.page.locator("section", { has: d.page.getByRole("heading", { name: /^Settlement/ }) }).first();
+    const settle = d.page.locator("section", { has: d.page.getByRole("heading", { name: /^(Settlement|Ready to settle)/ }) }).first();
     await d.click(settle.getByRole("button", { name: "Settle booking" }), { after: 1000 });
     await d.type(settle.locator('input[name^="settle-"]'), "Client balance agreed, books closed", { delay: 40 });
     await d.click(settle.getByRole("button", { name: "Settle and lock" }), { after: 2500 });
@@ -196,9 +196,6 @@ const HOST = "98000 00001";
   await demo.segment({ device: "desktop", login: HOST }, async (d) => {
     await d.start("/calendar", { card: ["Chapter 11", "Calendar", "Every function across every booking."] });
     await look(d, text(d, "Today"), "The month at a glance. Move between months, or jump back to today.");
-    await d.scroll(450, { ms: 2000 });
-    await d.caption("Below, the list by day: venue, crew and vendors for each function.", 3000);
-    await d.scrollTop();
 
     await d.card("Chapter 12", "Approvals", "One inbox for everything a host decides.");
     await d.click(nav(d, "Approvals"), { after: 1300 });
@@ -308,7 +305,6 @@ const HOST = "98000 00001";
     await d.idle();
     await d.caption("Today's event in <b>night mode</b>: the next cue, crew confirmed, vendors due and proof to check.", 4500);
     await look(d, text(d, /Crew today/i), "Tap a number to call crew. Vendors due have a <b>Call</b> button.");
-    await look(d, text(d, /Tasks due/i), "Tasks due today, and the team on duty.");
     await d.click(link(d, /Back to the app/i), { after: 1500 });
 
     await d.card("Chapter 21", "Messages and notifications", "Team chats, vendor and crew threads, and announcements.");
@@ -330,7 +326,6 @@ const HOST = "98000 00001";
     await d.click(nav(d, "Team"), { after: 1300 });
     await d.idle();
     await d.caption("Add a person with a role and temporary password. Change roles, reset passwords or switch people off.", 4500);
-    await d.scroll(400, { ms: 1800 });
     await d.click(link(d, /What each role can do/), { after: 1500 });
     await d.idle();
     await d.caption("<b>Roles</b>: for managers, supervisors and the accountant, choose each permission: none, their bookings, or all.", 5000);
