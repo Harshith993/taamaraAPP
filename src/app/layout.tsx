@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import { connection } from "next/server";
 import "./globals.css";
+import { IntroScript, IntroSplash } from "@/components/intro/intro-splash";
+import { PageTransition } from "@/components/page-transition";
 
 // Fonts are downloaded at build time and served from our own server: no requests to Google from users' phones.
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-space-grotesk", display: "swap" });
@@ -13,6 +15,7 @@ export const metadata: Metadata = {
   description: "Taamara Taamara: bookings, vendors, crew, tasks and money in one place.",
   applicationName: "Taamara Taamara",
   appleWebApp: { capable: true, title: "Taamara", statusBarStyle: "default" },
+  icons: { icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }], apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }] },
   robots: { index: false, follow: false },
 };
 
@@ -20,14 +23,23 @@ export const viewport: Viewport = {
   themeColor: "#ffffff",
   width: "device-width",
   initialScale: 1,
+  // Content runs under the iPhone notch and home bar; screens pad themselves with safe-area insets.
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   // Every page is rendered per request, so each gets its own CSP nonce (src/proxy.ts).
   await connection();
   return (
-    <html lang="en-IN" className={`${spaceGrotesk.variable} ${geist.variable} ${geistMono.variable}`}>
-      <body className="min-h-dvh">{children}</body>
+    // The intro script may add a class to <html> before React loads, hence suppressHydrationWarning.
+    <html lang="en-IN" className={`${spaceGrotesk.variable} ${geist.variable} ${geistMono.variable}`} suppressHydrationWarning>
+      <head>
+        <IntroScript />
+      </head>
+      <body className="min-h-dvh">
+        <IntroSplash />
+        <PageTransition>{children}</PageTransition>
+      </body>
     </html>
   );
 }

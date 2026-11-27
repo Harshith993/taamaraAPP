@@ -12,22 +12,28 @@ const PETALS: [string, string][] = [
   ["#85A646", "M100 112Q150 76 198 82Q170 118 100 112Z"],
 ];
 
-export function LotusMark({ width = 32, gap = "#FFFFFF", title = "Taamara Taamara" }: { width?: number; gap?: string; title?: string }) {
+/** The order the petals open in the intro: the centre bud first, then outwards in pairs. */
+const BLOOM_ORDER = [4, 2, 3, 0, 1, 5, 6, 7, 8];
+
+export function LotusMark({ width = 32, gap = "#FFFFFF", title = "Taamara Taamara", bloom = false }: { width?: number; gap?: string; title?: string; bloom?: boolean }) {
   return (
-    <svg width={width} height={(width * 120) / 200} viewBox="0 0 200 120" role="img" aria-label={title}>
+    <svg width={width} height={(width * 120) / 200} viewBox="0 0 200 120" role="img" aria-label={title} className={bloom ? "tt-bloom" : undefined}>
       <g stroke={gap} strokeWidth={4} strokeLinejoin="round">
-        {PETALS.map(([fill, d]) => (
-          <path key={d} fill={fill} d={d} />
+        {PETALS.map(([fill, d], i) => (
+          <path key={d} fill={fill} d={d} style={bloom ? ({ "--i": BLOOM_ORDER.indexOf(i) } as React.CSSProperties) : undefined} />
         ))}
       </g>
     </svg>
   );
 }
 
-/** The lotus on a white disc with a soft shadow. */
+/**
+ * The lotus on a white disc with a soft shadow. The first one on a page is where the intro's logo
+ * lands (data-brand-mark), so it hides while the intro plays.
+ */
 export function LotusBadge({ size = 42 }: { size?: number }) {
   return (
-    <span className="grid shrink-0 place-items-center rounded-full bg-white shadow-[var(--shadow-card)] ring-1 ring-line" style={{ width: size, height: size }}>
+    <span data-brand-mark className="grid shrink-0 place-items-center rounded-full bg-white shadow-[var(--shadow-card)] ring-1 ring-line" style={{ width: size, height: size }}>
       <LotusMark width={size * 0.76} />
     </span>
   );
@@ -42,7 +48,7 @@ export function PetalStripe({ height = 3 }: { height?: number }) {
 export function Wordmark({ withTagline = true }: { withTagline?: boolean }) {
   return (
     <span className="flex flex-col leading-none">
-      <span className="font-condensed text-[19px] tracking-[-0.02em]">Taamara Taamara</span>
+      <span className="font-condensed text-[17px] tracking-[-0.02em] sm:text-[19px]">Taamara Taamara</span>
       {withTagline && <span className="mt-[3px] text-[11.5px] font-medium text-ink-quiet">events &amp; beyond</span>}
     </span>
   );

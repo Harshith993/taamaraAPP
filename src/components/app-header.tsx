@@ -20,20 +20,20 @@ function initials(name: string) {
 /** The liquid-glass header: it floats over the page, with a soft rainbow glow behind it. */
 export function AppHeader({ name, roleLabel, items }: { name: string; roleLabel: string; items: NavItem[] }) {
   return (
-    <div className="sticky top-0 z-40">
+    <div className="sticky top-0 z-40" style={{ viewTransitionName: "site-header" }}>
       <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-10 h-40 overflow-hidden">
         <div className="absolute -top-8 left-[8%] h-36 w-72 rounded-full bg-[#fbcfe8] opacity-60 blur-3xl" />
         <div className="absolute -top-6 left-[38%] h-32 w-80 rounded-full bg-[#fde68a] opacity-50 blur-3xl" />
         <div className="absolute -top-10 right-[10%] h-36 w-72 rounded-full bg-[#bae6fd] opacity-60 blur-3xl" />
       </div>
       <header className="lattice-plum relative">
-        <div className="mx-auto flex min-h-[60px] max-w-[1400px] flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 pt-2 sm:px-8">
-          <Link href="/home" className="flex items-center gap-2.5 text-ink no-underline">
+        <div className="mx-auto flex min-h-[60px] max-w-[1400px] flex-wrap items-center justify-between gap-x-2 gap-y-1 px-4 pt-[max(env(safe-area-inset-top),8px)] sm:gap-x-4 sm:px-8">
+          <Link href="/home" className="flex min-w-0 items-center gap-2.5 text-ink no-underline">
             <LotusBadge />
             <Wordmark />
           </Link>
           <MainNav items={items} />
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <span className="hidden text-right leading-tight sm:flex sm:flex-col">
               <span className="text-[13.5px] font-semibold">{name}</span>
               <span className="text-[12px] text-ink-quiet">{roleLabel}</span>

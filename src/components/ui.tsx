@@ -156,16 +156,17 @@ export function IconTile({ tint, children, size = "md" }: { tint: Tint; children
 /** A card that links somewhere: icon, title, a line of text, a count, and an arrow that moves on hover. */
 export function FeatureCard({ href, icon, tint, title, text, count }: { href: string; icon: ReactNode; tint: Tint; title: string; text: string; count?: number | string }) {
   return (
-    <Link href={href} className="group lift flex w-full min-w-0 flex-col gap-3 rounded-[20px] border border-line bg-white p-4 text-ink no-underline shadow-[var(--shadow-card)]">
+    <Link href={href} className="group lift flex w-full min-w-0 flex-col gap-2.5 rounded-[20px] border border-line bg-white p-3.5 text-ink no-underline shadow-[var(--shadow-card)] sm:gap-3 sm:p-4">
       <span className="flex items-start justify-between gap-2">
         <IconTile tint={tint}>{icon}</IconTile>
         {count !== undefined && count !== 0 && <span className="rounded-full bg-ink px-2.5 py-0.5 text-[12px] font-semibold text-white">{count}</span>}
       </span>
       <span className="flex flex-col gap-0.5">
-        <span className="font-condensed text-[17px] font-semibold">{title}</span>
-        <span className="text-[13.5px] leading-snug text-ink-quiet">{text}</span>
+        <span className="font-condensed text-[16px] leading-tight font-semibold sm:text-[17px]">{title}</span>
+        {/* On a phone the cards sit two to a row, so the line is kept short. */}
+        <span className="line-clamp-2 text-[13px] leading-snug text-ink-quiet sm:line-clamp-none sm:text-[13.5px]">{text}</span>
       </span>
-      <span className="mt-auto inline-flex items-center gap-1 text-[13px] font-semibold text-plum">
+      <span className="mt-auto hidden items-center gap-1 text-[13px] font-semibold text-plum sm:inline-flex">
         Open <ArrowRight aria-hidden className="size-4 transition-transform duration-200 group-hover:translate-x-1" />
       </span>
     </Link>

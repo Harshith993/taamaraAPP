@@ -41,7 +41,7 @@ export default async function EventDayPage({ searchParams }: { searchParams: Pro
   return (
     <div className="flex min-h-dvh flex-col bg-night-ground text-night-text">
       <AutoRefresh seconds={30} />
-      <header className="lattice-deep">
+      <header className="lattice-deep" style={{ viewTransitionName: "site-header" }}>
         <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-3 px-4 pt-[max(env(safe-area-inset-top),12px)] pb-3 sm:px-8">
           <LotusBadge size={40} />
           <span className="flex min-w-0 flex-1 flex-col leading-none">

@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeCheck, CalendarDays, Camera, FileText, Home, IndianRupee, LayoutList, MoonStar, Receipt, Settings, Store, Users, UsersRound, type LucideIcon } from "lucide-react";
+import { Armchair, BadgeCheck, CalendarDays, Camera, FileText, Home, IndianRupee, LayoutList, MoonStar, Receipt, Settings, Store, Users, UsersRound, Wallet, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -21,6 +21,8 @@ const ICONS: Record<string, LucideIcon> = {
   "/money": IndianRupee,
   "/invoices": FileText,
   "/expenses": Receipt,
+  "/advances": Wallet,
+  "/equipment": Armchair,
   "/approvals": BadgeCheck,
   "/team": Users,
   "/settings": Settings,

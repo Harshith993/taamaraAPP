@@ -10,7 +10,7 @@ const { BASE, PHONE, launch, checker, query } = require("./lib.cjs");
   try {
     {
       const { ctx, page } = await signIn("98110 00005", PHONE);
-      await page.getByRole("link", { name: /Your details, GST and bank/ }).click();
+      await page.getByRole("navigation", { name: "Sections" }).getByRole("link", { name: "Profile" }).click(); // the bottom tab bar
       await page.waitForURL(/\/vendor\/profile/);
       await page.getByRole("button", { name: /bank details/ }).click();
       await page.fill('input[name="accountName"]', "Roshni Lights");

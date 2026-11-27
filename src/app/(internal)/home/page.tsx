@@ -94,7 +94,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         </div>
       </div>
 
-      <ul aria-label="Shortcuts" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+      <ul aria-label="Shortcuts" className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4 xl:grid-cols-5">
         {cards.map((c) => (
           <li key={c.href} className="flex">
             <FeatureCard {...c} />

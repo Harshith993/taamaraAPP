@@ -175,3 +175,250 @@
 @utility lattice-cream {
   background-image: linear-gradient(120deg, #fce7f3, #ffedd5 30%, #fef9c3 50%, #dcfce7 70%, #e0f2fe 85%, #ede9fe);
 }
+
+/* ───────────── The opening (src/components/intro) ─────────────
+ * Hidden unless the <head> script adds html.tt-intro before the first paint. The petals bloom from
+ * the centre outwards, the name writes in, then the controller flies the badge into the header. */
+.tt-intro-overlay {
+  display: none;
+}
+html.tt-intro .tt-intro-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  background: #ffffff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+html.tt-intro body {
+  overflow: hidden;
+}
+/* The real mark the badge lands on stays hidden until the badge is exactly on top of it. */
+html.tt-intro [data-brand-mark] {
+  opacity: 0;
+}
+.tt-intro-glow {
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(38% 30% at 30% 30%, rgb(251 207 232 / 0.7), transparent 70%),
+    radial-gradient(34% 28% at 70% 35%, rgb(186 230 253 / 0.7), transparent 70%),
+    radial-gradient(40% 30% at 50% 75%, rgb(221 214 254 / 0.6), transparent 70%),
+    radial-gradient(30% 24% at 55% 50%, rgb(253 230 138 / 0.45), transparent 70%);
+  filter: blur(30px);
+  animation: tt-glow 2.2s ease-out both;
+}
+.tt-intro-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.tt-intro-badge {
+  display: grid;
+  place-items: center;
+  width: 176px;
+  height: 176px;
+  border-radius: 9999px;
+  background: #ffffff;
+  box-shadow:
+    0 0 0 1px var(--color-line),
+    0 30px 80px -30px rgb(22 20 31 / 0.35);
+  will-change: transform;
+  animation: tt-badge 900ms cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+}
+.tt-bloom path {
+  transform-box: view-box;
+  transform-origin: 100px 108px;
+  animation: tt-petal 620ms cubic-bezier(0.2, 0.85, 0.3, 1.2) both;
+  animation-delay: calc(180ms + var(--i, 0) * 70ms);
+}
+.tt-intro-name {
+  font-size: clamp(30px, 6vw, 44px);
+  line-height: 1;
+  color: var(--color-ink);
+  animation: tt-rise 600ms cubic-bezier(0.2, 0.8, 0.2, 1) 720ms both;
+}
+.tt-intro-tag {
+  margin-top: -6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-ink-quiet);
+  letter-spacing: 0.02em;
+  animation: tt-rise 600ms cubic-bezier(0.2, 0.8, 0.2, 1) 860ms both;
+}
+.tt-intro-line {
+  height: 3px;
+  width: 168px;
+  border-radius: 9999px;
+  transform-origin: left center;
+  animation: tt-draw 700ms cubic-bezier(0.65, 0, 0.35, 1) 900ms both;
+}
+html.tt-intro-out .tt-intro-name,
+html.tt-intro-out .tt-intro-tag,
+html.tt-intro-out .tt-intro-line,
+html.tt-intro-out .tt-intro-glow {
+  animation: tt-fade-out 260ms ease-in both;
+}
+html.tt-intro-out .tt-intro-overlay {
+  pointer-events: none;
+}
+/* The page settles in as the overlay clears. */
+html.tt-intro-reveal main > * {
+  animation: tt-settle 640ms cubic-bezier(0.2, 0.8, 0.2, 1) 120ms both;
+}
+html.tt-intro-reveal main > *:nth-child(n + 2) {
+  animation-delay: 180ms;
+}
+
+@keyframes tt-glow {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes tt-badge {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes tt-petal {
+  from {
+    opacity: 0;
+    transform: scale(0.15) rotate(-14deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+@keyframes tt-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+@keyframes tt-draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes tt-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes tt-settle {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* Reduced motion: the logo and name simply appear, then fade (the base rule switches animations off). */
+@media (prefers-reduced-motion: reduce) {
+  html.tt-intro .tt-intro-overlay * {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
+
+/* ───────────── Moving between pages (React <ViewTransition>, src/components/page-transition.tsx) ───────────── */
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-old(.page-out) {
+  animation: 140ms ease-in both tt-vt-fade reverse;
+}
+::view-transition-new(.page-in) {
+  animation:
+    220ms ease-out 90ms both tt-vt-fade,
+    360ms cubic-bezier(0.2, 0.8, 0.2, 1) both tt-vt-rise;
+}
+/* The header (and the portals' tab bar) stay put while the page under them changes. */
+::view-transition-group(portal-tabs) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(portal-tabs) {
+  display: none;
+}
+::view-transition-new(portal-tabs) {
+  animation: none;
+}
+::view-transition-group(site-header) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(site-header) {
+  display: none;
+}
+::view-transition-new(site-header) {
+  animation: none;
+}
+@keyframes tt-vt-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes tt-vt-rise {
+  from {
+    translate: 0 10px;
+  }
+  to {
+    translate: 0 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
+/* Touch: a quick press-down on anything tappable, and no grey flash on iOS. */
+@layer base {
+  a,
+  button,
+  [role="button"],
+  summary,
+  label:has(input[type="checkbox"]) {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  button:not(:disabled):active,
+  a[class*="rounded"]:active {
+    transform: scale(0.97);
+    transition: transform 80ms ease;
+  }
+}

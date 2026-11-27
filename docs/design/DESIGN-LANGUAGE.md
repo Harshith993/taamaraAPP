@@ -18,6 +18,17 @@
 | Components | `Button`/`ButtonLink` pills (primary ink, look = rainbow pastel), `Tag` pastel pills, `FeatureCard` (icon, title, text, count, arrow), `Panel`, `Field`, `Notice`, `EmptyState` with a sparkle |
 | Event day | Stays dark (night mode) for venues |
 
+
+### Motion and touch (27 Nov, the host's request: "smoother, more interesting, easy for vendors")
+
+| Piece | What it does |
+|---|---|
+| Opening intro | Once per browser session: the lotus blooms from the centre bud outwards (petals 70 ms apart), "Taamara Taamara" and "events & beyond" write in, a rainbow line draws, then the logo flies into the page's own brand mark (header, portal bar or sign-in page) while the page settles in under it. About 2.3 s; a tap or key skips it; with reduced motion the logo simply appears and fades in under a second. It is in the first HTML (no flash of the page first) and decided by a small script with the page's CSP nonce. Files: `src/components/intro/`. |
+| Page changes | React `<ViewTransition>`: the old page fades out in 140 ms and the new one rises 10 px and fades in; the header and the portal tab bar stay still. Browsers without the View Transitions API simply switch pages. |
+| Touch | Every button and rounded link presses down slightly on tap; no grey tap flash on iOS; double-tap zoom is off on controls. |
+| Vendor and crew phones | A glass bottom tab bar in thumb reach (vendor: Jobs, Messages, Alerts, Profile; crew: Today, Messages, Alerts, Me) with unread counts; the header keeps only the brand and sign-out. The vendor home opens with "What needs you now": one big card per job waiting on them (send your quote, accept the work order, add photos and mark it done). |
+| Phones and iPads | Content runs under the notch and home bar with safe-area padding; the host's shortcut cards sit two to a row on phones; the app can be added to the home screen and opens full screen (manifest and icons from the logo). |
+
 ---
 
 ## v1 (Cue Sheet), for reference

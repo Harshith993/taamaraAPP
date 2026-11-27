@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { WaitingAnnouncements } from "@/components/messages";
-import { ChevronRight } from "lucide-react";
+import { ArrowRight, Camera, ChevronRight, FileSignature, PartyPopper, Send } from "lucide-react";
 import { PortalShell } from "@/components/portal-shell";
-import { EmptyState, MovingArrow, Panel, Tag } from "@/components/ui";
+import { EmptyState, IconTile, Panel, Tag, type Tint } from "@/components/ui";
 import { db } from "@/lib/db";
 import {
   formatCalendarDate,
@@ -34,6 +34,13 @@ const STAGE_WORDS: Record<string, string> = {
 
 /** Stages where the vendor has something to do (quote, or accept a work order). */
 const NEEDS_YOU = new Set(["INVITED", "APPROVED"]);
+
+/** What the vendor does next on a job, in plain words, for the "needs you now" cards. */
+const NEXT_STEP: Record<string, { verb: string; icon: typeof Send; tint: Tint }> = {
+  INVITED: { verb: "Send your quote", icon: Send, tint: "yellow" },
+  APPROVED: { verb: "Accept the work order", icon: FileSignature, tint: "violet" },
+  IN_PROGRESS: { verb: "Add photos and mark it done", icon: Camera, tint: "sky" },
+};
 
 export default async function VendorHome() {
   const actor = await requireActor();
@@ -76,6 +83,7 @@ export default async function VendorHome() {
     (j) => !j.event.endDate || j.event.endDate >= today,
   );
   const past = jobs.filter((j) => j.event.endDate && j.event.endDate < today);
+  const todo = upcoming.filter((j) => j.status in NEXT_STEP);
 
   const paid = can(actor, "payments.status")
     ? await db.payment.aggregate({
@@ -90,9 +98,41 @@ export default async function VendorHome() {
       subtitle="Taamara Taamara · vendor"
     >
       <div className="flex flex-col gap-3.5">
-        <Link href="/vendor/profile" className="group inline-flex items-center gap-1 self-end text-[13.5px] font-medium text-ink-quiet no-underline hover:text-ink">
-          Your details, GST and bank <MovingArrow />
-        </Link>
+        <section aria-label="What needs you now" className="flex flex-col gap-2.5">
+          <h2 className="font-condensed text-[22px] leading-tight">{todo.length ? `${todo.length} thing${todo.length === 1 ? "" : "s"} need${todo.length === 1 ? "s" : ""} you` : "You're all caught up"}</h2>
+          {todo.length === 0 ? (
+            <p className="flex items-center gap-2.5 rounded-[20px] border border-line bg-white p-4 text-[15px] shadow-[var(--shadow-card)]">
+              <IconTile tint="green">
+                <PartyPopper aria-hidden className="size-5" />
+              </IconTile>
+              {upcoming.length ? "Nothing to do right now. Your next jobs are below." : "When Taamara Taamara asks you for a quote, it appears here."}
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-2.5">
+              {todo.map((j) => {
+                const step = NEXT_STEP[j.status];
+                return (
+                  <li key={j.id}>
+                    <Link href={`/vendor/jobs/${j.id}`} className="lift group flex items-center gap-3.5 rounded-[20px] border border-line bg-white p-4 text-ink no-underline shadow-[var(--shadow-card)]">
+                      <IconTile tint={step.tint}>
+                        <step.icon aria-hidden className="size-5" />
+                      </IconTile>
+                      <span className="flex min-w-0 flex-1 flex-col leading-tight">
+                        <span className="text-[16.5px] font-bold">{step.verb}</span>
+                        <span className="truncate text-[13.5px] text-ink-quiet">
+                          {j.scopeOfWork} · {j.event.name}
+                        </span>
+                      </span>
+                      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-ink text-white transition-transform group-hover:translate-x-0.5">
+                        <ArrowRight aria-hidden className="size-5" />
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
         <WaitingAnnouncements actor={actor} />
         <Panel title={`Upcoming jobs · ${upcoming.length}`}>
           {upcoming.length === 0 ? (
