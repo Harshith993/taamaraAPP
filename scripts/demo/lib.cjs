@@ -99,7 +99,8 @@ function overlayScript(opts) {
 
 /** One demo video: an ordered list of recorded segments, plus chapter marks. */
 class Demo {
-  constructor(name, { workDir, small = false, frame = "desktop" } = {}) {
+  constructor(name, { workDir, small = false, frame = "desktop", speed = 1 } = {}) {
+    this.speed = speed;
     this.name = name;
     this.workDir = workDir || path.join(require("os").tmpdir(), `demo-${name}`);
     fs.rmSync(this.workDir, { recursive: true, force: true });
@@ -115,7 +116,7 @@ class Demo {
 
   async close() {
     await this.browser.close();
-    fs.writeFileSync(path.join(this.workDir, "segments.json"), JSON.stringify({ name: this.name, frame: this.frame, segments: this.segments }, null, 2));
+    fs.writeFileSync(path.join(this.workDir, "segments.json"), JSON.stringify({ name: this.name, frame: this.frame, speed: this.speed, segments: this.segments }, null, 2));
     console.log(`${this.segments.length} segments in ${this.workDir}`);
   }
 
@@ -210,7 +211,7 @@ class Director {
   }
 
   cardTime(card) {
-    return 2300 + ((card[2] || "").length + card[1].length) * 28;
+    return 1900 + ((card[2] || "").length + card[1].length) * 22;
   }
 
   /** A chapter title card in the middle of a segment. */
@@ -226,7 +227,7 @@ class Director {
   /** A step caption at the bottom of the screen; waits long enough to read it. */
   async caption(html, ms) {
     await this.page.evaluate((h) => window.__demo.caption(h), html).catch(() => {});
-    if (html) await this.wait(ms ?? Math.min(6500, 1700 + html.replace(/<[^>]+>/g, "").length * 52));
+    if (html) await this.wait(ms ?? Math.min(5500, 1300 + html.replace(/<[^>]+>/g, "").length * 46));
   }
 
   /** Shows a caption without waiting (for captions that sit over a following action). */

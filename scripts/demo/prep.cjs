@@ -24,8 +24,13 @@ async function as(login, fn) {
 async function inviteQuote() {
   const url = await bookingUrl();
   await as("priya@demo.taamara.in", async (page) => {
-    await page.goto(`${url}?tab=vendors`);
-    await page.getByRole("button", { name: "+ Ask a vendor to quote" }).click();
+    await page.goto(`${url}?tab=vendors`, { waitUntil: "networkidle" });
+    // A freshly started server can be slow to hydrate the first page: try the button again if needed.
+    for (let i = 0; i < 3; i++) {
+      await page.getByRole("button", { name: "+ Ask a vendor to quote" }).click();
+      if (await page.locator('select[name="department"]').waitFor({ timeout: 5000 }).then(() => true, () => false)) break;
+      await page.reload({ waitUntil: "networkidle" });
+    }
     await page.selectOption('select[name="department"]', { label: "Lighting" });
     await page.selectOption('select[name="vendorId"]', { label: "Roshni Lights · Jaipur" });
     await page.fill('input[name="scopeOfWork"]', SCOPE);

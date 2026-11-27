@@ -14,7 +14,7 @@ const phoneOptions = { permissions: ["geolocation"], geolocation: NAHARGARH };
 
 (async () => {
   const workDir = process.argv[2] || "/tmp/demo-vendor";
-  const demo = new Demo("For vendors", { workDir, frame: "phone" });
+  const demo = new Demo("For vendors", { workDir, frame: "phone", speed: 1.1 });
   const media = await makeMedia(path.join(workDir, "media"));
   await demo.open();
   const tabs = (d) => d.page.getByRole("navigation", { name: "Sections" });

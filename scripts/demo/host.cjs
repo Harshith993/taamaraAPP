@@ -13,7 +13,7 @@ const HOST = "98000 00001";
 
 (async () => {
   const workDir = process.argv[2] || "/tmp/demo-host";
-  const demo = new Demo("For hosts", { workDir, frame: "desktop" });
+  const demo = new Demo("For hosts", { workDir, frame: "desktop", speed: 1.15 });
   const media = await makeMedia(path.join(workDir, "media"));
   await demo.open();
   await prep.clientInvoicesOn();
@@ -42,7 +42,7 @@ const HOST = "98000 00001";
   const look = async (d, target, html, hold = 0) => {
     await d.say(html);
     await d.point(target, { hold: 400 });
-    await d.wait(Math.max(hold, 1200 + html.replace(/<[^>]+>/g, "").length * 50));
+    await d.wait(Math.max(hold, 900 + html.replace(/<[^>]+>/g, "").length * 44));
     await d.unhl();
   };
   const cancelForm = async (d) => {
@@ -83,11 +83,8 @@ const HOST = "98000 00001";
     await d.unhl();
     await d.page.keyboard.press("Control+k");
     await d.wait(900);
-    await d.page.keyboard.type("roshni", { delay: 140 });
-    await d.wait(2200);
-    await d.caption("Results appear as you type. Arrow keys and Enter open one.", 2600);
-    await d.page.keyboard.press("Control+a");
-    await d.page.keyboard.type("aditi", { delay: 140 });
+    await d.say("Results appear as you type. Arrow keys and Enter open one.");
+    await d.page.keyboard.type("aditi", { delay: 160 });
     await d.wait(2000);
     await d.page.keyboard.press("Enter");
     await d.page.waitForURL(/\/bookings\//, { timeout: 8000 }).catch(() => {});
@@ -180,8 +177,14 @@ const HOST = "98000 00001";
 
     await d.card("Chapter 10", "Settling a booking", "A checklist, then settle and lock the books.");
     await d.go(`${DIWALI}?tab=money`);
-    await d.scroll(300);
-    await d.caption("When an event is over, the <b>settlement checklist</b> shows what's left: payments, proof, expenses.", 4200);
+    await d.caption("When an event is over, the <b>settlement checklist</b> shows what's left. Here the client still owes the balance.", 4200);
+    const owed = ((await d.page.locator("main").textContent()).match(/still owes ₹([\d,]+)/) || [])[1];
+    if (owed && (await d.click(btn(d, "+ Record a payment received"), { after: 900 }))) {
+      await d.type('input[name="amount"]', owed.replace(/,/g, ""), { delay: 60 });
+      await d.type('input[name="reference"]', "NEFT-INFOTECH-2", { delay: 40 });
+      await d.click(btn(d, "Record", true), { after: 2500 });
+      await d.caption("Payment recorded. Every item on the checklist is now done.", 2800);
+    }
     const settle = d.page.locator("section", { has: d.page.getByRole("heading", { name: /^Settlement/ }) }).first();
     await d.click(settle.getByRole("button", { name: "Settle booking" }), { after: 1000 });
     await d.type(settle.locator('input[name^="settle-"]'), "Client balance agreed, books closed", { delay: 40 });

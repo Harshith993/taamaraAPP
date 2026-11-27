@@ -12,7 +12,7 @@ if (!workDir || !out) {
   console.error("Usage: node scripts/demo/stitch.cjs <work-dir> <out.mp4>");
   process.exit(1);
 }
-const { name, frame, segments } = JSON.parse(fs.readFileSync(path.join(workDir, "segments.json"), "utf8"));
+const { name, frame, segments, speed = 1 } = JSON.parse(fs.readFileSync(path.join(workDir, "segments.json"), "utf8"));
 const CREAM = "0xF6F0E3";
 const canvas = frame === "phone" ? { w: 786, h: 1704 } : { w: 1440, h: 900 };
 
@@ -36,10 +36,11 @@ segments.forEach((seg, i) => {
   const part = path.join(workDir, `part-${String(i).padStart(2, "0")}.mp4`);
   ff([
     "-ss", seg.trim.toFixed(3), "-i", seg.file,
-    "-vf", `${filterFor(seg.device)},fps=30,format=yuv420p`,
-    "-c:v", "libx264", "-preset", "medium", "-crf", "21", "-an", part,
+    // A gentle speed-up (set per video) keeps the long tour within its length without rushing captions.
+    "-vf", `setpts=PTS/${speed},${filterFor(seg.device)},fps=30,format=yuv420p`,
+    "-c:v", "libx264", "-preset", "medium", "-crf", "23", "-an", part,
   ]);
-  for (const m of seg.marks) chapters.push({ title: m.title, kicker: m.kicker, start: clock + Math.max(0, m.at) });
+  for (const m of seg.marks) chapters.push({ title: m.title, kicker: m.kicker, start: clock + Math.max(0, m.at) / speed });
   clock += duration(part);
   parts.push(part);
 });
