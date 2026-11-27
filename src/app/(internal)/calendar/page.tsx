@@ -27,7 +27,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">{title}</h1>
+          <h1 className="font-condensed text-[26px] leading-tight tracking-[-0.03em] sm:text-[30px]">{title}</h1>
           <p className="mt-1 text-[15px] text-ink-quiet">
             {[...cal.days.values()].flat().length} functions on {busyDays.length} days{actor.grants.get("bookings.view") === "ASSIGNED" ? " · your bookings" : ""}
           </p>

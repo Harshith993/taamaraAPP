@@ -506,6 +506,7 @@ const EXEMPT: Record<string, string> = {
   assertEventAccess: "the check itself (tests/access/policy.test.ts)",
   // Lists and counts filter by the policy layer rather than refusing; their filters are tested in
   // tests/access/policy.test.ts and the feature tests.
+  globalSearch: "filtered list (bookings by eventWhere, vendors and crew only with their view permission)",
   listBookings: "filtered list",
   pickableClients: "filtered list",
   monthCalendar: "filtered list",

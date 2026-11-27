@@ -17,7 +17,7 @@ const VARIANTS: Record<Variant, string> = {
 };
 
 const BUTTON_BASE =
-  "group inline-flex min-h-11 items-center justify-center gap-2 rounded-full border px-5 text-[14px] font-semibold transition duration-150 ease-out active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0";
+  "group inline-flex min-h-11 items-center justify-center gap-2 rounded-full border px-[18px] text-[14px] font-semibold transition duration-150 ease-out active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0";
 
 export function Button({ variant = "primary", className = "", ...props }: ComponentProps<"button"> & { variant?: Variant }) {
   return <button className={`${BUTTON_BASE} ${VARIANTS[variant]} ${className}`} {...props} />;
@@ -40,10 +40,10 @@ export function MovingArrow({ className = "" }: { className?: string }) {
 
 export function Panel({ title, action, children, className = "", tone = "paper" }: { title?: ReactNode; action?: ReactNode; children: ReactNode; className?: string; tone?: "paper" | "plain" }) {
   return (
-    <section className={`overflow-hidden rounded-[20px] border border-line ${tone === "paper" ? "bg-white shadow-[var(--shadow-card)]" : ""} ${className}`}>
+    <section className={`overflow-hidden rounded-2xl border border-line ${tone === "paper" ? "bg-white shadow-[var(--shadow-card)]" : ""} ${className}`}>
       {title && (
         <header className="flex min-h-12 items-center justify-between gap-3 border-b border-rule-soft px-4 py-2">
-          <h2 className="font-condensed text-[15.5px] font-semibold tracking-[-0.01em]">{title}</h2>
+          <h2 className="text-[14.5px] font-semibold tracking-[-0.005em]">{title}</h2>
           {action}
         </header>
       )}
@@ -156,7 +156,7 @@ export function IconTile({ tint, children, size = "md" }: { tint: Tint; children
 /** A card that links somewhere: icon, title, a line of text, a count, and an arrow that moves on hover. */
 export function FeatureCard({ href, icon, tint, title, text, count }: { href: string; icon: ReactNode; tint: Tint; title: string; text: string; count?: number | string }) {
   return (
-    <Link href={href} className="group lift flex w-full min-w-0 flex-col gap-2.5 rounded-[20px] border border-line bg-white p-3.5 text-ink no-underline shadow-[var(--shadow-card)] sm:gap-3 sm:p-4">
+    <Link href={href} className="group lift flex w-full min-w-0 flex-col gap-2.5 rounded-2xl border border-line bg-white p-3.5 text-ink no-underline shadow-[var(--shadow-card)] sm:gap-3 sm:p-4">
       <span className="flex items-start justify-between gap-2">
         <IconTile tint={tint}>{icon}</IconTile>
         {count !== undefined && count !== 0 && <span className="rounded-full bg-ink px-2.5 py-0.5 text-[12px] font-semibold text-white">{count}</span>}

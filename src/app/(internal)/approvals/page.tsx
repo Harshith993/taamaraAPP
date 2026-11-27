@@ -17,7 +17,7 @@ export default async function ApprovalsPage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">Approvals · {items.length}</h1>
+        <h1 className="font-condensed text-[26px] leading-tight tracking-[-0.03em] sm:text-[30px]">Approvals · {items.length}</h1>
         <p className="mt-1 text-[15px] text-ink-quiet">Quotes, payments, expenses, cash advances and crew extras waiting for a host. Everything you decide is kept in the audit log.</p>
       </div>
       {items.length === 0 ? (

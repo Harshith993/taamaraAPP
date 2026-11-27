@@ -1,57 +1,35 @@
 import { LogOut } from "lucide-react";
 import Link from "next/link";
 import { signOutAction } from "@/app/actions/auth";
-import { LotusBadge, PetalStripe, Wordmark } from "@/components/brand";
-import { MainNav, type NavItem } from "@/components/main-nav";
+import { LotusBadge, Wordmark } from "@/components/brand";
 import { MessagesButton } from "@/components/messages";
 import { NotificationBell } from "@/components/notifications";
+import { SearchButton } from "@/components/shell/command-palette";
 
-export type { NavItem };
-
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase())
-    .join("");
-}
-
-/** The liquid-glass header: it floats over the page, with a soft rainbow glow behind it. */
-export function AppHeader({ name, roleLabel, items }: { name: string; roleLabel: string; items: NavItem[] }) {
+/**
+ * The staff top bar: glass, slim and quiet. The brand shows here only on phones (the sidebar carries
+ * it on larger screens); search, messages, the bell and sign-out sit on the right.
+ */
+export function AppHeader() {
   return (
-    <div className="sticky top-0 z-40" style={{ viewTransitionName: "site-header" }}>
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 -top-10 h-40 overflow-hidden">
-        <div className="absolute -top-8 left-[8%] h-36 w-72 rounded-full bg-[#fbcfe8] opacity-60 blur-3xl" />
-        <div className="absolute -top-6 left-[38%] h-32 w-80 rounded-full bg-[#fde68a] opacity-50 blur-3xl" />
-        <div className="absolute -top-10 right-[10%] h-36 w-72 rounded-full bg-[#bae6fd] opacity-60 blur-3xl" />
-      </div>
-      <header className="lattice-plum relative">
-        <div className="mx-auto flex min-h-[60px] max-w-[1400px] flex-wrap items-center justify-between gap-x-2 gap-y-1 px-4 pt-[max(env(safe-area-inset-top),8px)] sm:gap-x-4 sm:px-8">
-          <Link href="/home" className="flex min-w-0 items-center gap-2.5 text-ink no-underline">
-            <LotusBadge />
-            <Wordmark />
-          </Link>
-          <MainNav items={items} />
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <span className="hidden text-right leading-tight sm:flex sm:flex-col">
-              <span className="text-[13.5px] font-semibold">{name}</span>
-              <span className="text-[12px] text-ink-quiet">{roleLabel}</span>
-            </span>
-            <span aria-hidden="true" className="hidden size-10 place-items-center rounded-full rainbow-soft text-[13.5px] font-bold text-ink ring-2 ring-white shadow-[var(--shadow-card)] sm:grid">
-              {initials(name)}
-            </span>
-            <MessagesButton />
-            <NotificationBell />
-            <form action={signOutAction}>
-              <button type="submit" aria-label="Sign out" className="grid size-11 place-items-center rounded-full border border-line bg-white text-ink-quiet transition hover:-translate-y-px hover:text-ink hover:shadow-[var(--shadow-card)]">
-                <LogOut aria-hidden className="size-[18px]" />
-              </button>
-            </form>
-          </div>
+    <header className="lattice-plum sticky top-0 z-40 border-b border-line print:hidden" style={{ viewTransitionName: "site-header" }}>
+      <div className="flex min-h-[60px] items-center gap-2 px-4 pt-[env(safe-area-inset-top)] sm:px-6 lg:px-8">
+        <Link href="/home" className="mr-auto flex min-w-0 items-center gap-2.5 text-ink no-underline md:hidden">
+          <LotusBadge size={36} />
+          <Wordmark withTagline={false} />
+        </Link>
+        <div className="md:mr-auto">
+          <SearchButton />
         </div>
-      </header>
-      <PetalStripe height={3} />
-    </div>
+        <MessagesButton />
+        <NotificationBell />
+        {/* On phones sign-out lives in the bottom bar's "More" sheet, to keep this bar uncluttered. */}
+        <form action={signOutAction} className="hidden md:block">
+          <button type="submit" aria-label="Sign out" className="grid size-11 place-items-center rounded-full border border-line bg-white text-ink-quiet transition hover:text-ink hover:shadow-[var(--shadow-card)]">
+            <LogOut aria-hidden className="size-[18px]" />
+          </button>
+        </form>
+      </div>
+    </header>
   );
 }

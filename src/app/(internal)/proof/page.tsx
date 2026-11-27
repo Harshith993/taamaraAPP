@@ -42,7 +42,7 @@ export default async function ProofPage({ searchParams }: { searchParams: Promis
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">Proof of work</h1>
+        <h1 className="font-condensed text-[26px] leading-tight tracking-[-0.03em] sm:text-[30px]">Proof of work</h1>
         <p className="mt-1 text-[15px] text-ink-quiet">Photos and videos from vendors and crew. Approve each one, or ask for it to be redone with a note.</p>
       </div>
 

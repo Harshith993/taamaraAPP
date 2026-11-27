@@ -53,7 +53,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           </div>
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {FEATURES.map((f) => (
-              <li key={f.title} className="lift flex flex-col gap-2.5 rounded-[20px] border border-line bg-white/80 p-4 shadow-[var(--shadow-card)] backdrop-blur">
+              <li key={f.title} className="lift flex flex-col gap-2.5 rounded-2xl border border-line bg-white/80 p-4 shadow-[var(--shadow-card)] backdrop-blur">
                 <IconTile tint={f.tint}>
                   <f.icon aria-hidden className="size-5" />
                 </IconTile>

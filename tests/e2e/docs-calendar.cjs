@@ -73,8 +73,9 @@ const { BASE, PHONE, launch, checker } = require("./lib.cjs");
       check("calendar shows this month's functions", /Aditi & Karan/.test(grid) && /Kabir's 1st Birthday/.test(grid));
       await page.screenshot({ path: `${out}/81-calendar.png`, fullPage: true });
       await page.setViewportSize({ width: 1180, height: 820 });
-      const navH = await page.evaluate(() => document.querySelector('nav[aria-label="Main"]').getBoundingClientRect().height);
-      check("owner menu still fits one line on iPad landscape", navH <= 56, `${navH}px`);
+      // The sidebar shows the host's whole menu on an iPad in landscape without scrolling.
+      const nav = await page.evaluate(() => { const n = document.querySelector('nav[aria-label="Main"]'); return { visible: n.getBoundingClientRect().width > 0, fits: n.scrollHeight <= n.clientHeight + 1, links: n.querySelectorAll("a").length }; });
+      check("the host's whole menu fits the sidebar on iPad landscape", nav.visible && nav.fits && nav.links >= 14, JSON.stringify(nav));
       await page.setViewportSize(PHONE);
       check("phone shows the agenda list", await page.locator(".md\\:hidden li").first().isVisible());
       await page.screenshot({ path: `${out}/82-calendar-phone.png`, fullPage: true });

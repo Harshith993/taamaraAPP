@@ -28,7 +28,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">Vendor invoices</h1>
+        <h1 className="font-condensed text-[26px] leading-tight tracking-[-0.03em] sm:text-[30px]">Vendor invoices</h1>
         <p className="mt-1 text-[15px] text-ink-quiet">Check each invoice against its work order and the approved proof. Verified invoices are ready for payment.</p>
       </div>
       <nav aria-label="Filter invoices" className="flex w-fit max-w-full flex-wrap self-start gap-1 rounded-full border border-line bg-ground p-1 text-[13.5px] font-medium">

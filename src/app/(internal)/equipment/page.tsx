@@ -33,7 +33,7 @@ export default async function EquipmentPage({ searchParams }: { searchParams: Pr
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">Equipment</h1>
+        <h1 className="font-condensed text-[26px] leading-tight tracking-[-0.03em] sm:text-[30px]">Equipment</h1>
         <p className="mt-1 max-w-prose text-[15px] text-ink-quiet">
           The company&apos;s own decor, furniture, lights and sound. Book it out from a booking&apos;s Equipment tab; check it out and back in with notes. {owned} pieces across {items.length} items · {out} out now.
         </p>
@@ -130,7 +130,7 @@ export default async function EquipmentPage({ searchParams }: { searchParams: Pr
           {items.map((i) => {
             const look = LOOK[i.category ?? "OTHER"] ?? LOOK.OTHER;
             return (
-              <li key={i.id} aria-label={i.name} className="lift flex flex-col overflow-hidden rounded-[20px] border border-line bg-white shadow-[var(--shadow-card)]">
+              <li key={i.id} aria-label={i.name} className="lift flex flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-[var(--shadow-card)]">
                 {i.photo?.thumbUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={i.photo.thumbUrl} alt={i.name} className="h-36 w-full object-cover" />

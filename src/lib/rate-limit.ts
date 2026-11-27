@@ -17,6 +17,7 @@ export const LIMITS = {
   "channel.stream": { max: 30, windowMs: 60_000 },
   "message.post": { max: 40, windowMs: 60_000 },
   "announcement.send": { max: 10, windowMs: 60_000 },
+  search: { max: 120, windowMs: 60_000 },
 } as const;
 export type LimitKey = keyof typeof LIMITS;
 

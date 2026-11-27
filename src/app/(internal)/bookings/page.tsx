@@ -27,7 +27,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">Bookings</h1>
+          <h1 className="font-condensed text-[26px] leading-tight tracking-[-0.03em] sm:text-[30px]">Bookings</h1>
           <p className="mt-1 text-[15px] text-ink-quiet">{actor.grants.get("bookings.view") === "ASSIGNED" ? "Bookings you are assigned to." : "Every booking."}</p>
         </div>
         {can(actor, "bookings.create") && <ButtonLink href="/bookings/new">+ New booking</ButtonLink>}

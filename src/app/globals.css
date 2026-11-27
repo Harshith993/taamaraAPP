@@ -49,7 +49,7 @@
   /* Figures and small labels use Geist with even-width digits (calmer than a code font). */
   --font-mono: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
 
-  --shadow-card: 0 1px 2px rgb(22 20 31 / 0.04), 0 10px 30px -14px rgb(22 20 31 / 0.16);
+  --shadow-card: 0 1px 2px rgb(22 20 31 / 0.04), 0 6px 20px -12px rgb(22 20 31 / 0.12);
   --shadow-lift: 0 2px 4px rgb(22 20 31 / 0.05), 0 22px 44px -18px rgb(22 20 31 / 0.24);
   --shadow-glass: 0 1px 0 rgb(255 255 255 / 0.8) inset, 0 8px 32px -12px rgb(22 20 31 / 0.18);
 
@@ -82,7 +82,8 @@
     -webkit-text-size-adjust: 100%;
   }
   body {
-    background: #ffffff;
+    /* A soft grey page so white cards read as surfaces (27 Nov professional pass). */
+    background: #f8f8fb;
     color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -421,4 +422,35 @@ html.tt-intro-reveal main > *:nth-child(n + 2) {
     transform: scale(0.97);
     transition: transform 80ms ease;
   }
+}
+
+/* Search and the phone "More" sheet (src/components/shell). */
+@keyframes tt-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes tt-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+}
+@keyframes tt-sheet {
+  from {
+    transform: translateY(100%);
+  }
+}
+::view-transition-group(site-sidebar),
+::view-transition-group(app-tabs) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(site-sidebar),
+::view-transition-old(app-tabs) {
+  display: none;
+}
+::view-transition-new(site-sidebar),
+::view-transition-new(app-tabs) {
+  animation: none;
 }

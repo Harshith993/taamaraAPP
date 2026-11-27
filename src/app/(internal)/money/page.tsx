@@ -17,7 +17,7 @@ export const metadata: Metadata = { title: "Money" };
 
 function Tile({ label, value, note, tone, icon: Icon, tint }: { label: string; value: number; note?: string; tone?: "ok" | "now"; icon: LucideIcon; tint: Tint }) {
   return (
-    <div className="lift flex flex-col gap-2 rounded-[20px] border border-line bg-white p-4 shadow-[var(--shadow-card)]">
+    <div className="lift flex flex-col gap-2 rounded-2xl border border-line bg-white p-4 shadow-[var(--shadow-card)]">
       <span className="flex items-center justify-between gap-2">
         <span className="text-[13px] font-medium text-ink-quiet">{label}</span>
         <IconTile tint={tint} size="sm">
@@ -70,7 +70,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">Money</h1>
+        <h1 className="font-condensed text-[26px] leading-tight tracking-[-0.03em] sm:text-[30px]">Money</h1>
         <p className="mt-1 text-[15px] text-ink-quiet">Across every booking. Client amounts are before GST; vendor costs include the GST on their invoices.</p>
       </div>
 

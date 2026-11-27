@@ -101,7 +101,7 @@ export default async function VendorHome() {
         <section aria-label="What needs you now" className="flex flex-col gap-2.5">
           <h2 className="font-condensed text-[22px] leading-tight">{todo.length ? `${todo.length} thing${todo.length === 1 ? "" : "s"} need${todo.length === 1 ? "s" : ""} you` : "You're all caught up"}</h2>
           {todo.length === 0 ? (
-            <p className="flex items-center gap-2.5 rounded-[20px] border border-line bg-white p-4 text-[15px] shadow-[var(--shadow-card)]">
+            <p className="flex items-center gap-2.5 rounded-2xl border border-line bg-white p-4 text-[15px] shadow-[var(--shadow-card)]">
               <IconTile tint="green">
                 <PartyPopper aria-hidden className="size-5" />
               </IconTile>
@@ -113,7 +113,7 @@ export default async function VendorHome() {
                 const step = NEXT_STEP[j.status];
                 return (
                   <li key={j.id}>
-                    <Link href={`/vendor/jobs/${j.id}`} className="lift group flex items-center gap-3.5 rounded-[20px] border border-line bg-white p-4 text-ink no-underline shadow-[var(--shadow-card)]">
+                    <Link href={`/vendor/jobs/${j.id}`} className="lift group flex items-center gap-3.5 rounded-2xl border border-line bg-white p-4 text-ink no-underline shadow-[var(--shadow-card)]">
                       <IconTile tint={step.tint}>
                         <step.icon aria-hidden className="size-5" />
                       </IconTile>

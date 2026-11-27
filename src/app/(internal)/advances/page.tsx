@@ -123,7 +123,7 @@ export default async function AdvancesPage({ searchParams }: { searchParams: Pro
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">Cash advances</h1>
+        <h1 className="font-condensed text-[26px] leading-tight tracking-[-0.03em] sm:text-[30px]">Cash advances</h1>
         <p className="mt-1 max-w-prose text-[15px] text-ink-quiet">
           Company cash carried by managers and supervisors. Spending is recorded as expenses, each with its bill; what is left comes back and the advance is closed.
         </p>

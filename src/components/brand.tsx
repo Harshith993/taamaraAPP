@@ -48,7 +48,7 @@ export function PetalStripe({ height = 3 }: { height?: number }) {
 export function Wordmark({ withTagline = true }: { withTagline?: boolean }) {
   return (
     <span className="flex flex-col leading-none">
-      <span className="font-condensed text-[17px] tracking-[-0.02em] sm:text-[19px]">Taamara Taamara</span>
+      <span className="font-condensed text-[17px] tracking-[-0.02em] whitespace-nowrap sm:text-[19px]">Taamara Taamara</span>
       {withTagline && <span className="mt-[3px] text-[11.5px] font-medium text-ink-quiet">events &amp; beyond</span>}
     </span>
   );

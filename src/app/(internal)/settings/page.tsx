@@ -20,7 +20,7 @@ export default async function SettingsPage() {
   return (
     <div className="flex max-w-3xl flex-col gap-5">
       <div>
-        <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">Settings</h1>
+        <h1 className="font-condensed text-[26px] leading-tight tracking-[-0.03em] sm:text-[30px]">Settings</h1>
         <p className="mt-1 text-[15px] text-ink-quiet">How the app works for everyone. Changes are recorded in the audit log.</p>
       </div>
       {current && (

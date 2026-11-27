@@ -83,7 +83,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       {denied && <Notice tone="error">That page is not part of your access. Ask a host if you need it.</Notice>}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-condensed text-[clamp(32px,4vw,46px)] leading-[0.95]">
+          <h1 className="font-condensed text-[26px] leading-tight tracking-[-0.03em] sm:text-[30px]">
             {greeting()}, <span className="rainbow-text">{firstName(actor.name)}</span>
             <Sparkles aria-hidden className="ml-2 inline size-7 animate-twinkle align-[-2px] text-[#a855f7]" />
           </h1>

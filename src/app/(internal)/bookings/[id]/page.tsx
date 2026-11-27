@@ -203,7 +203,7 @@ export default async function BookingPage({
 
       <nav
         aria-label="Booking sections"
-        className="flex w-fit max-w-full flex-wrap gap-1 rounded-[22px] border border-line bg-ground p-1 text-[13.5px] font-medium"
+        className="flex w-fit max-w-full flex-wrap gap-1 rounded-2xl border border-line bg-ground p-1 text-[13.5px] font-medium"
       >
         {TABS.filter((t) => tabVisible(actor, t.key)).map((t) => (
           <Link

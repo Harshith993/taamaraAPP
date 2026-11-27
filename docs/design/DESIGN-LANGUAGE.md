@@ -29,6 +29,18 @@
 | Vendor and crew phones | A glass bottom tab bar in thumb reach (vendor: Jobs, Messages, Alerts, Profile; crew: Today, Messages, Alerts, Me) with unread counts; the header keeps only the brand and sign-out. The vendor home opens with "What needs you now": one big card per job waiting on them (send your quote, accept the work order, add photos and mark it done). |
 | Phones and iPads | Content runs under the notch and home bar with safe-area padding; the host's shortcut cards sit two to a row on phones; the app can be added to the home screen and opens full screen (manifest and icons from the logo). |
 
+### Professional pass (27 Nov, the host's request: "more professional, interesting and easy to use")
+
+Figma file with the redesigned screens as editable layers: https://www.figma.com/design/4BoZnY3K9A59iwpyayMelt
+(laptop: host home, money, search; iPad: a booking's money tab; phone: host home, the "More" sheet, vendor home, crew today).
+
+| Piece | What it does |
+|---|---|
+| Sidebar | Staff pages move from a top row of links to a left sidebar grouped Work, People, Operations, Money, Admin, with icons, counts and the signed-in person at the bottom. Full width (252 px) on laptops and iPad landscape; an icon rail (76 px) on iPad portrait. The page you are on has a soft pill and a rainbow edge. Files: `src/components/shell/`. |
+| Search (⌘K) | One search box in the top bar (or ⌘K / Ctrl K / "/"): bookings by name, code or client, vendors and crew by name, plus every page to jump to. Arrow keys and Enter work; results follow the same rules as each page (`src/modules/search/service.ts`). |
+| Phone bar | Staff phones get the same thumb-reach bottom bar as vendors and crew: four main pages for the person's role and "More", which opens a sheet with every page in its group and Sign out. |
+| Calmer type and colour | Page titles are 26–30 px instead of 32–46 px, panels and cards share one 16 px corner, the background is a cool near-white with softer shadows, so numbers and actions stand out rather than the frame. The rainbow stays as an accent (active page, brand line, look buttons). |
+
 ---
 
 ## v1 (Cue Sheet), for reference
