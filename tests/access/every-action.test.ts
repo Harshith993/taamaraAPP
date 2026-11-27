@@ -537,6 +537,8 @@ const EXEMPT: Record<string, string> = {
   listNotifications: "own notifications only",
   openNotification: "own notifications only",
   markAllRead: "own notifications only",
+  savePushSubscription: "own devices only (tests/push.test.ts)",
+  removePushSubscription: "own devices only (tests/push.test.ts)",
 };
 
 beforeAll(async () => {

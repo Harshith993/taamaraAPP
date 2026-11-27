@@ -8,7 +8,8 @@ import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 import { buildCsp, newNonce } from "@/lib/csp";
 
-const PUBLIC_PATHS = ["/login", "/api/auth"];
+// The service worker is public: browsers re-check it for updates, signed in or not. It holds no data.
+const PUBLIC_PATHS = ["/login", "/api/auth", "/sw.js"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
