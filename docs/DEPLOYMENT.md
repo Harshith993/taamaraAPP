@@ -21,7 +21,7 @@ from the app itself. No business data is stored outside India.
 | `deploy/backup-to-s3.sh` | The nightly backup (cron): `scripts/backup.sh` inside the app, then upload to the backup bucket. |
 | `scripts/create-host.ts` | Creates the first Host on the empty database and prints a temporary password. |
 
-The image is being built and run end to end on a test machine (27 Nov 2026; see the log at the end).
+The same image was built and run end to end on a test machine on 27 Nov 2026 (see the log at the end).
 
 ## 1. The AWS account (hosts)
 
@@ -113,4 +113,4 @@ Migrations run on start. A backup runs first if the update changes the database
 
 | Date | Where | What was checked |
 |---|---|---|
-| 27 Nov 2026 | Test machine (Docker 29, Compose v5) | Image builds; `docker compose up` starts PostgreSQL, migrates, starts the app and Caddy; reference seed and `create-host.ts`; sign-in over HTTPS through Caddy (local certificate); `scripts/backup.sh` inside the app container with the PostgreSQL 16 client. S3 and SES were tested against a local S3 server and a mocked SES (tests/files/s3-storage.test.ts, tests/email-driver.test.ts) until the account exists. |
+| 27 Nov 2026 | Test machine (Docker 29, Compose v5) | Image builds; `docker compose up` starts PostgreSQL 16, applies all 14 migrations, starts the app (healthy) and Caddy; HTTP redirects to HTTPS; `/sw.js` served; reference seed; `create-host.ts` (and its refusal when a host exists); the new Host signs in over HTTPS, is made to set a password and lands on Home; `scripts/backup.sh` inside the app container with the PostgreSQL 16 client. (The test machine needed its own proxy certificate added to the build; a normal server doesn't.) S3 and SES were tested against a local S3 server and a mocked SES (tests/files/s3-storage.test.ts, tests/email-driver.test.ts) until the account exists. |
