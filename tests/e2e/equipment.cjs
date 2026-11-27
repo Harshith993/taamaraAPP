@@ -17,6 +17,14 @@ const { BASE, PHONE, IPAD, launch, checker, query } = require("./lib.cjs");
   writeFileSync(photo, await sharp({ create: { width: 1200, height: 900, channels: 3, background: "#C084FC" } }).jpeg().toBuffer());
   const SOFA = `Velvet sofa set ${Date.now() % 10000}`;
   const [wedding] = await query(`SELECT id FROM events WHERE name = 'Aditi & Karan'`);
+  // Success messages sit in controls that disappear when the row refreshes, so wait on the record.
+  const until = async (sql, params, ok) => {
+    for (let i = 0; i < 60; i++) {
+      if (ok((await query(sql, params))[0])) return true;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    return false;
+  };
 
   try {
     // 1. Manager: the register, its clash and damage report; adds an item with a photo
@@ -61,7 +69,7 @@ const { BASE, PHONE, IPAD, launch, checker, query } = require("./lib.cjs");
       await chairs.getByRole("button", { name: "Check out" }).click();
       await chairs.locator('input[name^="co-"]').fill("Seat pads packed separately");
       await chairs.getByRole("button", { name: "Checked out" }).click();
-      await page.getByText("Checked out.").waitFor({ timeout: 10000 });
+      await until(`SELECT a.status FROM inventory_allocations a JOIN inventory_items i ON i.id = a."itemId" WHERE i.name = 'Gold chiavari chairs' AND a."eventId" = $1`, [wedding.id], (r) => r?.status === "OUT");
       await page.reload();
       const again = page.getByRole("listitem", { name: "Equipment: Gold chiavari chairs" });
       await again.getByRole("button", { name: "Check in" }).click();
@@ -102,7 +110,7 @@ const { BASE, PHONE, IPAD, launch, checker, query } = require("./lib.cjs");
       await row.getByRole("button", { name: "Settle" }).click();
       await row.locator('input[name^="rs-"]').fill("Lens replaced");
       await row.getByRole("button", { name: "Settled" }).click();
-      await page.getByText("Settled.").waitFor({ timeout: 10000 });
+      await until(`SELECT a.resolution FROM inventory_allocations a JOIN inventory_items i ON i.id = a."itemId" WHERE i.name = 'LED PAR uplighters' AND a.status = 'RETURNED'`, [], (r) => Boolean(r?.resolution));
       const [r] = await query(`SELECT a.resolution FROM inventory_allocations a JOIN inventory_items i ON i.id = a."itemId" WHERE i.name = 'LED PAR uplighters' AND a.status = 'RETURNED'`);
       check("host settles a damage report", r?.resolution === "Lens replaced", r?.resolution);
       await ctx.close();
